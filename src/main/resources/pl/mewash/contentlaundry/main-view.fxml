@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="pl.mewash.contentlaundry.MainController">
+
+    <center>
+        <VBox spacing="10" alignment="TOP_CENTER" style="-fx-padding: 20;">
+
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="%label.paste_urls" />
+                <Label text="❓">
+                    <tooltip><Tooltip text="%tooltip.paste_url"/></tooltip>
+                </Label>
+            </HBox>
+            <TextArea fx:id="urlInput" prefRowCount="16" wrapText="true">
+                <tooltip>
+                    <Tooltip text="%tooltip.paste_url" />
+                </tooltip>
+            </TextArea>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="%label.save_to_dir" />
+                <TextField fx:id="pathField" prefWidth="300" />
+                <Button text="%button.browse_dirs" onAction="#handleBrowse" />
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER">
+                <CheckBox fx:id="mp3CheckBox" text="MP3" />
+                <CheckBox fx:id="wavCheckBox" text="WAV" />
+                <CheckBox fx:id="mp4CheckBox" text="MP4" />
+            </HBox>
+
+            <TitledPane text="%menu.advanced_options" expanded="false">
+                <VBox spacing="10" style="-fx-padding: 10;">
+
+                    <Label text="%label.download_type" />
+
+                    <fx:define>
+                        <ToggleGroup fx:id="downloadSelection"/>
+                        <ToggleGroup fx:id="structureSelection"/>
+                    </fx:define>
+
+                    <HBox spacing="5">
+                        <RadioButton fx:id="fileOnlyRadio" toggleGroup="$downloadSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.download.file_only_radio.prefix"/>
+                        <Label text="%label.download.file_only_radio.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.download.file_only_radio"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="5">
+                        <RadioButton fx:id="fileWithMetadataRadio" toggleGroup="$downloadSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.download.file_with_metadata_radio.prefix"/>
+                        <Label text="%label.download.file_with_metadata_radio.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.download.file_with_metadata_radio"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <Separator/>
+
+                    <Label text="%label.grouping_selection" />
+
+                    <HBox spacing="5">
+                        <RadioButton fx:id="noGroupingRadio" toggleGroup="$structureSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.grouping.no_grouping.prefix"/>
+                        <Label text="%label.grouping.no_grouping.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.grouping.no_grouping"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="5">
+                        <RadioButton fx:id="groupByContentRadio" toggleGroup="$structureSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.grouping.by_content.prefix"/>
+                        <Label text="%label.grouping.by_content.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.grouping.by_content"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="5">
+                        <RadioButton fx:id="groupByFormatRadio" toggleGroup="$structureSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.grouping.by_format.prefix"/>
+                        <Label text="%label.grouping.by_format.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.grouping.by_format"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <Separator/>
+
+                    <HBox spacing="5">
+                        <CheckBox fx:id="addDateCheckbox" />
+                        <Label style="-fx-font-weight: bold;" text="%label.add_date_checkbox.prefix"/>
+                        <Label text="%label.add_date_checkbox.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.add_date_checkbox"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                </VBox>
+            </TitledPane>
+
+            <Button text="%button.start_laundry" onAction="#handleDownload">
+                <tooltip><Tooltip text="%tooltip.start_laundry"/></tooltip>
+            </Button>
+
+            <TextArea fx:id="outputLog" editable="false" wrapText="true" prefRowCount="16" />
+        </VBox>
+    </center>
+</BorderPane>
