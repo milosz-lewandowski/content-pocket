@@ -81,3 +81,18 @@ tasks.named<JPackageImageTask>("jpackageImage") {
         println("✅ Copied tools to: $targetTools")
     }
 }
+
+tasks.register<Zip>("zipPortableApp") {
+    dependsOn("jpackageImage")
+
+    group = "distribution"
+    description = "Zips the jpackage portable app for sharing"
+
+    archiveFileName.set("ContentLaundry-portable.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
+
+    // Optional: remove absolute folder prefix inside zip
+    into("ContentLaundry")
+}
