@@ -1,3 +1,5 @@
+import org.beryx.jlink.JPackageImageTask
+
 plugins {
     java
     application
@@ -17,7 +19,7 @@ val junitVersion = "5.10.2"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
@@ -27,7 +29,7 @@ tasks.withType<JavaCompile> {
 
 application {
     mainModule.set("pl.mewash.contentlaundry")
-    mainClass.set("pl.mewash.contentlaundry.HelloApplication")
+    mainClass.set("pl.mewash.contentlaundry.LaundryApplication")
     applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
 }
 
@@ -37,8 +39,8 @@ javafx {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
 }
 
 tasks.withType<Test> {
@@ -46,9 +48,36 @@ tasks.withType<Test> {
 }
 
 jlink {
-    imageZip.set(layout.buildDirectory.file("/distributions/app-${javafx.platform.classifier}.zip"))
-    options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
+    options.set(
+        listOf(
+            "--strip-debug",
+            "--compress", "2",
+            "--no-header-files",
+            "--no-man-pages"
+        )
+    )
+
     launcher {
-        name = "app"
+        name = "ContentLaundry"
+    }
+
+    jpackage {
+        imageName = "ContentLaundry"
+        installerType = "app-image" // Creates a folder, not an installer
+        skipInstaller = true
+        appVersion = "1.0.0"
+        // icon = "icon.ico" // Add this later if needed
+        // resourceDir = file("src/main/resources") // Optional
+    }
+}
+
+tasks.named<JPackageImageTask>("jpackageImage") {
+    doLast {
+        val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
+        copy {
+            from("tools")
+            into(targetTools)
+        }
+        println("✅ Copied tools to: $targetTools")
     }
 }

@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry;
+package pl.mewash.contentlaundry.service;
 
 import pl.mewash.contentlaundry.models.AdvancedOptions;
 import pl.mewash.contentlaundry.utils.Formats;
@@ -9,19 +9,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.util.ResourceBundle;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public class DownloadService {
 
 
-    private ResourceBundle resources;
-
-    public void setResources(ResourceBundle bundle) {
-        this.resources = bundle;
-    }
+//    private ResourceBundle resources;
+//
+//    public void setResources(ResourceBundle bundle) {
+//        this.resources = bundle;
+//    }
     private BiConsumer<String, Object[]> logConsumer;
 
     public void setLogConsumer(BiConsumer<String, Object[]> consumer) {

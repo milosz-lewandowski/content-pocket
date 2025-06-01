@@ -1,19 +1,18 @@
-package pl.mewash.contentlaundry;
+package pl.mewash.contentlaundry.controller;
 
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
+import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.models.AdvancedOptions;
-import pl.mewash.contentlaundry.models.OutputStructure;
+import pl.mewash.contentlaundry.utils.OutputStructure;
 import pl.mewash.contentlaundry.utils.Formats;
 import pl.mewash.contentlaundry.utils.UrlExtractor;
 
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.List;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class MainController {
@@ -48,6 +47,7 @@ public class MainController {
         fileOnlyRadio.setSelected(true);
         noGroupingRadio.setSelected(true);
         addDateCheckbox.setSelected(false);
+//        appendLog("test.latin", "- test liter"); // test polskich liter w konsoli
     }
 
     @FXML
@@ -66,7 +66,7 @@ public class MainController {
         DownloadService service = new DownloadService();
         // logger injection
         service.setLogConsumer(this::appendLog);
-        service.setResources(resources);
+//        service.setResources(resources);
 
 
         String urls = urlInput.getText();

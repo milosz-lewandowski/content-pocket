@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry.models;
+package pl.mewash.contentlaundry.utils;
 
 public enum OutputStructure {
     GROUP_BY_FORMAT,
