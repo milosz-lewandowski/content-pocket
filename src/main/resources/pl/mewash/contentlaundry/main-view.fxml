@@ -110,6 +110,9 @@
                 <tooltip><Tooltip text="%tooltip.start_laundry"/></tooltip>
             </Button>
 
+            <Label fx:id="progressLabel" text="Progress will show here" />
+<!--            <ProgressBar fx:id="progressBar" progress="0.0" prefWidth="300"/>-->
+
             <TextArea fx:id="outputLog" editable="false" wrapText="true" prefRowCount="16" />
         </VBox>
     </center>
