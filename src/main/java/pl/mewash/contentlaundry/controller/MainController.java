@@ -16,9 +16,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainController {
@@ -50,6 +48,8 @@ public class MainController {
     @FXML private RadioButton noGroupingRadio;
     // Date dir checkbox
     @FXML private CheckBox addDateCheckbox;
+    // Allow multithreading checkbox
+    @FXML private CheckBox allowMultithreading;
 
     // Progress info elements
     @FXML private Label progressLabel;
@@ -102,35 +102,49 @@ public class MainController {
         AtomicInteger completedCount = new AtomicInteger(0);
         AtomicInteger failedCount = new AtomicInteger(0);
 
-        new Thread(() -> {
-            for (String url : refinedUrlList) {
-                for (Formats format : selectedFormats) {
-                    try {
-                        service.download(url, format, basePath, advancedOptions);
-                        completedCount.incrementAndGet();
-                    } catch (Exception e) {
-                        System.err.printf("❌ Failed to download [%s] as [%s]%n", url, format);
-                        e.printStackTrace();
-                        failedCount.incrementAndGet();
-                    }
-                }
-            }
-
-            // ensure final message print and uiLogger shutdown
-            appendToOutputLog("🎉 All downloads finished!");
-            try {
-                Thread.sleep(1100);
-            } catch (InterruptedException ignored) {}
-            uiLoggerScheduledThread.shutdown();
-            uiLoggerThreadStarted = false;
-        }).start();
-
         if (uiLoggerScheduledThread == null || uiLoggerScheduledThread.isShutdown()) {
             uiLoggerScheduledThread = Executors.newSingleThreadScheduledExecutor();
             UiLoggerJob uiTask = new UiLoggerJob(completedCount, failedCount, totalDownloads);
             uiLoggerScheduledThread.scheduleAtFixedRate(uiTask, 0, 500, TimeUnit.MILLISECONDS);
             uiLoggerThreadStarted = true;
         }
+
+        int threadsCount = 3;
+        ExecutorService fixedPool = Executors.newFixedThreadPool(threadsCount);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                for (String url : refinedUrlList) {
+                    for (Formats format : selectedFormats) {
+                        fixedPool.submit(() -> {
+                            try {
+                                service.download(url, format, basePath, advancedOptions);
+                                completedCount.incrementAndGet();
+                            } catch (Exception e) {
+                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, format);
+                                appendToOutputLog("Failed to download [" + url + "]: " + e.getMessage());
+                                e.printStackTrace();
+                                failedCount.incrementAndGet();
+                            }
+                        });
+                    }
+                }
+
+                fixedPool.shutdown();
+                fixedPool.awaitTermination(30, TimeUnit.SECONDS);
+
+                appendToOutputLog("🎉 All downloads finished!");
+                Thread.sleep(1100);
+            } catch (Exception e) {
+                appendToOutputLog("❌ Unexpected error during download execution.");
+                e.printStackTrace();
+            } finally {
+                if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown()) {
+                    uiLoggerScheduledThread.shutdown();
+                }
+                uiLoggerThreadStarted = false;
+            }
+        });
     }
 
     private static boolean getRemoveDuplicatesAlertDecision(int duplicatesCount, int allUrlsCount) {
