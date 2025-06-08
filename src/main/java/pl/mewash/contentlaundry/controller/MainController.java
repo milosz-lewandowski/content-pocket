@@ -3,13 +3,12 @@ package pl.mewash.contentlaundry.controller;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
-import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.models.AdvancedOptions;
-import pl.mewash.contentlaundry.utils.OutputStructure;
+import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.utils.Formats;
 import pl.mewash.contentlaundry.utils.InputUtils;
+import pl.mewash.contentlaundry.utils.OutputStructure;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -24,59 +23,51 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainController {
 
+    private final StringBuilder logBuffer = new StringBuilder();
+    private ScheduledExecutorService uiLoggerScheduledThread;
+    protected boolean uiLoggerThreadStarted = false;
+
     // Language resources
-    @FXML
-    private ResourceBundle resources;
+    @FXML private ResourceBundle resources;
 
     // Input text window
-    @FXML
-    private TextArea urlInput;
+    @FXML private TextArea urlInput;
     // Path directory selection
-    @FXML
-    private TextField pathField;
+    @FXML private TextField pathField;
 
     // Format Selection
-    @FXML
-    private CheckBox mp3CheckBox;
-    @FXML
-    private CheckBox wavCheckBox;
-    @FXML
-    private CheckBox mp4CheckBox;
+    @FXML private CheckBox mp3CheckBox;
+    @FXML private CheckBox wavCheckBox;
+    @FXML private CheckBox mp4CheckBox;
 
     // Metadata selection
-    @FXML
-    private RadioButton fileOnlyRadio;
-    @FXML
-    private RadioButton fileWithMetadataRadio;
+    @FXML private RadioButton fileOnlyRadio;
+    @FXML private RadioButton fileWithMetadataRadio;
     // Grouping Selection
-    @FXML
-    private ToggleGroup groupingToggleGroup;
-    @FXML
-    private RadioButton groupByFormatRadio;
-    @FXML
-    private RadioButton groupByContentRadio;
-    @FXML
-    private RadioButton noGroupingRadio;
-    // Date checkbox
-    @FXML
-    private CheckBox addDateCheckbox;
+    @FXML private ToggleGroup groupingToggleGroup;
+    @FXML private RadioButton groupByFormatRadio;
+    @FXML private RadioButton groupByContentRadio;
+    @FXML private RadioButton noGroupingRadio;
+    // Date dir checkbox
+    @FXML private CheckBox addDateCheckbox;
 
-    // Progress view elements
-    @FXML
-    private Label progressLabel;
-    @FXML
-    private ProgressBar progressBar;
+    // Progress info elements
+    @FXML private Label progressLabel;
+    @FXML private TextArea outputLog;
 
     @FXML
-    private TextArea outputLog;
+    public void onClose() {
+        if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown()) {
+            uiLoggerScheduledThread.shutdownNow();
+            uiLoggerThreadStarted = false;
+        }
+    }
 
     @FXML
     public void initialize() {
-        outputLog.setFont(Font.font("JetBrains Mono", 13));
         fileOnlyRadio.setSelected(true);
         noGroupingRadio.setSelected(true);
         addDateCheckbox.setSelected(false);
-//        appendLog("test.latin", "- test liter"); // test polskich liter w konsoli
     }
 
     @FXML
@@ -93,30 +84,19 @@ public class MainController {
     protected void handleDownload() {
         List<String> refinedUrlList = refineInputToUrlList(urlInput.getText());
 
-        DownloadService service = new DownloadService();
-        // logger injection
-        service.setLogConsumer(this::appendLog);
-//        service.setResources(resources);
+        DownloadService service = new DownloadService();  // Service selection
+        service.setLogConsumer(this::appendLog); // Logger injection
 
         String basePath = pathField.getText().trim();
         if (basePath.isEmpty()) {
             System.err.println("⚠️ No download path selected!");
-            appendLog("log.no_download_path");
+            outputLog.appendText(resources.getString("log.no_download_path") + "\n");
             return;
         }
 
         EnumSet<Formats> selectedFormats = getSelectedFormats();
 
         AdvancedOptions advancedOptions = getAdvancedOptions();
-
-        // For progress bar
-//        Platform.runLater(() -> {
-//            progressBar.setProgress(0.0);
-//            progressBar.setVisible(true);
-//            progressBar.setManaged(true); // 👈 helps if layout hides invisible items
-//            progressLabel.setVisible(true);
-//        });
-
 
         final int totalDownloads = refinedUrlList.size() * selectedFormats.size();
         AtomicInteger completedCount = new AtomicInteger(0);
@@ -135,26 +115,32 @@ public class MainController {
                     }
                 }
             }
+
+            // ensure final message print and uiLogger shutdown
+            appendToOutputLog("🎉 All downloads finished!");
+            try {
+                Thread.sleep(1100);
+            } catch (InterruptedException ignored) {}
+            uiLoggerScheduledThread.shutdown();
+            uiLoggerThreadStarted = false;
         }).start();
 
-        ScheduledExecutorService uiUpdater = Executors.newSingleThreadScheduledExecutor();
-        uiUpdater.scheduleAtFixedRate(() -> {
-            int completed = completedCount.get();
-            Platform.runLater(() -> {
-                progressLabel.setText("Completed: " + completed + " / " + totalDownloads + "  |  Failed: " + failedCount + " / " + totalDownloads);
-//                progressBar.setProgress((double) completed / totalDownloads);
-            });
-        }, 0, 500, TimeUnit.MILLISECONDS);
+        if (uiLoggerScheduledThread == null || uiLoggerScheduledThread.isShutdown()) {
+            uiLoggerScheduledThread = Executors.newSingleThreadScheduledExecutor();
+            UiLoggerJob uiTask = new UiLoggerJob(completedCount, failedCount, totalDownloads);
+            uiLoggerScheduledThread.scheduleAtFixedRate(uiTask, 0, 500, TimeUnit.MILLISECONDS);
+            uiLoggerThreadStarted = true;
+        }
     }
 
     private static boolean getRemoveDuplicatesAlertDecision(int duplicatesCount, int allUrlsCount) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Duplicate URLs Detected");
-        alert.setHeaderText(duplicatesCount + " out of " + allUrlsCount + "URLs are duplicates.");
-        alert.setContentText("Do you want to remove duplicates before processing?");
+        alert.setHeaderText(duplicatesCount + " out of " + allUrlsCount + " URLs are duplicates.");
+        alert.setContentText("Do you want to skip duplicates processing?");
 
-        ButtonType removeButton = new ButtonType("Remove duplicates");
-        ButtonType keepButton = new ButtonType("Duplicates are fine", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType removeButton = new ButtonType("Skip duplicates");
+        ButtonType keepButton = new ButtonType("Process with duplicates", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         alert.getButtonTypes().setAll(removeButton, keepButton);
 
@@ -172,12 +158,6 @@ public class MainController {
         return removeDuplicates
                 ? InputUtils.removeDuplicates(initialUrlsList)
                 : initialUrlsList;
-    }
-
-    private void appendLog(String key, Object... params) {
-        String pattern = resources.getString(key);
-        String formatted = MessageFormat.format(pattern, params);
-        outputLog.appendText(formatted + "\n");
     }
 
     private AdvancedOptions getAdvancedOptions() {
@@ -204,5 +184,52 @@ public class MainController {
         if (wavCheckBox.isSelected()) selectedFormats.add(Formats.WAV);
         if (mp4CheckBox.isSelected()) selectedFormats.add(Formats.MP4);
         return selectedFormats;
+    }
+
+    // Logging logic
+    private void appendLog(String key, Object... params) {
+        String pattern = resources.getString(key);
+        String formatted = MessageFormat.format(pattern, params);
+        appendToOutputLog(formatted);
+    }
+
+    private void appendToOutputLog(String message) {
+        synchronized (logBuffer) {
+            logBuffer.append(message).append("\n");
+        }
+    }
+
+    class UiLoggerJob implements Runnable {
+        private final AtomicInteger completedCount;
+        private final AtomicInteger failedCount;
+        private final int totalDownloads;
+
+        public UiLoggerJob(AtomicInteger completedCount, AtomicInteger failedCount, int totalDownloads) {
+            this.completedCount = completedCount;
+            this.failedCount = failedCount;
+            this.totalDownloads = totalDownloads;
+        }
+
+        @Override
+        public void run() {
+            int completed = completedCount.get();
+            int failed = failedCount.get();
+
+            String toAppend = getLogAndFlush();
+            Platform.runLater(() -> {
+                progressLabel.setText("Completed: " + completed + " | Failed: " + failed + " | Total: " + totalDownloads);
+                if (!toAppend.isEmpty()) {
+                    outputLog.appendText(toAppend);
+                }
+            });
+        }
+
+        private String getLogAndFlush() {
+            synchronized (logBuffer) {
+                String currentLog = logBuffer.toString();
+                logBuffer.setLength(0);
+                return currentLog;
+            }
+        }
     }
 }
