@@ -43,7 +43,7 @@
                         <ToggleGroup fx:id="structureSelection"/>
                     </fx:define>
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <RadioButton fx:id="fileOnlyRadio" toggleGroup="$downloadSelection" />
                         <Label style="-fx-font-weight: bold;" text="%label.download.file_only_radio.prefix"/>
                         <Label text="%label.download.file_only_radio.suffix"/>
@@ -52,7 +52,7 @@
                         </Label>
                     </HBox>
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <RadioButton fx:id="fileWithMetadataRadio" toggleGroup="$downloadSelection" />
                         <Label style="-fx-font-weight: bold;" text="%label.download.file_with_metadata_radio.prefix"/>
                         <Label text="%label.download.file_with_metadata_radio.suffix"/>
@@ -65,7 +65,7 @@
 
                     <Label text="%label.grouping_selection" />
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <RadioButton fx:id="noGroupingRadio" toggleGroup="$structureSelection" />
                         <Label style="-fx-font-weight: bold;" text="%label.grouping.no_grouping.prefix"/>
                         <Label text="%label.grouping.no_grouping.suffix"/>
@@ -74,7 +74,7 @@
                         </Label>
                     </HBox>
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <RadioButton fx:id="groupByContentRadio" toggleGroup="$structureSelection" />
                         <Label style="-fx-font-weight: bold;" text="%label.grouping.by_content.prefix"/>
                         <Label text="%label.grouping.by_content.suffix"/>
@@ -83,7 +83,7 @@
                         </Label>
                     </HBox>
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <RadioButton fx:id="groupByFormatRadio" toggleGroup="$structureSelection" />
                         <Label style="-fx-font-weight: bold;" text="%label.grouping.by_format.prefix"/>
                         <Label text="%label.grouping.by_format.suffix"/>
@@ -94,7 +94,7 @@
 
                     <Separator/>
 
-                    <HBox spacing="5">
+                    <HBox spacing="3">
                         <CheckBox fx:id="addDateCheckbox" />
                         <Label style="-fx-font-weight: bold;" text="%label.add_date_checkbox.prefix"/>
                         <Label text="%label.add_date_checkbox.suffix"/>
@@ -103,10 +103,55 @@
                         </Label>
                     </HBox>
 
+                    <Separator/>
+
+                    <HBox spacing="5">
+                        <Label text="%label.multithreadingSelection" />
+                        <Label text="⚠">
+                            <tooltip><Tooltip text="%tooltip.multithreading.warning"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="3">
+                        <RadioButton fx:id="singleThreadRadio" toggleGroup="$multithreadingSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.multithreading.single.prefix"/>
+                        <Label text="%label.multithreading.single.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.multithreading.single"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="3">
+                        <RadioButton fx:id="lowThreadsRadio" toggleGroup="$multithreadingSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.multithreading.low.prefix"/>
+                        <Label text="%label.multithreading.low.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.multithreading.low"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="3">
+                        <RadioButton fx:id="mediumThreadsRadio" toggleGroup="$multithreadingSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.multithreading.medium.prefix"/>
+                        <Label text="%label.multithreading.medium.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.multithreading.medium"/></tooltip>
+                        </Label>
+                    </HBox>
+
+                    <HBox spacing="3">
+                        <RadioButton fx:id="maximumThreadsRadio" toggleGroup="$multithreadingSelection" />
+                        <Label style="-fx-font-weight: bold;" text="%label.multithreading.maximum.prefix"/>
+                        <Label text="%label.multithreading.maximum.suffix"/>
+                        <Label text="❓">
+                            <tooltip><Tooltip text="%tooltip.multithreading.maximum"/></tooltip>
+                        </Label>
+                    </HBox>
+
                 </VBox>
             </TitledPane>
 
-            <Button text="%button.start_laundry" onAction="#handleDownload">
+            <Button fx:id="startStopButton" text="%button.start_laundry" onAction="#handleStartStopLaundry">
                 <tooltip><Tooltip text="%tooltip.start_laundry"/></tooltip>
             </Button>
 

@@ -8,6 +8,7 @@ import pl.mewash.contentlaundry.models.AdvancedOptions;
 import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.utils.Formats;
 import pl.mewash.contentlaundry.utils.InputUtils;
+import pl.mewash.contentlaundry.utils.MultithreadingMode;
 import pl.mewash.contentlaundry.utils.OutputStructure;
 
 import java.io.File;
@@ -48,18 +49,54 @@ public class MainController {
     @FXML private RadioButton noGroupingRadio;
     // Date dir checkbox
     @FXML private CheckBox addDateCheckbox;
+
     // Allow multithreading checkbox
-    @FXML private CheckBox allowMultithreading;
+    @FXML private ToggleGroup multithreadingSelection;
+    @FXML private RadioButton singleThreadRadio;
+    @FXML private RadioButton lowThreadsRadio;
+    @FXML private RadioButton mediumThreadsRadio;
+    @FXML private RadioButton maximumThreadsRadio;
+
+    // Main start/stop button & workers pool management
+    @FXML private Button startStopButton;
+    private boolean downloadRunning = false;
+    private ExecutorService workersThreadPool;
 
     // Progress info elements
     @FXML private Label progressLabel;
     @FXML private TextArea outputLog;
 
     @FXML
+    protected void handleStartStopLaundry() {
+        if (!downloadRunning) {
+            startLaundry();
+            startStopButton.setText("Stop Laundry");
+            downloadRunning = true;
+        } else {
+            stopLaundry();
+            startStopButton.setText("Start Laundry");
+            downloadRunning = false;
+        }
+    }
+
+    private void stopLaundry() {
+        if (workersThreadPool != null && !workersThreadPool.isShutdown()) {
+            workersThreadPool.shutdownNow();
+            appendToOutputLog("❌ Laundry stopped by user.");
+        }
+    }
+
+
+    @FXML
     public void onClose() {
         if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown()) {
             uiLoggerScheduledThread.shutdownNow();
             uiLoggerThreadStarted = false;
+        }
+
+        if (workersThreadPool != null && !workersThreadPool.isShutdown()) {
+            workersThreadPool.shutdownNow();
+            downloadRunning = false;
         }
     }
 
@@ -81,7 +118,7 @@ public class MainController {
 
 
     @FXML
-    protected void handleDownload() {
+    protected void startLaundry() {
         List<String> refinedUrlList = refineInputToUrlList(urlInput.getText());
 
         DownloadService service = new DownloadService();  // Service selection
@@ -89,13 +126,12 @@ public class MainController {
 
         String basePath = pathField.getText().trim();
         if (basePath.isEmpty()) {
-            System.err.println("⚠️ No download path selected!");
+            System.err.println("⚠ No download path selected!");
             outputLog.appendText(resources.getString("log.no_download_path") + "\n");
             return;
         }
 
         EnumSet<Formats> selectedFormats = getSelectedFormats();
-
         AdvancedOptions advancedOptions = getAdvancedOptions();
 
         final int totalDownloads = refinedUrlList.size() * selectedFormats.size();
@@ -109,14 +145,14 @@ public class MainController {
             uiLoggerThreadStarted = true;
         }
 
-        int threadsCount = 3;
-        ExecutorService fixedPool = Executors.newFixedThreadPool(threadsCount);
+        workersThreadPool = getExecutorSetup();
 
         CompletableFuture.runAsync(() -> {
             try {
+                List<Future<?>> tasksCompleted = new CopyOnWriteArrayList<>();
                 for (String url : refinedUrlList) {
                     for (Formats format : selectedFormats) {
-                        fixedPool.submit(() -> {
+                        Future<?> task = workersThreadPool.submit(() -> {
                             try {
                                 service.download(url, format, basePath, advancedOptions);
                                 completedCount.incrementAndGet();
@@ -127,22 +163,27 @@ public class MainController {
                                 failedCount.incrementAndGet();
                             }
                         });
+                        tasksCompleted.add(task);
                     }
                 }
-
-                fixedPool.shutdown();
-                fixedPool.awaitTermination(30, TimeUnit.SECONDS);
-
+                for (Future<?> task : tasksCompleted) {
+                    try {
+                        task.get();
+                    } catch (CancellationException ignored) {
+                        appendToOutputLog("Cancellation Exception");
+                        System.err.println("Cancellation Exception");
+                    }
+                }
                 appendToOutputLog("🎉 All downloads finished!");
-                Thread.sleep(1100);
             } catch (Exception e) {
                 appendToOutputLog("❌ Unexpected error during download execution.");
                 e.printStackTrace();
             } finally {
-                if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown()) {
-                    uiLoggerScheduledThread.shutdown();
+                if (workersThreadPool != null && !workersThreadPool.isShutdown()) {
+                    workersThreadPool.shutdown();
                 }
-                uiLoggerThreadStarted = false;
+                downloadRunning = false;
+                Platform.runLater(() -> startStopButton.setText("Start Laundry"));
             }
         });
     }
@@ -184,11 +225,24 @@ public class MainController {
             outputStructure = OutputStructure.GROUP_BY_FORMAT;
         } else outputStructure = OutputStructure.GROUP_BY_FORMAT;
 
+        MultithreadingMode multithreadingMode;
+        if (singleThreadRadio.isSelected()) {
+            multithreadingMode = MultithreadingMode.SINGLE;
+        } else if (lowThreadsRadio.isSelected()) {
+            multithreadingMode = MultithreadingMode.LOW;
+        } else if (mediumThreadsRadio.isSelected()) {
+            multithreadingMode = MultithreadingMode.MEDIUM;
+        } else if (maximumThreadsRadio.isSelected()) {
+            multithreadingMode = MultithreadingMode.MAXIMUM;
+        } else multithreadingMode = MultithreadingMode.SINGLE;
+
         boolean withMetadata = !fileOnlyRadio.isSelected();
+
         return new AdvancedOptions(
                 withMetadata,
                 outputStructure,
-                addDateCheckbox.isSelected()
+                addDateCheckbox.isSelected(),
+                multithreadingMode
         );
     }
 
@@ -198,6 +252,23 @@ public class MainController {
         if (wavCheckBox.isSelected()) selectedFormats.add(Formats.WAV);
         if (mp4CheckBox.isSelected()) selectedFormats.add(Formats.MP4);
         return selectedFormats;
+    }
+
+    private ExecutorService getExecutorSetup(){
+        int totalAvailableThreads = Runtime.getRuntime().availableProcessors();
+        int reservedThreads = 3 + 1; //MainUiThread, ScheduledUiLoggerThread, LoopIteratorThread + 1 JVM
+        int availableThreads = totalAvailableThreads - reservedThreads;
+
+        MultithreadingMode mode = getAdvancedOptions().multithreadingMode();
+
+        int fixedThreadsCount = switch (mode) {
+            case SINGLE -> 1;
+            case LOW -> Math.max(2, availableThreads / 4);
+            case MEDIUM -> Math.max(3, availableThreads / 2);
+            case MAXIMUM -> Math.max(4, availableThreads -1);
+        };
+        appendToOutputLog("Parallel worker threads: " + fixedThreadsCount);
+        return Executors.newFixedThreadPool(fixedThreadsCount);
     }
 
     // Logging logic

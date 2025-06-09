@@ -60,7 +60,6 @@ public class ProcessFactory {
         String titleDirWithExtension = "%(title)s-" + formatDir;
         String dateDir = advancedOptions.withDateDir() ? LocalDate.now() + "/" : "";
 
-
         return switch (advancedOptions.outputStructure()) {
 
             case GROUP_BY_FORMAT -> advancedOptions.withMetadata()
