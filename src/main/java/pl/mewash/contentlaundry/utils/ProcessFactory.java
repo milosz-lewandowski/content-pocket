@@ -3,9 +3,7 @@ package pl.mewash.contentlaundry.utils;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -15,12 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessFactory {
-    private static final Path TOOL_PATH = Paths.get(System.getProperty("user.dir"), "tools", "yt-dlp.exe");
-    private static final String TOOL_COMMAND = TOOL_PATH.toString();
+    private static final Path TOOL_PATH_MAC = Paths.get(System.getProperty("user.dir"), "tools", "mac", "yt-dlp_macos");
+    private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
 
     public static ProcessBuilder buildFetchUploadListCommand(String channelUrl, LocalDateTime afterDate, File tempFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND);
+        command.add(TOOL_COMMAND_MAC);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String date = afterDate.format(formatter);
@@ -43,7 +41,7 @@ public class ProcessFactory {
 
     public static ProcessBuilder buildCheckChannelCommand(String channelUrl, File tempFile) {
         List<String> command = new ArrayList<>(List.of(
-                TOOL_COMMAND,
+                TOOL_COMMAND_MAC,
                 "--skip-download",
                 "--playlist-end", "1",
                 "--quiet",
@@ -60,7 +58,7 @@ public class ProcessFactory {
     public static ProcessBuilder buildDownloadCommand(String url, Formats format,
                                                       AdvancedOptions advancedOptions, Path tempTitleFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND); // tool command
+        command.add(TOOL_COMMAND_MAC); // tool command
 
         // adds format specific download & conversion options
         if (format.audioFormat) {
@@ -124,25 +122,25 @@ public class ProcessFactory {
         };
     }
 
-    public static void checkTool(String toolName) {
-        try {
-            String toolExe = toolName + ".exe";
-            String toolPathCommand = Paths.get(System.getProperty("user.dir"), "tools", toolExe).toString();
-            ProcessBuilder builder = new ProcessBuilder(toolPathCommand, "-version");
-            builder.redirectErrorStream(true);
-            Process process = builder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-            process.waitFor();
-        } catch (Exception e) {
-            System.err.println("error while checking: " + toolName);
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    public static void checkTool(String toolName) {
+//        try {
+//            String toolExe = toolName + ".exe";
+//            String toolPathCommand = Paths.get(System.getProperty("user.dir"), "tools", toolExe).toString();
+//            ProcessBuilder builder = new ProcessBuilder(toolPathCommand, "-version");
+//            builder.redirectErrorStream(true);
+//            Process process = builder.start();
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                System.out.println(line);
+//            }
+//            process.waitFor();
+//        } catch (Exception e) {
+//            System.err.println("error while checking: " + toolName);
+//            System.err.println(e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 }
 
 //    @Deprecated
