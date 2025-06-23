@@ -1,0 +1,36 @@
+name: Build macOS .dmg
+
+on:
+  push:
+    branches:
+      - mac-os-build
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: 🔄 Checkout code
+        uses: actions/checkout@v3
+
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: 🧼 Make mac tools & gradlew executable
+        run: |
+          chmod +x gradlew
+          chmod +x tools/mac/yt-dlp_macos
+          chmod +x tools/mac/ffmpeg
+          chmod +x tools/mac/ffprobe
+
+      - name: ⚙️ Build macOS .dmg with Gradle
+        run: ./gradlew jpackage
+
+      - name: 📦 Upload .dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ContentLaundry
+          path: build/jpackage/
