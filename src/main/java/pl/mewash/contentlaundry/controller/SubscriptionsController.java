@@ -278,10 +278,7 @@ public class SubscriptionsController {
 
         DownloadService downloadService = new DownloadService();
         AdvancedOptions advancedOptions = new AdvancedOptions(
-                false, GroupingMode.NO_GROUPING
-//                , true
-                , false
-                , MultithreadingMode.SINGLE);
+                false, GroupingMode.NO_GROUPING, true, MultithreadingMode.SINGLE);
         CompletableFuture.runAsync(() -> {
             try {
                 Path channelBasePath = Paths.get(subsBasePath + File.separator + upload.getChannelName());

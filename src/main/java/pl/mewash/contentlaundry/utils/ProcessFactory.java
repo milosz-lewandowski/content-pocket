@@ -57,7 +57,8 @@ public class ProcessFactory {
 
     }
 
-    public static ProcessBuilder buildDownloadCommand(Path tempDirPath, String url, Formats format, AdvancedOptions advancedOptions, File titleTempFile) {
+    public static ProcessBuilder buildDownloadCommand(String url, Formats format,
+                                                      AdvancedOptions advancedOptions, Path tempTitleFile) {
         List<String> command = new ArrayList<>();
         command.add(TOOL_COMMAND); // tool command
 
@@ -73,7 +74,6 @@ public class ProcessFactory {
                     "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
                     "--merge-output-format", format.value
             ));
-
         } else System.err.println("Unsupported format: " + format);
 
         if (format != Formats.WAV) {
@@ -89,28 +89,19 @@ public class ProcessFactory {
             ));
         }
 
-        // if download with known name
-        if (titleTempFile != null) {
-            command.addAll(List.of(
-                    "--print-to-file", "%(title)s", titleTempFile.getAbsolutePath()
-            ));
-        }
+        command.addAll(List.of("--print-to-file", "%(title)s", tempTitleFile.toAbsolutePath().toString()));
 
-        String outputPath = getOutputPath(advancedOptions, format);
-        Path full = tempDirPath.resolve(outputPath).toAbsolutePath();
-        System.out.println(full); //FIXME: TEST
-        System.out.println(full.toString()); //FIXME: TEST
-
+        String outputPathString = getOutputPathParam(advancedOptions, format);
         command.addAll(List.of(
-                "--output", full.toString(),
+                "--output", outputPathString,
                 url
         ));
 
-        System.out.println(command);
+        System.out.println("mp4 debug command: " + command);
         return new ProcessBuilder(command);
     }
 
-    private static String getOutputPath(AdvancedOptions advancedOptions, Formats format) {
+    private static String getOutputPathParam(AdvancedOptions advancedOptions, Formats format) {
         String formatDir = format.name() + "/";
         String fileTitleWithExtension = "%(title)s.%(ext)s";
         String titleDir = "%(title)s/";

@@ -5,14 +5,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
-import pl.mewash.contentlaundry.mp4debug.DownloadService2;
-import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
-import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
-import pl.mewash.contentlaundry.utils.InputUtils;
-import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
+import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
+import pl.mewash.contentlaundry.service.DownloadService;
+import pl.mewash.contentlaundry.subscriptions.SettingsManager;
+import pl.mewash.contentlaundry.utils.InputUtils;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -136,8 +135,7 @@ public class MainController {
     protected void startLaundry() {
         List<String> refinedUrlList = refineInputToUrlList(urlInput.getText());
 
-//        DownloadService service = new DownloadService();  // Service selection
-        DownloadService2 service = new DownloadService2();  // Service selection 2
+        DownloadService service = new DownloadService();  // Service selection
         service.setLogConsumer(this::appendLog); // Logger injection
 
         String basePath = pathField.getText().trim();
@@ -161,7 +159,7 @@ public class MainController {
             uiLoggerThreadStarted = true;
         }
 
-        workersThreadPool = getExecutorSetup();
+        workersThreadPool = getExecutorSetup(totalDownloads);
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -270,10 +268,11 @@ public class MainController {
         return selectedFormats;
     }
 
-    private ExecutorService getExecutorSetup(){
-        int fixedThreads = getAdvancedOptions()
+    private ExecutorService getExecutorSetup(int downloadsCount){
+        int calculatedAvailableThreads = getAdvancedOptions()
                 .multithreadingMode()
                 .calculateThreads();
+        int fixedThreads = Math.min(downloadsCount, calculatedAvailableThreads);
         appendToOutputLog("Parallel worker threads: " + fixedThreads);
         return Executors.newFixedThreadPool(fixedThreads);
     }

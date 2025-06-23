@@ -4,6 +4,7 @@ import pl.mewash.contentlaundry.models.content.FetchedUpload;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
 import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
+import pl.mewash.contentlaundry.utils.LoggerUtils;
 import pl.mewash.contentlaundry.utils.ProcessFactory;
 
 import java.io.File;
@@ -25,64 +26,48 @@ public class DownloadService {
 
     public void downloadFetched(FetchedUpload fetchedUpload, Formats format, String basePathString,
                                 AdvancedOptions advancedOptions) throws IOException, InterruptedException {
-        Path basePath = Paths.get(basePathString);
-//        long threadId = Thread.currentThread().threadId();
-//        Path tempDirPath = Files.createTempDirectory(basePath, "__laundry-temp-multi-thread-" + threadId);
-        Path fullPath = null;
-
         String url = fetchedUpload.getUrl();
-        String title = fetchedUpload.getTitle();
-        appendLog("log.washing_and_drying", fetchedUpload.getUrl(), format.name());
 
-        ProcessBuilder builder = ProcessFactory.buildDownloadCommand(fullPath, url, format, advancedOptions, null);
-        builder.directory(basePath.toFile());
+        //TODO: here do all required contents history and tracking management
 
-        Process process = builder.start();
-        int exitCode = process.waitFor();
+        // run download
+        download(url, format, basePathString, advancedOptions);
 
-        if (exitCode != 0) {
-            System.err.println("Error downloading: " + url + " with title: " + title + " as " + format.value);
-            appendLog("log.failed_to_process", url + " with title: " + title, format.value);
-        }
-
-//        moveTempContent(tempDirPath, basePath);
-
-        if (title == null || title.isEmpty()) {
-            System.out.println("No download title: " + title + "." + format.value + " -> file probably already downloaded");
-            appendLog("log.already_saved", title, format.value);
-        } else {
-            System.out.println("Downloaded: " + title + " as " + format.value);
-            appendLog("log.laundry_ready", title, format.value);
-        }
-
-//        cleanupTempDir(tempDirPath);
     }
 
-    public void download(String url, Formats format, String basePathString, AdvancedOptions advancedOptions) throws IOException, InterruptedException {
-        Path basePath = Paths.get(basePathString);
-        long threadId = Thread.currentThread().threadId();
-        Path tempDirPath = Files.createTempDirectory(basePath, "__laundry-temp-multi-thread-" + threadId);
-        Path titleTempFile = Files.createTempFile(tempDirPath, "yt_title", ".txt");
-
+    public void download(String url, Formats format, String baseDirString, AdvancedOptions advancedOptions) throws IOException, InterruptedException {
         appendLog("log.washing_and_drying", url, format.name());
 
-        ProcessBuilder builder = ProcessFactory.buildDownloadCommand(tempDirPath, url, format, advancedOptions, titleTempFile.toFile());
-        builder.directory(tempDirPath.toFile());
+        // building paths
+        Path baseDirPath = Paths.get(baseDirString);
+        long threadId = Thread.currentThread().threadId();
+        Path tempDirPath = Files.createTempDirectory(baseDirPath, "__laundry-temp-multi-thread-" + threadId);
+        Path tempTitleFile = Files.createTempFile(tempDirPath, "temp_title", ".txt");
 
+        // process creation + execution
+        ProcessBuilder builder = ProcessFactory.buildDownloadCommand(url, format, advancedOptions, tempTitleFile);
+        builder.directory(tempDirPath.toFile());
         Process process = builder.start();
+
+        // redirect and log process output stream to file while process is running
+        LoggerUtils.synchronizedLogProcessOutputToFile(process);
+
+        // wait for process finished
         int exitCode = process.waitFor();
 
-        String title = Files.readString(titleTempFile, StandardCharsets.UTF_8).trim();
-        Files.deleteIfExists(titleTempFile);
+        // Get UTF-8 file title and delete temp file
+        String title = Files.readString(tempTitleFile, StandardCharsets.UTF_8).trim();
+        Files.deleteIfExists(tempTitleFile);
 
+        // if process failed
         if (exitCode != 0) {
             System.err.println("Error downloading: " + url + " with title: " + title + " as " + format.value);
             appendLog("log.failed_to_process", url + " with title: " + title, format.value);
         }
 
-        moveTempContent(tempDirPath, basePath);
+        moveTempContent(tempDirPath, baseDirPath);
 
-        if (title == null || title.isEmpty()) {
+        if (title.isEmpty()) {
             System.out.println("No download title: " + title + "." + format.value + " -> file probably already downloaded");
             appendLog("log.already_saved", title, format.value);
         } else {
@@ -93,22 +78,6 @@ public class DownloadService {
         cleanupTempDir(tempDirPath);
     }
 
-//    @Deprecated
-//    private static String getTitle(Process process) throws IOException {
-//        BufferedReader reader = new BufferedReader(
-//                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-//        String line;
-//        String title = null;
-//
-//        while ((line = reader.readLine()) != null) {
-//            if (line.startsWith("[download] Destination: ")) {
-//                String filename = line.substring("[download] Destination: ".length()).trim();
-//                int dotIndex = filename.lastIndexOf('.');
-//                title = (dotIndex > 0) ? filename.substring(0, dotIndex) : filename;
-//            }
-//        }
-//        return title;
-//    }
 
     private void appendLog(String key, Object... params) {
         if (logConsumer != null) {

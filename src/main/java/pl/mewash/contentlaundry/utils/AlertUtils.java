@@ -40,7 +40,7 @@ public class AlertUtils {
 
                 String contextText = new StringBuilder()
                         .append("Fetch process timed out after defined ").append(formatDurationHumanFriendly(currentTimeout))
-                        .append(" ,before fetching all uploads since target date: ")
+                        .append(" before fetching all uploads since target date: ")
                         .append(targetDate.format(DateTimeFormatter.ISO_LOCAL_DATE)).append(".\n")
                         .append("Fetched ").append(fetchedCount).append(" uploads. ")
                         .append("Oldest fetch from ").append(fetchedUntil.format(DateTimeFormatter.ISO_LOCAL_DATE)).append(".\n")
