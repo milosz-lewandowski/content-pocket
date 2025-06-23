@@ -4,12 +4,14 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
-import pl.mewash.contentlaundry.models.AdvancedOptions;
+import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.service.DownloadService;
-import pl.mewash.contentlaundry.utils.Formats;
+import pl.mewash.contentlaundry.models.general.GeneralSettings;
+import pl.mewash.contentlaundry.subscriptions.SettingsManager;
+import pl.mewash.contentlaundry.models.general.enums.Formats;
 import pl.mewash.contentlaundry.utils.InputUtils;
-import pl.mewash.contentlaundry.utils.MultithreadingMode;
-import pl.mewash.contentlaundry.utils.OutputStructure;
+import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
+import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -66,6 +68,21 @@ public class MainController {
     @FXML private Label progressLabel;
     @FXML private TextArea outputLog;
 
+    private GeneralSettings generalSettings = SettingsManager.load();
+
+
+    @FXML
+    public void initialize() {
+        fileOnlyRadio.setSelected(true);
+        noGroupingRadio.setSelected(true);
+        addDateCheckbox.setSelected(false);
+        singleThreadRadio.setSelected(true);
+
+        if (generalSettings.lastSelectedPath != null && !generalSettings.lastSelectedPath.isBlank()) {
+            pathField.setText(generalSettings.lastSelectedPath);
+        }
+    }
+
     @FXML
     protected void handleStartStopLaundry() {
         if (!downloadRunning) {
@@ -101,18 +118,15 @@ public class MainController {
     }
 
     @FXML
-    public void initialize() {
-        fileOnlyRadio.setSelected(true);
-        noGroupingRadio.setSelected(true);
-        addDateCheckbox.setSelected(false);
-    }
-
-    @FXML
     protected void handleBrowse() {
         DirectoryChooser chooser = new DirectoryChooser();
         File selectedDirectory = chooser.showDialog(null);
         if (selectedDirectory != null) {
-            pathField.setText(selectedDirectory.getAbsolutePath());
+            String selectedPath = selectedDirectory.getAbsolutePath();
+            pathField.setText(selectedPath);
+
+            generalSettings.lastSelectedPath = selectedPath;
+            SettingsManager.saveSettings(generalSettings);
         }
     }
 
@@ -216,14 +230,14 @@ public class MainController {
     }
 
     private AdvancedOptions getAdvancedOptions() {
-        OutputStructure outputStructure;
+        GroupingMode groupingMode;
         if (noGroupingRadio.isSelected()) {
-            outputStructure = OutputStructure.NO_GROUPING;
+            groupingMode = GroupingMode.NO_GROUPING;
         } else if (groupByContentRadio.isSelected()) {
-            outputStructure = OutputStructure.GROUP_BY_CONTENT;
+            groupingMode = GroupingMode.GROUP_BY_CONTENT;
         } else if (groupByFormatRadio.isSelected()) {
-            outputStructure = OutputStructure.GROUP_BY_FORMAT;
-        } else outputStructure = OutputStructure.GROUP_BY_FORMAT;
+            groupingMode = GroupingMode.GROUP_BY_FORMAT;
+        } else groupingMode = GroupingMode.GROUP_BY_FORMAT;
 
         MultithreadingMode multithreadingMode;
         if (singleThreadRadio.isSelected()) {
@@ -240,7 +254,7 @@ public class MainController {
 
         return new AdvancedOptions(
                 withMetadata,
-                outputStructure,
+                groupingMode,
                 addDateCheckbox.isSelected(),
                 multithreadingMode
         );
@@ -255,20 +269,11 @@ public class MainController {
     }
 
     private ExecutorService getExecutorSetup(){
-        int totalAvailableThreads = Runtime.getRuntime().availableProcessors();
-        int reservedThreads = 3 + 1; //MainUiThread, ScheduledUiLoggerThread, LoopIteratorThread + 1 JVM
-        int availableThreads = totalAvailableThreads - reservedThreads;
-
-        MultithreadingMode mode = getAdvancedOptions().multithreadingMode();
-
-        int fixedThreadsCount = switch (mode) {
-            case SINGLE -> 1;
-            case LOW -> Math.max(2, availableThreads / 4);
-            case MEDIUM -> Math.max(3, availableThreads / 2);
-            case MAXIMUM -> Math.max(4, availableThreads -1);
-        };
-        appendToOutputLog("Parallel worker threads: " + fixedThreadsCount);
-        return Executors.newFixedThreadPool(fixedThreadsCount);
+        int fixedThreads = getAdvancedOptions()
+                .multithreadingMode()
+                .calculateThreads();
+        appendToOutputLog("Parallel worker threads: " + fixedThreads);
+        return Executors.newFixedThreadPool(fixedThreads);
     }
 
     // Logging logic

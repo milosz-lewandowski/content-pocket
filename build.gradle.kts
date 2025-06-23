@@ -39,6 +39,14 @@ javafx {
 }
 
 dependencies {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
+
+    implementation("org.projectlombok:lombok:1.18.38")
+    annotationProcessor("org.projectlombok:lombok:1.18.38")
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
 }
