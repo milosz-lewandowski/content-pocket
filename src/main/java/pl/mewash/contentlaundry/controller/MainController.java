@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
+import pl.mewash.contentlaundry.mp4debug.DownloadService2;
 import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
 import pl.mewash.contentlaundry.subscriptions.SettingsManager;
@@ -135,7 +136,8 @@ public class MainController {
     protected void startLaundry() {
         List<String> refinedUrlList = refineInputToUrlList(urlInput.getText());
 
-        DownloadService service = new DownloadService();  // Service selection
+//        DownloadService service = new DownloadService();  // Service selection
+        DownloadService2 service = new DownloadService2();  // Service selection 2
         service.setLogConsumer(this::appendLog); // Logger injection
 
         String basePath = pathField.getText().trim();

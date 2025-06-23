@@ -1,63 +1,19 @@
-package pl.mewash.contentlaundry.utils;
+package pl.mewash.contentlaundry.mp4debug;
 
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessFactory {
+public class ProcessFactory2 {
     private static final Path TOOL_PATH = Paths.get(System.getProperty("user.dir"), "tools", "yt-dlp.exe");
     private static final String TOOL_COMMAND = TOOL_PATH.toString();
 
-    public static ProcessBuilder buildFetchUploadListCommand(String channelUrl, LocalDateTime afterDate, File tempFile) {
-        List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String date = afterDate.format(formatter);
-
-        command.addAll(List.of(
-                "--dateafter", date,
-                "--skip-download",
-                "--match-filter", "!is_live",
-                "--break-on-reject",
-//                "--playlist-items", "15", // don't use - does not work as expected
-                "--playlist-end", "150", // Safety for infinite dangling process
-                "--quiet",  // Optional: suppress progress bars
-                "--print-to-file", "%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s", tempFile.getAbsolutePath(),
-                channelUrl
-        ));
-        System.out.println(command);
-
-        return new ProcessBuilder(command);
-    }
-
-    public static ProcessBuilder buildCheckChannelCommand(String channelUrl, File tempFile) {
-        List<String> command = new ArrayList<>(List.of(
-                TOOL_COMMAND,
-                "--skip-download",
-                "--playlist-end", "1",
-                "--quiet",
-//                "--print", "%(channel)s",
-                "--print-to-file", "%(channel)s", tempFile.getAbsolutePath(),
-                channelUrl
-        ));
-
-        return new ProcessBuilder(command);
-
-
-    }
-
-    public static ProcessBuilder buildDownloadCommand(Path tempDirPath, String url, Formats format, AdvancedOptions advancedOptions, File titleTempFile) {
+    public static ProcessBuilder buildProcessCommand(String url, Formats format, AdvancedOptions advancedOptions) {
         List<String> command = new ArrayList<>();
         command.add(TOOL_COMMAND); // tool command
 
@@ -73,7 +29,6 @@ public class ProcessFactory {
                     "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
                     "--merge-output-format", format.value
             ));
-
         } else System.err.println("Unsupported format: " + format);
 
         if (format != Formats.WAV) {
@@ -89,24 +44,13 @@ public class ProcessFactory {
             ));
         }
 
-        // if download with known name
-        if (titleTempFile != null) {
-            command.addAll(List.of(
-                    "--print-to-file", "%(title)s", titleTempFile.getAbsolutePath()
-            ));
-        }
-
         String outputPath = getOutputPath(advancedOptions, format);
-        Path full = tempDirPath.resolve(outputPath).toAbsolutePath();
-        System.out.println(full); //FIXME: TEST
-        System.out.println(full.toString()); //FIXME: TEST
 
         command.addAll(List.of(
-                "--output", full.toString(),
+                "--output", outputPath,
                 url
         ));
 
-        System.out.println(command);
         return new ProcessBuilder(command);
     }
 
@@ -116,6 +60,7 @@ public class ProcessFactory {
         String titleDir = "%(title)s/";
         String titleDirWithExtension = "%(title)s-" + formatDir;
         String dateDir = advancedOptions.withDateDir() ? LocalDate.now() + "/" : "";
+
 
         return switch (advancedOptions.groupingMode()) {
 
@@ -132,28 +77,7 @@ public class ProcessFactory {
                     : dateDir + fileTitleWithExtension;
         };
     }
-
-    public static void checkTool(String toolName) {
-        try {
-            String toolExe = toolName + ".exe";
-            String toolPathCommand = Paths.get(System.getProperty("user.dir"), "tools", toolExe).toString();
-            ProcessBuilder builder = new ProcessBuilder(toolPathCommand, "-version");
-            builder.redirectErrorStream(true);
-            Process process = builder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-            process.waitFor();
-        } catch (Exception e) {
-            System.err.println("error while checking: " + toolName);
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-}
-
+//
 //    @Deprecated
 //    public static ProcessBuilder getWithFormat(String url, Formats format) {
 //        return switch (format) {
@@ -209,4 +133,4 @@ public class ProcessFactory {
 //                url
 //        );
 //    }
-//}
+}
