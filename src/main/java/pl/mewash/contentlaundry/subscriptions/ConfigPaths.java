@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 
 public class ConfigPaths {
     public static final Path BASE_DIR = Paths.get("").toAbsolutePath();
+    public static final Path LOGS_DIR = BASE_DIR.resolve("logs");
     public static final Path CONFIG_DIR = BASE_DIR.resolve("config");
 
     public static final Path SETTINGS_FILE = CONFIG_DIR.resolve("settings.json");
@@ -16,5 +17,11 @@ public class ConfigPaths {
         if (!Files.exists(CONFIG_DIR)) {
             Files.createDirectories(CONFIG_DIR);
         }
+    }
+
+    public static Path getLogsDir() throws IOException {
+        return Files.exists(LOGS_DIR)
+                ? LOGS_DIR
+                : Files.createDirectories(LOGS_DIR);
     }
 }

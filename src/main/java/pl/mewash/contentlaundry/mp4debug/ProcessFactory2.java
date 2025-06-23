@@ -13,7 +13,9 @@ public class ProcessFactory2 {
     private static final Path TOOL_PATH = Paths.get(System.getProperty("user.dir"), "tools", "yt-dlp.exe");
     private static final String TOOL_COMMAND = TOOL_PATH.toString();
 
-    public static ProcessBuilder buildProcessCommand(String url, Formats format, AdvancedOptions advancedOptions) {
+    public static ProcessBuilder buildProcessCommand(String url, Formats format, AdvancedOptions advancedOptions
+            , Path tempTitleFile
+    ) {
         List<String> command = new ArrayList<>();
         command.add(TOOL_COMMAND); // tool command
 
@@ -45,6 +47,9 @@ public class ProcessFactory2 {
         }
 
         String outputPath = getOutputPath(advancedOptions, format);
+        // FIXME: Step 2 print title to file
+        command.addAll(List.of("--print-to-file", "%(title)s", tempTitleFile.toAbsolutePath().toString()));
+
 
         command.addAll(List.of(
                 "--output", outputPath,
