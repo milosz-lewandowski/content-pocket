@@ -3,7 +3,8 @@ name: Build macOS .dmg
 on:
   push:
     branches:
-      - mac-os-build
+      - with-tools-macos-subs
+  workflow_dispach:
 
 jobs:
   build-macos:
