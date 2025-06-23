@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - with-tools-macos-subs
-  workflow_dispach:
+  workflow_dispatch:
 
 jobs:
   build-macos:
