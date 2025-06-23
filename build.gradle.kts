@@ -1,5 +1,3 @@
-import org.beryx.jlink.JPackageImageTask
-
 plugins {
     java
     application
@@ -71,36 +69,36 @@ jlink {
 
     jpackage {
         imageName = "ContentLaundry"
-        installerType = "app-image" // Creates a folder, not an installer
-        skipInstaller = true
+        installerType = "dmg" // Creates a folder, not an installer
+        skipInstaller = false
         appVersion = "1.0.0"
         // icon = "icon.ico" // Add this later if needed
         // resourceDir = file("src/main/resources") // Optional
     }
 }
 
-tasks.named<JPackageImageTask>("jpackageImage") {
+tasks.named("jpackage") {
+    dependsOn("copyMacTools")
+
     doLast {
-        val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
-        copy {
-            from("tools")
-            into(targetTools)
+        if (System.getProperty("os.name").lowercase().contains("mac")) {
+            val macToolsDir = File("$buildDir/jpackage/ContentLaundry/tools/mac")
+            if (macToolsDir.exists() && macToolsDir.isDirectory) {
+                macToolsDir.listFiles()?.forEach { file ->
+                    if (file.isFile) {
+                        exec {
+                            commandLine("chmod", "+x", file.absolutePath)
+                        }
+                    }
+                }
+            } else {
+                println("⚠️ No mac tools found at expected location: $macToolsDir")
+            }
         }
-        println("✅ Copied tools to: $targetTools")
     }
 }
 
-tasks.register<Zip>("zipPortableApp") {
-    dependsOn("jpackageImage")
-
-    group = "distribution"
-    description = "Zips the jpackage portable app for sharing"
-
-    archiveFileName.set("ContentLaundry-portable.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-
-    from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
-
-    // Optional: remove absolute folder prefix inside zip
-    into("ContentLaundry")
+tasks.register<Copy>("copyMacTools") {
+    from("tools/mac")
+    into("$buildDir/jpackage/ContentLaundry/tools/mac")
 }
