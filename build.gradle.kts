@@ -83,7 +83,7 @@ tasks.named("jpackage") {
     doLast {
         if (System.getProperty("os.name").lowercase().contains("mac")) {
             val macToolsDir = File("$buildDir/jpackage/ContentLaundry/tools/mac")
-            if (macToolsDir.exists() && macToolsDir.isDirectory) {
+//            if (macToolsDir.exists() && macToolsDir.isDirectory) {
                 macToolsDir.listFiles()?.forEach { file ->
                     if (file.isFile) {
                         exec {
@@ -91,9 +91,9 @@ tasks.named("jpackage") {
                         }
                     }
                 }
-            } else {
-                println("⚠️ No mac tools found at expected location: $macToolsDir")
-            }
+//            } else {
+//                println("⚠️ No mac tools found at expected location: $macToolsDir")
+//            }
         }
     }
 }
