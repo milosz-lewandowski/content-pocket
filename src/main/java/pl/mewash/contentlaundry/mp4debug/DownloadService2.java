@@ -25,7 +25,12 @@ public class DownloadService2 {
 
         ProcessBuilder builder = ProcessFactory2.buildProcessCommand(url, format, advancedOptions);
 
-        builder.directory(new File(basePath));
+        // Base Path directory
+        File basePathDir = new File(basePath);
+        System.out.println("mp4 debug base path dir: " + basePathDir);
+
+        builder.directory(basePathDir);
+
 
         Process process = builder.start();
         String title = getTitle(process);

@@ -50,7 +50,7 @@ public class ProcessFactory2 {
                 "--output", outputPath,
                 url
         ));
-
+        System.out.println("mp4 debug command: " + command);
         return new ProcessBuilder(command);
     }
 
