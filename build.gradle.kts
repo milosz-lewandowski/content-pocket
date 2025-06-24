@@ -1,3 +1,5 @@
+import org.beryx.jlink.JPackageImageTask
+
 plugins {
     java
     application
@@ -82,6 +84,7 @@ tasks.register("prepareMacTools") {
         file("src/main/jpackage/tools/mac").listFiles()?.forEach { file ->
             if (file.isFile) {
                 exec {
+                    println("tool: ${file.name}")
                     commandLine("chmod", "+x", file.absolutePath)
                 }
             }
