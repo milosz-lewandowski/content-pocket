@@ -73,32 +73,21 @@ jlink {
         skipInstaller = false
         appVersion = "1.0.0"
         // icon = "icon.ico" // Add this later if needed
-        // resourceDir = file("src/main/resources") // Optional
+         resourceDir = file("src/main/jpackage")
     }
 }
 
-tasks.named("jpackage") {
-    dependsOn("copyMacTools")
-
+tasks.register("prepareMacTools") {
     doLast {
-        if (System.getProperty("os.name").lowercase().contains("mac")) {
-            val macToolsDir = File("$buildDir/jpackage/ContentLaundry/tools/mac")
-//            if (macToolsDir.exists() && macToolsDir.isDirectory) {
-                macToolsDir.listFiles()?.forEach { file ->
-                    if (file.isFile) {
-                        exec {
-                            commandLine("chmod", "+x", file.absolutePath)
-                        }
-                    }
+        file("src/main/jpackage/tools/mac").listFiles()?.forEach { file ->
+            if (file.isFile) {
+                exec {
+                    commandLine("chmod", "+x", file.absolutePath)
                 }
-//            } else {
-//                println("⚠️ No mac tools found at expected location: $macToolsDir")
-//            }
+            }
         }
     }
 }
-
-tasks.register<Copy>("copyMacTools") {
-    from("tools/mac")
-    into("$buildDir/jpackage/ContentLaundry/tools/mac")
+tasks.named("jpackage") {
+    dependsOn("prepareMacTools")
 }
