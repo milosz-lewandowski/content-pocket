@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessFactory {
-    private static final Path TOOL_PATH_MAC = Paths.get(System.getProperty("user.dir"), "tools", "mac", "yt-dlp_macos");
+//    private static final Path TOOL_PATH_MAC = Paths.get(System.getProperty("user.dir"), "tools", "mac", "yt-dlp_macos");
+    private static final Path TOOL_PATH_MAC = Paths.get("../Resources/tools/mac/yt-dlp_macos");
     private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
 
     public static ProcessBuilder buildFetchUploadListCommand(String channelUrl, LocalDateTime afterDate, File tempFile) {

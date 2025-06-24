@@ -73,24 +73,49 @@ jlink {
         imageName = "ContentLaundry"
         installerType = "dmg" // Creates a folder, not an installer
         skipInstaller = false
-        appVersion = "1.0.0"
+        appVersion = "1.0.3"
         // icon = "icon.ico" // Add this later if needed
          resourceDir = file("src/main/jpackage")
     }
 }
 
 tasks.register("prepareMacTools") {
+    dependsOn("jpackage")
+
     doLast {
-        file("src/main/jpackage/tools/mac").listFiles()?.forEach { file ->
+//        val tools = file("$buildDir/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
+        val tools = file("${layout.buildDirectory}/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
+        tools.walk().forEach { file ->
             if (file.isFile) {
-                exec {
-                    println("tool: ${file.name}")
-                    commandLine("chmod", "+x", file.absolutePath)
-                }
+                println("Making ${file.name} executable")
+                file.setExecutable(true, false)
             }
         }
     }
 }
-tasks.named("jpackage") {
-    dependsOn("prepareMacTools")
-}
+
+//tasks.named<JPackageImageTask>("jpackageImage") {
+//    doLast {
+//        val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools/mac").get().asFile
+//        copy {
+//            from("tools/mac")
+//            into(targetTools)
+//        }
+//        println("✅ Copied tools to: $targetTools")
+//    }
+//}
+//tasks.register("prepareMacTools") {
+//    doLast {
+//        file("src/main/jpackage/tools/mac").listFiles()?.forEach { file ->
+//            if (file.isFile) {
+//                exec {
+//                    println("tool: ${file.name}")
+//                    commandLine("chmod", "+x", file.absolutePath)
+//                }
+//            }
+//        }
+//    }
+//}
+//tasks.named("jpackage") {
+//    dependsOn("prepareMacTools")
+//}
