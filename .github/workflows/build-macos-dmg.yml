@@ -23,13 +23,13 @@ jobs:
       - name: 🧼 Make mac tools & gradlew executable
         run: |
           chmod +x gradlew
-          chmod +x src/main/jpackage/tools/mac/yt-dlp_macos
-          chmod +x src/main/jpackage/tools/mac/ffmpeg
-          chmod +x src/main/jpackage/tools/mac/ffprobe
+#          chmod +x src/main/jpackage/tools/mac/yt-dlp_macos
+#          chmod +x src/main/jpackage/tools/mac/ffmpeg
+#          chmod +x src/main/jpackage/tools/mac/ffprobe
 
 
       - name: Build app
-        run: ./gradlew jpackage prepareMacTools
+        run: ./gradlew jpackage
 
 #      - name: ⚙️ Build macOS .dmg with Gradle
 #        run: ./gradlew jpackage

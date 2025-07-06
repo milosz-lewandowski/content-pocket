@@ -1,5 +1,3 @@
-import org.beryx.jlink.JPackageImageTask
-
 plugins {
     java
     application
@@ -39,6 +37,9 @@ javafx {
 }
 
 dependencies {
+//    implementation("org.openjfx:javafx-controls:$javafxVersion:mac")
+//    implementation("org.openjfx:javafx-fxml:$javafxVersion:mac")
+
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
@@ -79,20 +80,20 @@ jlink {
     }
 }
 
-tasks.register("prepareMacTools") {
-    dependsOn("jpackage")
-
-    doLast {
-//        val tools = file("$buildDir/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
-        val tools = file("${layout.buildDirectory}/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
-        tools.walk().forEach { file ->
-            if (file.isFile) {
-                println("Making ${file.name} executable")
-                file.setExecutable(true, false)
-            }
-        }
-    }
-}
+//tasks.register("prepareMacTools") {
+//    dependsOn("jpackage")
+//
+//    doLast {
+////        val tools = file("$buildDir/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
+//        val tools = file("${layout.buildDirectory}/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
+//        tools.walk().forEach { file ->
+//            if (file.isFile) {
+//                println("Making ${file.name} executable")
+//                file.setExecutable(true, false)
+//            }
+//        }
+//    }
+//}
 
 //tasks.named<JPackageImageTask>("jpackageImage") {
 //    doLast {
