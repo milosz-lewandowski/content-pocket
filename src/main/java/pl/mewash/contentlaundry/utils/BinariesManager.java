@@ -54,6 +54,10 @@ public class BinariesManager {
 
         // if validated save and return
         if (directoryPath != null) {
+            Path path = Paths.get(directoryPath);
+            Path absolutePath = path.toAbsolutePath();
+            directoryPath = absolutePath.toString();
+
             LoggerUtils.synchronizedAppendStringList(List.of("Binaries found at: " + directoryPath));
             System.out.println("Binaries found at: " + directoryPath);
             generalSettings.alreadyConfirmed = true;
@@ -131,7 +135,7 @@ public class BinariesManager {
         else throw new UnsupportedOperationException("Unsupported OS: " + os);
     }
 
-    enum SupportedPlatforms {
+    public enum SupportedPlatforms {
         WINDOWS,
         MACOS;
     }
@@ -163,7 +167,7 @@ public class BinariesManager {
 //    }
 
     @AllArgsConstructor
-    enum MacosLocations2 {
+    public enum MacosLocations2 {
         HOME_BIN_PROP("user.home", "bin"),
 //        HOME_BIN_PROP("home.dir", "bin"),
 //        HOME_USER_BIN_PROP("home.dir", "usr/bin"),
@@ -183,7 +187,7 @@ public class BinariesManager {
     }
 
     @AllArgsConstructor
-    enum BinariesNames {
+    public enum BinariesNames {
         YT_DLP("yt-dlp_macos", "yt-dlp.exe"),
         FFMPEG("ffmpeg", "ffmpeg.exe"),
         FFPROBE("ffprobe", "ffprobe.exe"),

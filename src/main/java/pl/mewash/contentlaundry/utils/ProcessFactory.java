@@ -18,7 +18,7 @@ public class ProcessFactory {
 //    private static final Path TOOL_PATH_MAC = Paths.get("../Resources/tools/mac/yt-dlp_macos");
 //    private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
 
-    private static final Path TOOL_PATH = Paths.get(BinariesContext.getToolsDir(), "yt-dlp_macos");
+    private static final Path TOOL_PATH = Paths.get(BinariesContext.getToolsDir(), "yt-dlp_macos").toAbsolutePath();
     private static final String TOOL_COMMAND = TOOL_PATH.toString();
 
 
@@ -84,6 +84,9 @@ public class ProcessFactory {
             command.add("--embed-thumbnail");    // adds picture miniature to content file
             command.add("--add-metadata");       // enrich content file with metadata (no full support for WAV)
         }
+
+        String ffmpegPath = Paths.get(BinariesContext.getToolsDir(), "ffmpeg").toAbsolutePath().toString();
+        command.addAll(List.of("--ffmpeg-location", ffmpegPath));
 
         // adds metadata files (.info.json + .description)
         if (advancedOptions.withMetadata()) {
