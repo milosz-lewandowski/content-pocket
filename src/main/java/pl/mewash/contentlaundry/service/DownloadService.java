@@ -37,10 +37,10 @@ public class DownloadService {
         appendLog("log.washing_and_drying", url, format.name());
 
         // building paths
-        Path baseDirPath = Paths.get(baseDirString);
+        Path baseDirPath = Paths.get(baseDirString).toAbsolutePath();
         long threadId = Thread.currentThread().threadId();
-        Path tempDirPath = Files.createTempDirectory(baseDirPath, "__laundry-temp-multi-thread-" + threadId);
-        Path tempTitleFile = Files.createTempFile(tempDirPath, "temp_title", ".txt");
+        Path tempDirPath = Files.createTempDirectory(baseDirPath, "__laundry-temp-multi-thread-" + threadId).toAbsolutePath();
+        Path tempTitleFile = Files.createTempFile(tempDirPath, "temp_title", ".txt").toAbsolutePath();
 
         // process creation + execution
         ProcessBuilder builder = ProcessFactory.buildDownloadCommand(url, format, advancedOptions, tempTitleFile);
