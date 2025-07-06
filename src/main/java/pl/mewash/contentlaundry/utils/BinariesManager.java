@@ -3,7 +3,6 @@ package pl.mewash.contentlaundry.utils;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import lombok.AllArgsConstructor;
-import pl.mewash.contentlaundry.models.general.BinariesConfig;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
 import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 
@@ -30,12 +29,12 @@ public class BinariesManager {
         // if not confirmed - check default locations
         directoryPath = switch (getPlatform()) {
             case MACOS -> {
-                Optional<MacosLocations> confirmedLocation = Arrays
-                        .stream(MacosLocations.values())
-                        .filter(location -> confirmBinariesAtLocation(location.dirPath))
+                Optional<MacosLocations2> confirmedLocation = Arrays
+                        .stream(MacosLocations2.values())
+                        .filter(location -> confirmBinariesAtLocation(location.compilePath()))
                         .findFirst();
                 yield confirmedLocation // is it always accessible?
-                        .map(macosLocations -> macosLocations.dirPath)
+                        .map(MacosLocations2::compilePath)
                         .orElse(null);
             }
             case WINDOWS -> {
@@ -137,24 +136,50 @@ public class BinariesManager {
         MACOS;
     }
 
+//    @AllArgsConstructor
+//    enum MacosLocations {
+//        HOME_BIN_PROP(Paths.get(System.getProperty("home.dir"), "bin").toString(), false),
+//        HOME_USER_BIN_PROP(Paths.get(System.getProperty("home.dir"), "usr", "bin").toString(), false),
+//        USR_LOCAL("/usr/local/bin/", false),
+//        USER_HOME_BIN_PROP(Paths.get(System.getProperty("user.dir"), "bin").toString(), false),
+//        USER_HOME_BIN_PROP_2(Paths.get(System.getProperty("user.dir"), "bin").toString(), false),
+//
+////        OPT_HOMEBREW("/opt/homebrew/bin/", false),
+////        USR_BIN("/usr/bin/", false),              // system only probably
+//
+//        APP_DIR_PROPERTY(Paths.get(System.getProperty("user.dir"), "tools", "mac").toString(), true),
+//        RESOURCES("../Resources/tools/mac/", true)
+////        ,USER_DIR(System.getProperty("user.dir"), "tools", "mac");
+////        ,JPACKAGE("src/main/jpackage/tools/mac", true);
+//        ;
+//
+//        final String dirPath;
+//        final boolean bundled;
+//
+//        private String compilePath(){
+//            String property = this.property;
+//            String nextDir = this.nextDir;
+//        }
+//    }
+
     @AllArgsConstructor
-    enum MacosLocations {
-        HOME_BIN_PROP(Paths.get(System.getProperty("home.dir"), "bin").toString(), false),
-        HOME_USER_BIN_PROP(Paths.get(System.getProperty("home.dir"), "usr", "bin").toString(), false),
-        USR_LOCAL("/usr/local/bin/", false),
-        USER_HOME_BIN_PROP(Paths.get(System.getProperty("user.dir"), "bin").toString(), false),
-
-//        OPT_HOMEBREW("/opt/homebrew/bin/", false),
-//        USR_BIN("/usr/bin/", false),              // system only probably
-
-        APP_DIR_PROPERTY(Paths.get(System.getProperty("user.dir"), "tools", "mac").toString(), true),
-        RESOURCES("../Resources/tools/mac/", true)
-//        ,USER_DIR(System.getProperty("user.dir"), "tools", "mac");
-//        ,JPACKAGE("src/main/jpackage/tools/mac", true);
+    enum MacosLocations2 {
+        HOME_BIN_PROP("user.home", "bin"),
+//        HOME_BIN_PROP("home.dir", "bin"),
+//        HOME_USER_BIN_PROP("home.dir", "usr/bin"),
+////        USR_LOCAL("/usr/local/bin/", false),
+//        USER_HOME_BIN_PROP("user.dir", "bin"),
+//        USER_HOME_BIN_PROP_2("user.dir", "bin"),
         ;
 
-        final String dirPath;
-        final boolean bundled;
+        final String property;
+        final  String nextDir;
+
+        private String compilePath(){
+            String property = this.property;
+            String nextDir = this.nextDir;
+            return Paths.get(System.getProperty(property),  nextDir).toString();
+        }
     }
 
     @AllArgsConstructor
