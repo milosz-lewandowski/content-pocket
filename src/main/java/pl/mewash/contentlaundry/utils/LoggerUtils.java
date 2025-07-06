@@ -19,7 +19,28 @@ public class LoggerUtils {
 
     private static final Object logFileLock = new Object();
 
-    public static void synchronizedLogProcessOutputToFile(Process process) {
+    public static void synchronizedAppendStringList(List<String> list) {
+        try {
+            Path logDir = ConfigPaths.getLogsDir();
+            String date = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+            Path logFile = logDir.resolve(date + ".log");
+
+            synchronized (logFileLock) {
+                try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+                    for (String l :list) {
+                        writer.write(l);
+                        writer.newLine();
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error accessing to logging file: " + e.getMessage());
+        }
+    }
+
+    public static void synchronizedConsumeAndLogProcessOutputToFile(Process process) {
 
         try {
             Path logDir = ConfigPaths.getLogsDir();

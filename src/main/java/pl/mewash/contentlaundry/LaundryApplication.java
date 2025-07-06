@@ -1,12 +1,14 @@
 package pl.mewash.contentlaundry;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import pl.mewash.contentlaundry.controller.MainController;
+import pl.mewash.contentlaundry.utils.BinariesManager;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -16,6 +18,19 @@ public class LaundryApplication extends Application {
     @Override
     public void start(Stage stage) {
         try {
+
+            BinariesManager binariesManager = new BinariesManager();
+            String binariesDir = binariesManager.validateAndGetBinariesDir(stage);
+
+            if (binariesDir == null) {
+                System.out.println("🛑 Binaries are missing. Exiting application.");
+                Platform.exit();
+                return;
+            }
+
+            // Set session tools dir
+            BinariesContext.setToolsDir(binariesDir);
+
             Locale.setDefault(Locale.US);
             ResourceBundle bundle = ResourceBundle.getBundle(
                     "i18n.messages",

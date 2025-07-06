@@ -3,11 +3,9 @@ package pl.mewash.contentlaundry.service;
 import pl.mewash.contentlaundry.models.content.FetchedUpload;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
-import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 import pl.mewash.contentlaundry.utils.LoggerUtils;
 import pl.mewash.contentlaundry.utils.ProcessFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 public class DownloadService {
 
@@ -51,7 +48,7 @@ public class DownloadService {
         Process process = builder.start();
 
         // redirect and log process output stream to file while process is running
-        LoggerUtils.synchronizedLogProcessOutputToFile(process);
+        LoggerUtils.synchronizedConsumeAndLogProcessOutputToFile(process);
 
         // wait for process finished
         int exitCode = process.waitFor();

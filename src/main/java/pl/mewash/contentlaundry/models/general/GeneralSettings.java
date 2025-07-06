@@ -9,6 +9,14 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeneralSettings {
+
+    public BinariesConfig binariesConfig;
+
+    public boolean alreadyConfirmed;
+    public String dirPath;
+
+    public String toolsBinariesPath;
+
     public String lastSelectedPath;
     public List<Formats> formats;
     public boolean withMetadata;
@@ -22,5 +30,4 @@ public class GeneralSettings {
     public GeneralSettings(String lastSelectedPath) {
         this.lastSelectedPath = lastSelectedPath;
     }
-
 }

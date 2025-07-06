@@ -4,8 +4,11 @@ import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import pl.mewash.contentlaundry.models.content.FetchedUpload;
 
+import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +27,36 @@ public class AlertUtils {
             alert.setContentText(content);
             alert.showAndWait();
         });
+    }
+
+    public static String showBinariesNotFoundAlert(Stage stage) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Missing Tools");
+        alert.setHeaderText("Required binaries not found");
+        alert.setContentText("We could not find yt-dlp, ffmpeg and ffprobe.\n\n" +
+                "Please choose a folder that contains them, or close the application.");
+
+        ButtonType choosePathBtn = new ButtonType("Select tools path");
+        ButtonType closeAppBtn = new ButtonType("Close App", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(choosePathBtn, closeAppBtn);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == choosePathBtn) {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Select directory containing yt-dlp, ffmpeg, ffprobe");
+
+            File selectedDir = chooser.showDialog(stage);
+            if (selectedDir != null) {
+                return selectedDir.getAbsolutePath();
+            } else {
+                System.out.println("Directory selection canceled.");
+                return null;
+            }
+        } else {
+            System.out.println("User chose to close the app.");
+            return null;
+        }
     }
 
     public static boolean getFetchTimeoutAlertAnswer(String channelName, List<FetchedUpload> fetchedUploads,

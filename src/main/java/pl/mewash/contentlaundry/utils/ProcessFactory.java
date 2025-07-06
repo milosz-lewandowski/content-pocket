@@ -1,5 +1,6 @@
 package pl.mewash.contentlaundry.utils;
 
+import pl.mewash.contentlaundry.BinariesContext;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
 
@@ -14,12 +15,16 @@ import java.util.List;
 
 public class ProcessFactory {
 //    private static final Path TOOL_PATH_MAC = Paths.get(System.getProperty("user.dir"), "tools", "mac", "yt-dlp_macos");
-    private static final Path TOOL_PATH_MAC = Paths.get("../Resources/tools/mac/yt-dlp_macos");
-    private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
+//    private static final Path TOOL_PATH_MAC = Paths.get("../Resources/tools/mac/yt-dlp_macos");
+//    private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
+
+    private static final Path TOOL_PATH = Paths.get(BinariesContext.getToolsDir(), "yt-dlp_macos");
+    private static final String TOOL_COMMAND = TOOL_PATH.toString();
+
 
     public static ProcessBuilder buildFetchUploadListCommand(String channelUrl, LocalDateTime afterDate, File tempFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND_MAC);
+        command.add(TOOL_COMMAND);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String date = afterDate.format(formatter);
@@ -42,7 +47,7 @@ public class ProcessFactory {
 
     public static ProcessBuilder buildCheckChannelCommand(String channelUrl, File tempFile) {
         List<String> command = new ArrayList<>(List.of(
-                TOOL_COMMAND_MAC,
+                TOOL_COMMAND,
                 "--skip-download",
                 "--playlist-end", "1",
                 "--quiet",
@@ -59,7 +64,7 @@ public class ProcessFactory {
     public static ProcessBuilder buildDownloadCommand(String url, Formats format,
                                                       AdvancedOptions advancedOptions, Path tempTitleFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND_MAC); // tool command
+        command.add(TOOL_COMMAND); // tool command
 
         // adds format specific download & conversion options
         if (format.audioFormat) {
