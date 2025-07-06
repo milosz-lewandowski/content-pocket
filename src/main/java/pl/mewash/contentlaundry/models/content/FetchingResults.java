@@ -1,6 +1,4 @@
-package pl.mewash.contentlaundry.service;
-
-import pl.mewash.contentlaundry.models.content.FetchedUpload;
+package pl.mewash.contentlaundry.models.content;
 
 import java.util.List;
 

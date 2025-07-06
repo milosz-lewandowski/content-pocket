@@ -3,6 +3,7 @@ package pl.mewash.contentlaundry.service;
 import javafx.scene.control.Alert;
 import pl.mewash.contentlaundry.models.content.FetchedUpload;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
+import pl.mewash.contentlaundry.models.content.FetchingResults;
 import pl.mewash.contentlaundry.utils.AlertUtils;
 import pl.mewash.contentlaundry.utils.ProcessFactory;
 

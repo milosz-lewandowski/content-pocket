@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 public class DownloadService {
 
@@ -119,4 +120,40 @@ public class DownloadService {
             e.printStackTrace();
         }
     }
+
+    // TODO: check if try with resources does not fail silently
+//    private void moveTempContent(Path tempDir, Path basePath) throws IOException {
+//        try (Stream<Path> tempPaths = Files.walk(tempDir)) {
+//            tempPaths.filter(path -> !path.equals(tempDir))
+//                    .forEach(source -> {
+//                        try {
+//                            Path relativePath = tempDir.relativize(source);
+//                            Path target = basePath.resolve(relativePath);
+//                            if (Files.isDirectory(source)) {
+//                                Files.createDirectories(target);
+//                            } else {
+//                                Files.createDirectories(target.getParent());
+//                                Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+//                            }
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    });
+//        }
+//    }
+//
+//    private void cleanupTempDir(Path tempDir) {
+//        try (Stream<Path> tempPaths = Files.walk(tempDir)) {
+//            tempPaths.sorted((a, b) -> b.compareTo(a))  // delete children first
+//                    .forEach(path -> {
+//                        try {
+//                            Files.deleteIfExists(path);
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    });
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }
