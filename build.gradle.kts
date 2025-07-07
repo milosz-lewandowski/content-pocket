@@ -37,9 +37,6 @@ javafx {
 }
 
 dependencies {
-//    implementation("org.openjfx:javafx-controls:$javafxVersion:mac")
-//    implementation("org.openjfx:javafx-fxml:$javafxVersion:mac")
-
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
@@ -79,44 +76,3 @@ jlink {
          resourceDir = file("src/main/jpackage")
     }
 }
-
-//tasks.register("prepareMacTools") {
-//    dependsOn("jpackage")
-//
-//    doLast {
-////        val tools = file("$buildDir/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
-//        val tools = file("${layout.buildDirectory}/jpackage/ContentLaundry.app/Contents/Resources/tools/mac")
-//        tools.walk().forEach { file ->
-//            if (file.isFile) {
-//                println("Making ${file.name} executable")
-//                file.setExecutable(true, false)
-//            }
-//        }
-//    }
-//}
-
-//tasks.named<JPackageImageTask>("jpackageImage") {
-//    doLast {
-//        val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools/mac").get().asFile
-//        copy {
-//            from("tools/mac")
-//            into(targetTools)
-//        }
-//        println("✅ Copied tools to: $targetTools")
-//    }
-//}
-//tasks.register("prepareMacTools") {
-//    doLast {
-//        file("src/main/jpackage/tools/mac").listFiles()?.forEach { file ->
-//            if (file.isFile) {
-//                exec {
-//                    println("tool: ${file.name}")
-//                    commandLine("chmod", "+x", file.absolutePath)
-//                }
-//            }
-//        }
-//    }
-//}
-//tasks.named("jpackage") {
-//    dependsOn("prepareMacTools")
-//}
