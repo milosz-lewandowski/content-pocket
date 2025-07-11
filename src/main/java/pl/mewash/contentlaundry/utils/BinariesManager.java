@@ -21,8 +21,8 @@ public class BinariesManager {
         String directoryPath = null;
 
         // if binaries confirmed
-        if (generalSettings.alreadyConfirmed) {
-            directoryPath = generalSettings.dirPath;
+        if (generalSettings.binariesDirConfirmed) {
+            directoryPath = generalSettings.binariesDirPath;
             return directoryPath;
         }
 
@@ -60,8 +60,8 @@ public class BinariesManager {
 
             LoggerUtils.synchronizedAppendStringList(List.of("Binaries found at: " + directoryPath));
             System.out.println("Binaries found at: " + directoryPath);
-            generalSettings.alreadyConfirmed = true;
-            generalSettings.dirPath = directoryPath;
+            generalSettings.binariesDirConfirmed = true;
+            generalSettings.binariesDirPath = directoryPath;
             SettingsManager.saveSettings(generalSettings);
             return directoryPath;
         } else {

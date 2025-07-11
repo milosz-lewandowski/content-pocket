@@ -10,12 +10,8 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeneralSettings {
 
-    public BinariesConfig binariesConfig;
-
-    public boolean alreadyConfirmed;
-    public String dirPath;
-
-    public String toolsBinariesPath;
+    public boolean binariesDirConfirmed;        // if valid binaries detected
+    public String binariesDirPath;              // saves path to directory with detected tools binaries
 
     public String lastSelectedPath;
     public List<Formats> formats;

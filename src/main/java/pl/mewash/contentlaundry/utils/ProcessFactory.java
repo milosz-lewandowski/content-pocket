@@ -14,17 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessFactory {
-//    private static final Path TOOL_PATH_MAC = Paths.get(System.getProperty("user.dir"), "tools", "mac", "yt-dlp_macos");
-//    private static final Path TOOL_PATH_MAC = Paths.get("../Resources/tools/mac/yt-dlp_macos");
-//    private static final String TOOL_COMMAND_MAC = TOOL_PATH_MAC.toString();
 
-    private static final Path TOOL_PATH = Paths.get(BinariesContext.getToolsDir(), "yt-dlp_macos").toAbsolutePath();
-    private static final String TOOL_COMMAND = TOOL_PATH.toString();
-
+    private static final String TOOLS_DIR = BinariesContext.getToolsDir();
+    private static final String COMMAND_YT_DLP = Paths.get(TOOLS_DIR, "yt-dlp_macos").toAbsolutePath().toString();
+    private static final String COMMAND_FFMPEG = Paths.get(TOOLS_DIR, "ffmpeg").toAbsolutePath().toString();
 
     public static ProcessBuilder buildFetchUploadListCommand(String channelUrl, LocalDateTime afterDate, File tempFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND);
+        command.add(COMMAND_YT_DLP);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String date = afterDate.format(formatter);
@@ -47,7 +44,7 @@ public class ProcessFactory {
 
     public static ProcessBuilder buildCheckChannelCommand(String channelUrl, File tempFile) {
         List<String> command = new ArrayList<>(List.of(
-                TOOL_COMMAND,
+                COMMAND_YT_DLP,
                 "--skip-download",
                 "--playlist-end", "1",
                 "--quiet",
@@ -64,7 +61,7 @@ public class ProcessFactory {
     public static ProcessBuilder buildDownloadCommand(String url, Formats format,
                                                       AdvancedOptions advancedOptions, Path tempTitleFile) {
         List<String> command = new ArrayList<>();
-        command.add(TOOL_COMMAND); // tool command
+        command.add(COMMAND_YT_DLP); // tool command
 
         // adds format specific download & conversion options
         if (format.audioFormat) {
@@ -85,8 +82,7 @@ public class ProcessFactory {
             command.add("--add-metadata");       // enrich content file with metadata (no full support for WAV)
         }
 
-        String ffmpegPath = Paths.get(BinariesContext.getToolsDir(), "ffmpeg").toAbsolutePath().toString();
-        command.addAll(List.of("--ffmpeg-location", ffmpegPath));
+        command.addAll(List.of("--ffmpeg-location", COMMAND_FFMPEG)); // explicitly pass path to ffmpeg
 
         // adds metadata files (.info.json + .description)
         if (advancedOptions.withMetadata()) {
@@ -130,81 +126,4 @@ public class ProcessFactory {
                     : dateDir + fileTitleWithExtension;
         };
     }
-
-//    public static void checkTool(String toolName) {
-//        try {
-//            String toolExe = toolName + ".exe";
-//            String toolPathCommand = Paths.get(System.getProperty("user.dir"), "tools", toolExe).toString();
-//            ProcessBuilder builder = new ProcessBuilder(toolPathCommand, "-version");
-//            builder.redirectErrorStream(true);
-//            Process process = builder.start();
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                System.out.println(line);
-//            }
-//            process.waitFor();
-//        } catch (Exception e) {
-//            System.err.println("error while checking: " + toolName);
-//            System.err.println(e.getMessage());
-//            e.printStackTrace();
-//        }
-//    }
 }
-
-//    @Deprecated
-//    public static ProcessBuilder getWithFormat(String url, Formats format) {
-//        return switch (format) {
-//            case MP3 -> getMP3proc(url);
-//            case WAV -> getWAVproc(url);
-//            case MP4 -> getMP4proc(url);
-//        };
-//    }
-//
-//    @Deprecated
-//    private static ProcessBuilder getMP3proc(String url) {
-//        Formats format = Formats.MP3;
-//        return new ProcessBuilder(
-//                TOOL_COMMAND,
-//                "--extract-audio",
-//                "--audio-format", format.value,
-//                "--audio-quality", "0",
-//                "--embed-thumbnail",
-//                "--add-metadata",
-//                "--write-description",
-//                "--write-info-json",
-//                "--output", format.name() + "/%(title)s/%(title)s.%(ext)s",
-//                url);
-//    }
-//
-//    @Deprecated
-//    private static ProcessBuilder getWAVproc(String url) {
-//        Formats format = Formats.WAV;
-//        return new ProcessBuilder(
-//                TOOL_COMMAND,
-//                "--extract-audio",
-//                "--audio-format", format.value,
-//                "--audio-quality", "0",
-//                "--add-metadata",
-//                "--write-description",
-//                "--write-info-json",
-//                "--output", format.name() + "/%(title)s/%(title)s.%(ext)s",
-//                url);
-//    }
-//
-//    @Deprecated
-//    private static ProcessBuilder getMP4proc(String url) {
-//        Formats format = Formats.MP4;
-//        return new ProcessBuilder(
-//                TOOL_COMMAND,
-//                "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
-//                "--merge-output-format", format.value,
-//                "--embed-thumbnail",
-//                "--add-metadata",
-//                "--write-description",
-//                "--write-info-json",
-//                "--output", format.name() + "/%(title)s/%(title)s.%(ext)s",
-//                url
-//        );
-//    }
-//}
