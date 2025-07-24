@@ -13,7 +13,8 @@ public class GeneralSettings {
     public boolean binariesDirConfirmed;        // if valid binaries detected
     public String binariesDirPath;              // saves path to directory with detected tools binaries
 
-    public String lastSelectedPath;
+    public String batchLastSelectedPath;
+    public String subsLastSelectedPath;
     public List<Formats> formats;
     public boolean withMetadata;
     public GroupingMode groupingMode;
@@ -23,7 +24,7 @@ public class GeneralSettings {
     public GeneralSettings() {
     }
 
-    public GeneralSettings(String lastSelectedPath) {
-        this.lastSelectedPath = lastSelectedPath;
+    public GeneralSettings(String batchLastSelectedPath) {
+        this.batchLastSelectedPath = batchLastSelectedPath;
     }
 }

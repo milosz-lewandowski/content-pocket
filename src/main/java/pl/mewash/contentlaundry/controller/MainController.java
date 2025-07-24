@@ -4,9 +4,11 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Popup;
+import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
+import pl.mewash.contentlaundry.commands.VideoQuality;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
 import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 import pl.mewash.contentlaundry.service.DownloadService;
@@ -14,6 +16,8 @@ import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 import pl.mewash.contentlaundry.utils.InputUtils;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.EnumSet;
 import java.util.List;
@@ -25,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MainController {
 
     private final StringBuilder logBuffer = new StringBuilder();
+
     private ScheduledExecutorService uiLoggerScheduledThread;
     protected boolean uiLoggerThreadStarted = false;
 
@@ -36,10 +41,22 @@ public class MainController {
     // Path directory selection
     @FXML private TextField pathField;
 
-    // Format Selection
-    @FXML private CheckBox mp3CheckBox;
-    @FXML private CheckBox wavCheckBox;
-    @FXML private CheckBox mp4CheckBox;
+    // Format Selection -- OLD
+//    @FXML private CheckBox mp3CheckBox;
+//    @FXML private CheckBox wavCheckBox;
+//    @FXML private CheckBox mp4CheckBox;
+
+    // New Audio Formats
+    @FXML private CheckBox m4aHqCheckbox;
+    @FXML private CheckBox m4aCompressedCheckbox;
+    @FXML private CheckBox mp3HqCheckbox;
+    @FXML private CheckBox wavNewCheckbox;
+    @FXML private CheckBox nativeCheckbox;
+
+    // New video Formats
+    @FXML private CheckBox maximumMP4checkbox;
+    @FXML private CheckBox highMP4checkbox;
+    @FXML private CheckBox standardMP4checkbox;
 
     // Metadata selection
     @FXML private RadioButton fileOnlyRadio;
@@ -76,11 +93,13 @@ public class MainController {
         fileOnlyRadio.setSelected(true);
         noGroupingRadio.setSelected(true);
         addDateCheckbox.setSelected(false);
-        singleThreadRadio.setSelected(true);
+        mediumThreadsRadio.setSelected(true);
 
-        if (generalSettings.lastSelectedPath != null && !generalSettings.lastSelectedPath.isBlank()) {
-            pathField.setText(generalSettings.lastSelectedPath);
+        if (generalSettings.batchLastSelectedPath != null && !generalSettings.batchLastSelectedPath.isBlank()) {
+            pathField.setText(generalSettings.batchLastSelectedPath);
         }
+
+        setupCreditsPopup();
     }
 
     @FXML
@@ -125,7 +144,7 @@ public class MainController {
             String selectedPath = selectedDirectory.getAbsolutePath();
             pathField.setText(selectedPath);
 
-            generalSettings.lastSelectedPath = selectedPath;
+            generalSettings.batchLastSelectedPath = selectedPath;
             SettingsManager.saveSettings(generalSettings);
         }
     }
@@ -145,10 +164,16 @@ public class MainController {
             return;
         }
 
-        EnumSet<Formats> selectedFormats = getSelectedFormats();
         AdvancedOptions advancedOptions = getAdvancedOptions();
 
-        final int totalDownloads = refinedUrlList.size() * selectedFormats.size();
+//        EnumSet<Formats> selectedFormats = getSelectedFormats();
+        EnumSet<VideoQuality> selectedVideoQuality = getSelectedVideoQuality();
+        EnumSet<AudioOnlyQuality> selectedAudios = getSelectedAudios();
+
+        final int totalDownloads = refinedUrlList.size() * (
+//                selectedFormats.size() +
+                selectedAudios.size() + selectedVideoQuality.size());
+
         AtomicInteger completedCount = new AtomicInteger(0);
         AtomicInteger failedCount = new AtomicInteger(0);
 
@@ -165,13 +190,43 @@ public class MainController {
             try {
                 List<Future<?>> tasksCompleted = new CopyOnWriteArrayList<>();
                 for (String url : refinedUrlList) {
-                    for (Formats format : selectedFormats) {
+//                    for (Formats format : selectedFormats) {
+//                        Future<?> task = workersThreadPool.submit(() -> {
+//                            try {
+//                                service.download(url, format, basePath, advancedOptions);
+//                                completedCount.incrementAndGet();
+//                            } catch (Exception e) {
+//                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, format);
+//                                appendToOutputLog("Failed to download [" + url + "]: " + e.getMessage());
+//                                e.printStackTrace();
+//                                failedCount.incrementAndGet();
+//                            }
+//                        });
+//                        tasksCompleted.add(task);
+//                    }
+                    for (VideoQuality videoQuality : selectedVideoQuality) {
                         Future<?> task = workersThreadPool.submit(() -> {
                             try {
-                                service.download(url, format, basePath, advancedOptions);
+                                String qualityPath = basePath + "/" + videoQuality.getResolution().toString() + "/";
+                                Files.createDirectories(Paths.get(qualityPath));
+                                service.downloadWithSettings(url, videoQuality, qualityPath, advancedOptions);
                                 completedCount.incrementAndGet();
                             } catch (Exception e) {
-                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, format);
+                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, videoQuality);
+                                appendToOutputLog("Failed to download [" + url + "]: " + e.getMessage());
+                                e.printStackTrace();
+                                failedCount.incrementAndGet();
+                            }
+                        });
+                        tasksCompleted.add(task);
+                    }
+                    for (AudioOnlyQuality audioOnlyQuality : selectedAudios) {
+                        Future<?> task = workersThreadPool.submit(() -> {
+                            try {
+                                service.downloadWithSettings(url, audioOnlyQuality, basePath, advancedOptions);
+                                completedCount.incrementAndGet();
+                            } catch (Exception e) {
+                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, audioOnlyQuality);
                                 appendToOutputLog("Failed to download [" + url + "]: " + e.getMessage());
                                 e.printStackTrace();
                                 failedCount.incrementAndGet();
@@ -200,6 +255,29 @@ public class MainController {
                 Platform.runLater(() -> startStopButton.setText("Start Laundry"));
             }
         });
+    }
+
+    private EnumSet<AudioOnlyQuality> getSelectedAudios() {
+        EnumSet<AudioOnlyQuality> selectedAudios = EnumSet.noneOf(AudioOnlyQuality.class);
+        if (mp3HqCheckbox.isSelected()) selectedAudios.add(AudioOnlyQuality.MP3);
+        if (wavNewCheckbox.isSelected()) selectedAudios.add(AudioOnlyQuality.WAV);
+        if (nativeCheckbox.isSelected()) selectedAudios.add(AudioOnlyQuality.ORIGINAL_SOURCE);
+        boolean bothAacSelected = m4aHqCheckbox.isSelected() && m4aCompressedCheckbox.isSelected();
+        if (bothAacSelected) {
+            selectedAudios.add(AudioOnlyQuality.M4A);
+        } else {
+            if (m4aHqCheckbox.isSelected()) selectedAudios.add(AudioOnlyQuality.M4A);
+            if (m4aCompressedCheckbox.isSelected()) selectedAudios.add(AudioOnlyQuality.M4A_COMPRESSED);
+        }
+        return selectedAudios;
+    }
+
+    private EnumSet<VideoQuality> getSelectedVideoQuality() {
+        EnumSet<VideoQuality> videoQualitySet = EnumSet.noneOf(VideoQuality.class);
+        if (maximumMP4checkbox.isSelected()) videoQualitySet.add(VideoQuality.MAXIMUM);
+        if (highMP4checkbox.isSelected()) videoQualitySet.add(VideoQuality.HIGH);
+        if (standardMP4checkbox.isSelected()) videoQualitySet.add(VideoQuality.STANDARD);
+        return videoQualitySet;
     }
 
     private static boolean getRemoveDuplicatesAlertDecision(int duplicatesCount, int allUrlsCount) {
@@ -260,15 +338,16 @@ public class MainController {
         );
     }
 
-    private EnumSet<Formats> getSelectedFormats() {
-        EnumSet<Formats> selectedFormats = EnumSet.noneOf(Formats.class);
-        if (mp3CheckBox.isSelected()) selectedFormats.add(Formats.MP3);
-        if (wavCheckBox.isSelected()) selectedFormats.add(Formats.WAV);
-        if (mp4CheckBox.isSelected()) selectedFormats.add(Formats.MP4);
-        return selectedFormats;
-    }
+//    @Deprecated
+//    private EnumSet<Formats> getSelectedFormats() {
+//        EnumSet<Formats> selectedFormats = EnumSet.noneOf(Formats.class);
+//        if (mp3CheckBox.isSelected()) selectedFormats.add(Formats.MP3);
+//        if (wavCheckBox.isSelected()) selectedFormats.add(Formats.WAV);
+//        if (mp4CheckBox.isSelected()) selectedFormats.add(Formats.MP4);
+//        return selectedFormats;
+//    }
 
-    private ExecutorService getExecutorSetup(int downloadsCount){
+    private ExecutorService getExecutorSetup(int downloadsCount) {
         int calculatedAvailableThreads = getAdvancedOptions()
                 .multithreadingMode()
                 .calculateThreads();
@@ -322,5 +401,30 @@ public class MainController {
                 return currentLog;
             }
         }
+    }
+
+    @FXML private Label creditsLabel; // fx:id="creditsLabel"
+
+    private final Popup infoPopup = new Popup();
+    private boolean popupShown = false;
+
+    private void setupCreditsPopup() {
+        Label popupContent = new Label(resources.getString("app.credits"));
+        popupContent.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
+        popupContent.setOnMouseClicked(e -> infoPopup.hide()); // click to dismiss
+
+//        infoPopup.setAutoHide(true); // ✅ hides when clicking outside
+//        infoPopup.setHideOnEscape(true); // ✅ esc closes it
+
+        infoPopup.getContent().add(popupContent);
+
+        creditsLabel.setOnMouseClicked(event -> {
+            if (popupShown) {
+                infoPopup.hide();
+            } else {
+                infoPopup.show(creditsLabel, event.getScreenX(), event.getScreenY() + 15);
+            }
+            popupShown = !popupShown;
+        });
     }
 }

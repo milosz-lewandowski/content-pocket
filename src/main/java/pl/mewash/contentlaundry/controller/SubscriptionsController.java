@@ -4,76 +4,93 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.stage.DirectoryChooser;
+import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
+import pl.mewash.contentlaundry.commands.DownloadOption;
+import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
 import pl.mewash.contentlaundry.models.channel.ChannelSettings;
+import pl.mewash.contentlaundry.models.channel.enums.ChannelFetchParams;
+import pl.mewash.contentlaundry.models.content.ContentDownloadStage;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
 import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 import pl.mewash.contentlaundry.models.ui.ChannelUiState;
 import pl.mewash.contentlaundry.models.channel.enums.ChannelFetchingStage;
-import pl.mewash.contentlaundry.models.content.FetchedUpload;
+import pl.mewash.contentlaundry.models.content.FetchedContent;
 import pl.mewash.contentlaundry.models.channel.enums.ChannelValidationStage;
 import pl.mewash.contentlaundry.service.DownloadService;
-import pl.mewash.contentlaundry.models.content.FetchingResults;
-import pl.mewash.contentlaundry.service.SubscriptionService;
-import pl.mewash.contentlaundry.subscriptions.ChannelManager;
+import pl.mewash.contentlaundry.service.FetchService;
+import pl.mewash.contentlaundry.service.SubscriptionsProcessor;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
 import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 import pl.mewash.contentlaundry.utils.AlertUtils;
 
+import java.awt.*;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SubscriptionsController {
+
+    private final ExecutorService virtualTasksExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @FXML private TextField subsPathField;
 
     // add/check channel element
     @FXML private TextField channelUrlInput;
-    ChannelValidationStage channelValidationStage;
     @FXML public Button checkAddButton;
+    private ChannelValidationStage channelValidationStage;
 
     // subscribed channels list
     private final ObservableList<ChannelUiState> channelsUiStates = FXCollections.observableArrayList();
     @FXML private ListView<ChannelUiState> channelListView; // or ObservableList<String>, depending on usage
 
     // fetched contents list
-    private final ObservableList<FetchedUpload> currentFetchedUploads = FXCollections.observableArrayList();
-    @FXML public ListView<FetchedUpload> fetchedUploadListView;
+    private final ObservableList<FetchedContent> currentFetchedContents = FXCollections.observableArrayList();
+    @FXML public ListView<FetchedContent> fetchedContentsListView;
 
     private GeneralSettings generalSettings = SettingsManager.load();
 
+    private ChannelFetchRepo repository;
+//    private final SubscriptionsService subscriptionsService = new SubscriptionsService();
+    private final FetchService fetchService = new FetchService();
+
     @FXML
     protected void initialize() {
+        repository = ChannelFetchRepo.getInstance();
+        repository.load();
         channelValidationStage = ChannelValidationStage.NEW;
         channelListView.setItems(channelsUiStates);
+        fetchedContentsListView.setItems(currentFetchedContents);
 
-        if (generalSettings.lastSelectedPath != null && !generalSettings.lastSelectedPath.isBlank()) {
-            subsPathField.setText(generalSettings.lastSelectedPath);
+        if (generalSettings.subsLastSelectedPath != null && !generalSettings.subsLastSelectedPath.isBlank()) {
+            subsPathField.setText(generalSettings.subsLastSelectedPath);
         }
-
-        try {
-            List<SubscribedChannel> loaded = ChannelManager.loadChannels();
-            List<ChannelUiState> channelUiStates = loaded.stream()
-                    .map(channel -> new ChannelUiState(channel, ChannelFetchingStage.TO_FETCH))
-                    .toList(); // FIXME: consider delegating auto tasks
-            channelsUiStates.addAll(channelUiStates);
-        } catch (IOException e) {
-            System.err.println("Failed to load subscribed channels: " + e.getMessage());
-            e.printStackTrace();
-        }
+        channelsUiStates.addAll(repository.loadChannelsUiList());
         loadChannelsListOnUi();
+
+        // auto fetch implementation
+        channelsUiStates.forEach(channelUiState -> {
+            if (repository.getChannelSettings(channelUiState.getChannelName()).isAutoFetchLastestOnStartup()){
+                submitFetchTask(channelUiState);
+            }
+        });
     }
 
     @FXML
@@ -84,57 +101,34 @@ public class SubscriptionsController {
             String selectedPath = selectedDirectory.getAbsolutePath();
             subsPathField.setText(selectedPath);
 
-            generalSettings.lastSelectedPath = selectedPath;
+            generalSettings.subsLastSelectedPath = selectedPath;
             SettingsManager.saveSettings(generalSettings);
         }
     }
 
-    private void handleFetchAsync(ChannelUiState channelState, Duration increasedTimeout) {
-        channelState.setFetchingStage(ChannelFetchingStage.FETCHING);
-        Platform.runLater(channelListView::refresh);
+    private void submitFetchTask(ChannelUiState channelState) {
+        virtualTasksExecutor.submit(() -> {
 
-        SubscribedChannel channel = channelState.getSubscribedChannel();
-        LocalDateTime fetchBase = Optional.ofNullable(channel.getLastFetched())
-                .orElse(LocalDateTime.now());
-        LocalDateTime dateAfter = fetchBase.minusDays(14); // FIXME: MockDate
+            ChannelFetchParams currentFetchParams = channelState.copyCurrentFetchParams();
 
-        Duration currentTimeout = Optional.ofNullable(increasedTimeout)
-                .orElse(channel.getChannelSettings().getTimeout());
+            channelState.setFetchingStage(ChannelFetchingStage.FETCHING);
+            Platform.runLater(channelListView::refresh);
 
-        CompletableFuture.runAsync(() -> {
-            Optional<FetchingResults> resultsOp = SubscriptionService
-                    .fetchUploadsAfter(channel, dateAfter, currentTimeout);
+            ChannelFetchParams resultStage = fetchService
+                    .fetch(channelState.getChannelName(), currentFetchParams);
 
-            resultsOp.ifPresentOrElse(results -> {
-                List<FetchedUpload> fetchedUploads = results.fetchedUploads();
+            channelState.setFetchingStage(resultStage.stage());
+            channelState.setFetchOlderStage(resultStage.fetchOlder());
 
-                if (!results.completedBeforeTimeout()) {
-                    long estimatedTimeout = results.estimatedTimeout();
-                    boolean retry = AlertUtils.getFetchTimeoutAlertAnswer(
-                            channel.getChannelName(), fetchedUploads, dateAfter,
-                            currentTimeout.getSeconds(), estimatedTimeout
-                    );
-                    if (retry) {
-                        handleFetchAsync(channelState, Duration.ofSeconds(estimatedTimeout));
-                        return;
-                    }
-                }
-                // Fetch completed - manipulate channel here
-                channel.setLastFetched(LocalDateTime.now());
-
-                Platform.runLater(() -> {
-                    currentFetchedUploads.clear();
-                    currentFetchedUploads.addAll(fetchedUploads);
-                    fetchedUploadListView.setItems(currentFetchedUploads);
-                    loadFetchedUploadsListOnUi();
-                    channelState.setFetchingStage(ChannelFetchingStage.FETCHED);
-                    channelListView.refresh();
-                });
-
-            }, () -> Platform.runLater(() -> {
-                channelState.setFetchingStage(ChannelFetchingStage.TO_FETCH);
+            Platform.runLater(() -> {
                 channelListView.refresh();
-            }));
+                loadChannelsListOnUi();
+
+                Optional<FetchedContent> currentView = fetchedContentsListView.getItems().stream().findAny();
+                if (currentView.isPresent() && currentView.get().getChannelName().equals(channelState.getChannelName())) {
+                    loadContentsView(channelState.getChannelName());
+                }
+            });
         });
     }
 
@@ -149,8 +143,9 @@ public class SubscriptionsController {
     }
 
     private ChannelSettings showChannelSettingsSetupPopup() {
-        //TODO: implement settings selection popup
-        return ChannelSettings.defaultAudioSettings();
+        Optional<ChannelSettings> settings = ChannelSettingsDialogLauncher
+                .showDialogAndWait(ChannelSettings.defaultSettings());
+        return settings.orElse(ChannelSettings.defaultSettings());
     }
 
     public SubscribedChannel checkAndGetBasicChannelData() {
@@ -164,7 +159,7 @@ public class SubscriptionsController {
 
         if (channelValidationStage.equals(ChannelValidationStage.NEW)) {
             updateAddChannelButtonState(ChannelValidationStage.CHECKING);
-            SubscribedChannel newChannel = SubscriptionService.checkAndGetChannelName(channelUrl);
+            SubscribedChannel newChannel = SubscriptionsProcessor.checkAndGetChannelName(channelUrl);
             updateAddChannelButtonState(ChannelValidationStage.VALIDATED);
             return newChannel;
         }
@@ -174,14 +169,28 @@ public class SubscriptionsController {
     private void setupAndAddChannel(SubscribedChannel newChannel) {
         if (newChannel != null && channelValidationStage == ChannelValidationStage.VALIDATED) {
 
-            ChannelSettings channelSettings = showChannelSettingsSetupPopup();
-            newChannel.setChannelSettings(channelSettings);
-
             Platform.runLater(() -> {
-                channelsUiStates.add(new ChannelUiState(newChannel, ChannelFetchingStage.TO_FETCH));
+                ChannelSettings channelSettings = showChannelSettingsSetupPopup();
+                System.out.println("saving settings: " + channelSettings);
+                newChannel.setChannelSettings(channelSettings);
+                repository.addChannel(newChannel);
+
+                ChannelUiState channelUiState = repository.getChannelUiState(newChannel.getChannelName());
+                channelsUiStates.add(channelUiState);
+
+                if (channelSettings.isFullFetch()){
+                    channelUiState.setFetchingStage(ChannelFetchingStage.FETCH_OLDER);
+                    channelUiState.setFetchOlderStage(ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS);
+                    submitFetchTask(channelUiState);
+
+                } else if (channelSettings.isAutoFetchLastestOnStartup()){
+                    channelUiState.setFetchingStage(ChannelFetchingStage.FIRST_FETCH);
+                    submitFetchTask(channelUiState);
+                }
+
                 channelUrlInput.clear();
                 channelListView.refresh();
-                ChannelManager.saveChannels(channelsUiStates.stream().map(ChannelUiState::getSubscribedChannel).toList());
+
                 updateAddChannelButtonState(ChannelValidationStage.NEW);
             });
 
@@ -189,13 +198,9 @@ public class SubscriptionsController {
     }
 
     private boolean checkIfAlreadySubscribedWithAlert(String channelUrl) {
-        Optional<SubscribedChannel> alreadySubscribed = channelsUiStates.stream()
-                .map(ChannelUiState::getSubscribedChannel)
-                .filter(channel -> channel.getUrl().equals(channelUrl))
-                .findFirst();
-
-        if (alreadySubscribed.isPresent()) {
-            String name = alreadySubscribed.get().getChannelName();
+        Optional<SubscribedChannel> existingChannel = repository.checkChannelExists(channelUrl);
+        if (existingChannel.isPresent()) {
+            String name = existingChannel.get().getChannelName();
             AlertUtils.showAlertAndAwait("Channel already subscribed",
                     "This channel is already saved with name: " + name,
                     Alert.AlertType.INFORMATION);
@@ -216,47 +221,99 @@ public class SubscriptionsController {
     private void loadChannelsListOnUi() {
         channelListView.setCellFactory(listView -> new ListCell<>() {
             @Override
-            protected void updateItem(ChannelUiState channel, boolean empty) {
-                super.updateItem(channel, empty);
-                if (empty || channel == null) {
+            protected void updateItem(ChannelUiState channelState, boolean empty) {
+                super.updateItem(channelState, empty);
+                if (empty || channelState == null) {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    Label title = new Label(channel.getSubscribedChannel().getChannelName());
+                    Label title = new Label(channelState.getChannelName());
                     // Fetch Button
-                    Button fetchButton = new Button(channel.getFetchingStage().getButtonTitle());
-                    fetchButton.setDisable(channel.getFetchingStage().isDisabled());
-                    fetchButton.setOnAction(e -> handleFetchAsync(channel, null));
+                    Button fetchButton = new Button(channelState.getFetchButtonTitle());
+                    fetchButton.setDisable(channelState.getFetchingStage().isDisabled());
+                    fetchButton.setOnAction(e -> submitFetchTask(channelState));
                     // Manage Button
                     Button manageButton = new Button("Manage");
-//                    manageButton.setOnAction(e -> handleManageChannelWindow(channel));
+                    manageButton.setOnAction(e -> handleManageChannelSettings(channelState));
+                    // View Button
+                    Button viewButton = new Button("View");
+                    viewButton.setOnAction(e -> loadContentsView(channelState.getChannelName()));
 
-                    HBox hBox = new HBox(10, title, fetchButton, manageButton);
-                    hBox.setStyle("-fx-alignment: center-left;");
-                    setGraphic(hBox);
+                    HBox buttonsBox = new HBox(6, fetchButton, manageButton, viewButton);
+
+                    Region spacer = new Region();
+                    HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                    HBox titleBox = new HBox(10, title, spacer, buttonsBox);
+                    titleBox.setAlignment(Pos.CENTER_LEFT);
+
+                    setGraphic(titleBox);
                 }
             }
         });
+    }
+
+    private void handleManageChannelSettings(ChannelUiState channelState) {
+        SubscribedChannel subscribedChannel = repository.getChannel(channelState.getChannelName());
+
+        ChannelSettings currentSettings = subscribedChannel.getChannelSettings();
+        Optional<ChannelSettings> selected = ChannelSettingsDialogLauncher.showDialogAndWait(currentSettings);
+
+        selected.ifPresent(newSettings -> {
+            subscribedChannel.setChannelSettings(newSettings);
+            repository.updateChannel(subscribedChannel);
+
+            // FIXME: change if enable changing names
+            // FIXME: causes
+            int index = channelsUiStates.indexOf(channelState);
+            if (index >= 0) {
+                channelsUiStates.set(index, repository.getChannelUiState(subscribedChannel.getChannelName()));
+            }
+            Platform.runLater(() -> channelListView.refresh());
+
+        });
+    }
+
+    private void loadContentsView(String channelName) {
+        List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelName);
+
+        Platform.runLater(() -> {
+            currentFetchedContents.clear();
+            currentFetchedContents.addAll(fetchedContents);
+            loadFetchedUploadsListOnUi();
+        });
+
     }
 
     private void loadFetchedUploadsListOnUi() {
-        fetchedUploadListView.setCellFactory(listView -> new ListCell<>() {
+        fetchedContentsListView.setCellFactory(listView -> new ListCell<>() {
 
             @Override
-            protected void updateItem(FetchedUpload upload, boolean empty) {
-                super.updateItem(upload, empty);
-                if (empty || upload == null) {
+            protected void updateItem(FetchedContent content, boolean empty) {
+                super.updateItem(content, empty);
+                if (empty || content == null) {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    Label title = new Label(upload.getTitle());
-                    Button getMP3Button = new Button("Get MP3");
-                    getMP3Button.setOnAction(e -> handleGet(upload, Formats.MP3));
+                    Label title = new Label(content.getDisplayTitle());
 
-                    Button getMP4Button = new Button("Get MP4");
-                    getMP4Button.setOnAction(e -> handleGet(upload, Formats.MP4));
+                    ContentDownloadStage audioStage = content.getAudioStage();
+                    Button audioButton = new Button(audioStage.getAudioTitle());
+                    audioButton.setDisable(audioStage.isDisabled());
+                    if (audioStage == ContentDownloadStage.SAVED) audioButton
+                            .setStyle("-fx-background-color: #cccccc;");
+                    audioButton.setOnAction(e -> handleContentOptionButton(content,
+                            repository.getChannelSettings(content.getChannelName()).getDefaultAudio()));
 
-                    HBox hBox = new HBox(7, getMP3Button, getMP4Button, title);
+                    ContentDownloadStage videoStage = content.getVideoStage();
+                    Button videoButton = new Button(videoStage.getVideoTitle());
+                    videoButton.setDisable(videoStage.isDisabled());
+                    if (videoStage == ContentDownloadStage.SAVED) videoButton
+                            .setStyle("-fx-background-color: #cccccc;");
+                    videoButton.setOnAction(e -> handleContentOptionButton(content,
+                            repository.getChannelSettings(content.getChannelName()).getDefaultVideo()));
+
+                    HBox hBox = new HBox(7, audioButton, videoButton, title);
                     hBox.setStyle("-fx-alignment: center-left;");
                     setGraphic(hBox);
                 }
@@ -264,7 +321,37 @@ public class SubscriptionsController {
         });
     }
 
-    private void handleGet(FetchedUpload upload, Formats format) {
+    private void handleContentOptionButton(FetchedContent content, DownloadOption downloadOption) {
+        if (content.isDownloaded(downloadOption)) {
+            openInExplorer(content, downloadOption);
+        } else {
+            handleDownload(content, downloadOption);
+        }
+    }
+
+    private void openInExplorer(FetchedContent content, DownloadOption downloadOption) {
+        try {
+            Path path = switch (downloadOption) {
+                case VideoQuality vq -> Path.of(content.getVideoPath());
+                case AudioOnlyQuality aq -> Path.of(content.getAudioPath());
+                default -> throw new IllegalArgumentException("Unknown option");
+            };
+
+            if (Files.exists(path)) {
+                Path toOpen = Files.isDirectory(path) ? path : path.getParent();
+                Desktop.getDesktop().open(toOpen.toFile());
+            } else {
+                AlertUtils.showAlertAndAwait("File not found",
+                        "The saved path does not exist:\n" + path,
+                        Alert.AlertType.WARNING);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            AlertUtils.showAlertAndAwait("Open failed", ex.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
+
+    private void handleDownload(FetchedContent content, DownloadOption downloadOption) {
         String subsBasePath = subsPathField.getText().trim();
         if (subsBasePath.isEmpty()) {
             System.err.println("⚠ No download path selected!");
@@ -274,32 +361,36 @@ public class SubscriptionsController {
             return;
         }
 
-        DownloadService downloadService = new DownloadService();
-        AdvancedOptions advancedOptions = new AdvancedOptions(
-                false, GroupingMode.NO_GROUPING, true, MultithreadingMode.SINGLE);
-        CompletableFuture.runAsync(() -> {
+        content.setDownloadingStage(downloadOption);
+        Platform.runLater(fetchedContentsListView::refresh);
+
+        virtualTasksExecutor.submit(() -> {
+            DownloadService downloadService = new DownloadService();
+
+            ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
+            GroupingMode byFormatGrouping = channelSettings.isSeparateDirPerFormat()
+                    ? GroupingMode.GROUP_BY_FORMAT
+                    : GroupingMode.NO_GROUPING;
+            AdvancedOptions advancedOptions = new AdvancedOptions(
+                    false, byFormatGrouping, channelSettings.isAddDownloadDateDir(), MultithreadingMode.MEDIUM);
+
             try {
-                Path channelBasePath = Paths.get(subsBasePath + File.separator + upload.getChannelName());
+                Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
                 if (!Files.exists(channelBasePath)) {
                     Files.createDirectories(channelBasePath);
                 }
-                downloadService.downloadFetched(upload, format, channelBasePath.toString(), advancedOptions);
+                Path savedPath = downloadService
+                        .downloadFetched(content, downloadOption, channelBasePath.toString(), advancedOptions);
+
+                content.addAndSetDownloaded(downloadOption, savedPath);
+                repository.updateContent(content);
+                Platform.runLater(fetchedContentsListView::refresh);
             } catch (Exception e) {
                 e.printStackTrace();
                 AlertUtils.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);
             }
         });
-
     }
-
-    // DEV METHODS
-
-//    @FXML public Button checkToolsButton;
-//
-//    public void handleCheckTools() {
-//        CompletableFuture.runAsync(() -> ProcessFactory.checkTool("ffmpeg"));
-//        CompletableFuture.runAsync(() -> ProcessFactory.checkTool("ffprobe"));
-//    }
 }
 
 

@@ -1,10 +1,10 @@
 package pl.mewash.contentlaundry.models.channel;
 
 import lombok.*;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
+import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
+import pl.mewash.contentlaundry.commands.VideoQuality;
 
-import java.time.Duration;
-import java.util.EnumSet;
+import java.time.Period;
 
 @Getter
 @Setter
@@ -13,47 +13,55 @@ import java.util.EnumSet;
 @AllArgsConstructor
 public class ChannelSettings {
 
-    private EnumSet<Formats> defaultFormats;
+    private AudioOnlyQuality defaultAudio;
+    private VideoQuality defaultVideo;
 
-    private boolean autoFetch;
-    private boolean autoDownload;
-    private boolean trackHistory;
+    private boolean autoFetchLastestOnStartup;
+    private boolean fullFetch;
 
-    private boolean skipPreviouslyFetchedPrint;
+    private boolean autoDownloadAudio;
+    private boolean autoDownloadVideo;
 
-    private boolean skipAnyDownloadedPrint;
-    private boolean allowReDownload;
+    private boolean addDownloadDateDir;
+    private boolean separateDirPerFormat;
 
-    private Duration timeout;
+//    private boolean hidePreviouslyFetched;
+//    private boolean hideOnBothDownloads;
+//    private boolean hideOnAnyDownload;
+
+//    private Duration defaultTimeout;
+
+    private Period initialFetchPeriod;
 
     private static ChannelSettingsBuilder getBuilderWithDefaults(){
         return ChannelSettings.builder()
-                .autoFetch(false)
-                .autoDownload(false)
-                .trackHistory(true)
-                .skipPreviouslyFetchedPrint(false)
-                .skipAnyDownloadedPrint(false)
-                .allowReDownload(false)
-                .timeout(Duration.ofSeconds(30));
+                .defaultAudio(AudioOnlyQuality.MP3)
+                .defaultVideo(VideoQuality.STANDARD)
+                .autoFetchLastestOnStartup(false)
+                .fullFetch(false)
+                .autoDownloadAudio(false)
+                .autoDownloadVideo(false)
+                .addDownloadDateDir(false)
+                .separateDirPerFormat(false)
+                .initialFetchPeriod(Period.ofDays(14));
     }
 
-    public static ChannelSettings defaultVideoSettings() {
-        return getBuilderWithDefaults()
-                .defaultFormats(EnumSet.of(Formats.MP4))
-                .build();
+    public static ChannelSettings defaultSettings(){
+        return getBuilderWithDefaults().build();
     }
 
-    public static ChannelSettings defaultAudioSettings() {
-        return getBuilderWithDefaults()
-                .defaultFormats(EnumSet.of(Formats.MP3))
-                .build();
+    @Override
+    public String toString() {
+        return "ChannelSettings{" +
+                "defaultAudio=" + defaultAudio +
+                ", defaultVideo=" + defaultVideo +
+                ", autoFetchLastestOnStartup=" + autoFetchLastestOnStartup +
+                ", fullFetch=" + fullFetch +
+                ", autoDownloadAudio=" + autoDownloadAudio +
+                ", autoDownloadVideo=" + autoDownloadVideo +
+                ", addDownloadDateDir=" + addDownloadDateDir +
+                ", separateDirPerFormat=" + separateDirPerFormat +
+                ", initialFetchPeriod=" + initialFetchPeriod +
+                '}';
     }
-
-//    public static ChannelSettings defaultNewsChannelVideoSettings() {
-//        return null;
-//    }
-//
-//    public static ChannelSettings defaultPodcastAudioSettings() {
-//        return null;
-//    }
 }

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<DialogPane xmlns:fx="http://javafx.com/fxml" fx:controller="pl.mewash.contentlaundry.controller.ChannelSettingsController">
+    <content>
+        <VBox spacing="10" style="-fx-padding: 10;">
+
+            <TitledPane text="Fetch Settings" expanded="true">
+                <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
+                    <CheckBox fx:id="autoFetchLastestOnStartup" text="Auto Fetch Latest on startup"/>
+                    <CheckBox fx:id="fullFetch" text="Fetch all channel videos at once (May take hours!)"/>
+                </VBox>
+            </TitledPane>
+
+            <TitledPane text="Download Buttons Settings" expanded="true">
+                <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
+                    <Label text="Select Audio codec:" />
+                    <ComboBox fx:id="audioQualityCombo"/>
+
+                    <Label text="Select Video Quality:" />
+                    <ComboBox fx:id="videoQualityCombo"/>
+                </VBox>
+            </TitledPane>
+
+            <TitledPane text="Auto Download Settings" expanded="false">
+                <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
+                    <CheckBox fx:id="autoDownloadAudio" text="Auto download fetched content Audio" disable="true"/>
+                    <CheckBox fx:id="autoDownloadVideo" text="Auto download fetched content Video" disable="true"/>
+                </VBox>
+            </TitledPane>
+
+            <TitledPane text="Downloads Storage Settings" expanded="true">
+                <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
+                    <CheckBox fx:id="addDownloadDateDir" text="Add directory with date of download"/>
+                    <CheckBox fx:id="separateDirPerFormat" text="Keep audio and video in separate directories"/>
+                </VBox>
+            </TitledPane>
+
+            <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10;">
+                <Button fx:id="okButton" text="Apply"/>
+                <Button fx:id="cancelButton" text="Cancel"/>
+            </HBox>
+
+        </VBox>
+    </content>
+</DialogPane>

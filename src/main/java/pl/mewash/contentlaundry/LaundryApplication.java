@@ -19,17 +19,18 @@ public class LaundryApplication extends Application {
     public void start(Stage stage) {
         try {
 
+            // Check and set platform
             BinariesManager binariesManager = new BinariesManager();
-            String binariesDir = binariesManager.validateAndGetBinariesDir(stage);
+            BinariesManager.SupportedPlatforms platform = binariesManager.getPlatform();
 
+            // Check and set tools dir for session
+            String binariesDir = binariesManager.resolveValidatedToolsDir(stage);
             if (binariesDir == null) {
-                System.out.println("🛑 Binaries are missing. Exiting application.");
+                System.out.println("Binaries are missing. Exiting application.");
                 Platform.exit();
                 return;
             }
-
-            // Set session tools dir
-            BinariesContext.setToolsDir(binariesDir);
+            AppContext.getInstance().init(platform, binariesDir);
 
             Locale.setDefault(Locale.US);
             ResourceBundle bundle = ResourceBundle.getBundle(
@@ -40,7 +41,7 @@ public class LaundryApplication extends Application {
             Parent root = fxmlLoader.load();
             MainController controller = fxmlLoader.getController();
             controller.onClose();
-            Scene scene = new Scene(root, 1024, 768);
+            Scene scene = new Scene(root, 1280, 800);
             stage.setTitle(bundle.getString("app.name") + " - " + bundle.getString("app.slogan"));
             stage.setScene(scene);
             stage.show();
