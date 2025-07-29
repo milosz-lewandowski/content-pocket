@@ -1,0 +1,5 @@
+.github/*               merge=ours
+gradle/*                merge=ours
+*.gradle                merge=ours
+tools/*                 merge=ours
+src/main/jpackage/*     merge=ours
