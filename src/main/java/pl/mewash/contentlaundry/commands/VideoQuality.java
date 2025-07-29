@@ -53,16 +53,20 @@ public enum VideoQuality implements DownloadOption {
 
     @AllArgsConstructor
     enum HighQualityVideoAudioSettings {
-        FORCE_AAC_AUDIO("bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
-        //        FORCE_OPUS_AUDIO("bestvideo[height<=%s]+bestaudio[acodec^=opus]"),  // FIXME: disable until conversion rules get added with ffprobe
-        ANY_BEST_AUDIO("bestvideo[height<=%s]+bestaudio"),
-        MERGED_MP4("best[height<=%s][ext=mp4]"),
-        ANY_BEST_VIDEO("best[height<=%s]");
+        FORCE_H264_AAC("bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
+        FORCE_H264_BEST_AUDIO("bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
+
+//        FORCE_AAC_AUDIO("bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
+//        ANY_BEST_AUDIO("bestvideo[height<=%s]+bestaudio"),
+//        MERGED_MP4("best[height<=%s][ext=mp4]"),
+//        ANY_BEST_VIDEO("best[height<=%s]")
+        ;
         final String placeholder;
 
         private String withResolution(String resolution) {
             return String.format(placeholder, resolution);
         }
+
     }
 
 

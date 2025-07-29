@@ -48,6 +48,7 @@ public class DownloadService {
         // Detect download type and get process
         ProcessBuilder processBuilder = switch (downloadSettings) {
             case VideoQuality vq -> ProcessFactoryV2.videoWithQualityDownload(url, vq, advancedOptions, tempTitleFile);
+//            case VideoQuality vq -> ProcessFactoryV2.videoWithQualityDownloadForceH264(url, vq, advancedOptions, tempTitleFile);
             case AudioOnlyQuality aq -> ProcessFactoryV2.audioOnlyDownloadCommand(url, aq, advancedOptions, tempTitleFile);
             default -> throw new IllegalStateException("Settings type not recognized: " + downloadSettings);
         };

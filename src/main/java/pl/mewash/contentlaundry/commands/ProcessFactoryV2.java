@@ -66,6 +66,21 @@ public class ProcessFactoryV2 {
                 .buildDownloadProcess();
     }
 
+//    public static ProcessBuilder videoWithQualityDownloadForceH264(String url, VideoQuality videoQuality,
+//                                                          AdvancedOptions advancedOptions, Path tempFile) {
+//        return CommandBuilder.newYtDlpCommand()
+//                .setVideoQuality(videoQuality)
+//                .addCommandBundle(CommandBundles.FORCE_H264_RECODING)
+//                .addCommandBundle(CommandBundles.EMBED_FILE_METADATA)
+//                .addOptionalCommandBundle(CommandBundles.ADD_CONTENT_METADATA_FILES, advancedOptions.withMetadata())
+//                .setPrintToFile(CommandBuilder.PrintToFileOptions.CONTENT_TITLE, tempFile)
+//                .setFFMpegPath()
+//                .setOutputCommand(advancedOptions, Formats.MP4)
+//                .setUrl(url)
+//                .logCommandToConsole()
+//                .buildDownloadProcess();
+//    }
+
 //    @Deprecated
 //    public static ProcessBuilder buildDownloadCommand(String url, Formats format,
 //                                                      AdvancedOptions advancedOptions, Path tempTitleFile) {
