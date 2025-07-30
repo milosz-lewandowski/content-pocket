@@ -1,5 +1,5 @@
 .github/*               merge=ours
 gradle/*                merge=ours
-*.gradle                merge=ours
+build.gradle.kts        merge=ours
 tools/*                 merge=ours
 src/main/jpackage/*     merge=ours
