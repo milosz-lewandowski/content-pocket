@@ -6,7 +6,7 @@ import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
 import pl.mewash.contentlaundry.commands.VideoQuality;
 import pl.mewash.contentlaundry.models.content.FetchedContent;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
-import pl.mewash.contentlaundry.utils.LoggerUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -58,7 +58,7 @@ public class DownloadService {
         Process process = processBuilder.start();
 
         // redirect and log process output stream to file while process is running
-        LoggerUtils.synchronizedConsumeAndLogProcessOutputToFile(process);
+        ScheduledFileLogger.consumeAndLogProcessOutputToFile(process);
 
         // wait for process finished
         int exitCode = process.waitFor();

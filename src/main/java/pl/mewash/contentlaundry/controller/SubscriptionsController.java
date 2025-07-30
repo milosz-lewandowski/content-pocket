@@ -45,10 +45,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SubscriptionsController {
 
-    private final ExecutorService virtualTasksExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private static final AtomicInteger vThreadCounter = new AtomicInteger(1);
+    private final ExecutorService virtualTasksExecutor = Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual()
+                    .name("VirT-", vThreadCounter.getAndIncrement())
+                    .factory()
+    );
 
     @FXML private TextField subsPathField;
 

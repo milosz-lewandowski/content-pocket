@@ -22,6 +22,7 @@ public class ProcessFactoryV2 {
                 .addCommandBundle(CommandBundles.CHECK_CHANNEL_NAME)
                 .setPrintToFile(CommandBuilder.PrintToFileOptions.CHANNEL_NAME_LATEST_CONTENT, tempFile)
                 .setUrl(channelUrl)
+                .logCommandToFile()
                 .logCommandToConsole()
                 .buildReadOnlyProcess();
     }
@@ -47,6 +48,7 @@ public class ProcessFactoryV2 {
                 .setPrintToFile(CommandBuilder.PrintToFileOptions.CONTENT_TITLE, tempFile)
                 .setOutputCommand(advancedOptions, audioQuality.getFormat())
                 .setUrl(url)
+                .logCommandToFile()
                 .logCommandToConsole()
                 .buildDownloadProcess();
     }
@@ -62,6 +64,7 @@ public class ProcessFactoryV2 {
                 .setFFMpegPath()
                 .setOutputCommand(advancedOptions, Formats.MP4)
                 .setUrl(url)
+                .logCommandToFile()
                 .logCommandToConsole()
                 .buildDownloadProcess();
     }

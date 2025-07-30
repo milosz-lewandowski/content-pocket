@@ -53,7 +53,7 @@ public class BinariesManager {
             Path absolutePath = path.toAbsolutePath();
             directoryPath = absolutePath.toString();
 
-            LoggerUtils.synchronizedAppendStringList(List.of("Binaries found at: " + directoryPath));
+            ScheduledFileLogger.appendSingleLine("Binaries found at: " + directoryPath);
             System.out.println("Binaries found at: " + directoryPath);
             generalSettings.binariesDirConfirmed = true;
             generalSettings.binariesDirPath = directoryPath;
@@ -90,7 +90,7 @@ public class BinariesManager {
             if (existingPaths.isEmpty()) logs.add("no binaries found at above location");
             if (!existingPaths.isEmpty() && existingPaths.size() < 3)
                 logs.add("MISSING BINARIES! Found only " + existingPaths.size());
-            LoggerUtils.synchronizedAppendStringList(logs);
+            ScheduledFileLogger.appendStringList(logs);
             return false;
         }
 
@@ -101,7 +101,7 @@ public class BinariesManager {
 
         boolean result = versionMessages.size() == 3;
         if (!result) logs.add("Not all binaries returned version info!");
-        LoggerUtils.synchronizedAppendStringList(logs);
+        ScheduledFileLogger.appendStringList(logs);
         return result;
     }
 

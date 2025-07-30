@@ -5,7 +5,7 @@ import lombok.Getter;
 import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
-import pl.mewash.contentlaundry.utils.LoggerUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -129,8 +129,8 @@ public class CommandBuilder {
         } else {
             addCommandList(printCommand);
             addSingleCommand(url);
-            if (logToConsole) System.out.println(commandList);
-            if (logToFile) LoggerUtils.synchronizedAppendSingleLine(commandList.toString());
+            if (logToConsole) System.out.println(String.join(" ", this.commandList));
+            if (logToFile) ScheduledFileLogger.appendSingleLine(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }
@@ -144,8 +144,8 @@ public class CommandBuilder {
             if (printCommand != null) addCommandList(printCommand);
             addCommandList(outputCommand);
             addSingleCommand(url);
-            if (logToConsole) System.out.println(commandList);
-            if (logToFile) LoggerUtils.synchronizedAppendSingleLine(commandList.toString());
+            if (logToConsole) System.out.println(String.join(" ", this.commandList));
+            if (logToFile) ScheduledFileLogger.appendSingleLine(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }

@@ -7,7 +7,7 @@ import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
 import pl.mewash.contentlaundry.models.content.FetchedContent;
 import pl.mewash.contentlaundry.models.content.FetchingResults;
 import pl.mewash.contentlaundry.utils.AlertUtils;
-import pl.mewash.contentlaundry.utils.LoggerUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -74,7 +74,7 @@ public class SubscriptionsProcessor {
 //            System.out.println("process started, before logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
             // TODO: causes thread blocking until process finished and fully consumed. at this moment this disables timeout reaching at all
-            LoggerUtils.synchronizedConsumeAndLogProcessOutputToFile(process);
+            ScheduledFileLogger.consumeAndLogProcessOutputToFile(process);
 //            System.out.println("process started, after logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
 //            System.out.println("process before wait for");
