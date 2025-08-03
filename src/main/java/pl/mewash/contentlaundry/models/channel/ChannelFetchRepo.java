@@ -77,6 +77,13 @@ public class ChannelFetchRepo {
         persist();
     }
 
+    public void updateChannelSettingsFromState(ChannelUiState channelUiState) {
+        SubscribedChannel subscribedChannel = channelsNamesMap.get(channelUiState.getChannelName());
+        subscribedChannel.setChannelSettings(channelUiState.getChannelSettings());
+        channelsNamesMap.put(subscribedChannel.getChannelName(), subscribedChannel);
+        persist();
+    }
+
     public void updateContent(FetchedContent fetchedContent) {
         SubscribedChannel subscribedChannel = getChannel(fetchedContent.getChannelName());
         subscribedChannel.updateFetchedContent(fetchedContent);

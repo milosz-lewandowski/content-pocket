@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
         @JsonSubTypes.Type(value = AudioOnlyQuality.class, name = "audio"),
         @JsonSubTypes.Type(value = VideoQuality.class, name = "video")
 })
-public interface DownloadOption {
+public sealed interface DownloadOption permits VideoQuality, AudioOnlyQuality{
     String getFormatExtension();
     String getShortDescription();
 }

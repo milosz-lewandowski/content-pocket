@@ -49,7 +49,6 @@ public final class FetchedContent {
                 audioStage = ContentDownloadStage.SAVED;
                 audioPath = downloadedPath.toAbsolutePath().toString();
             }
-            default -> throw new IllegalArgumentException("Invalid download option");
         }
     }
 
@@ -72,7 +71,14 @@ public final class FetchedContent {
         switch (downloadOption) {
             case VideoQuality vq -> videoStage = ContentDownloadStage.SAVING;
             case AudioOnlyQuality va-> audioStage = ContentDownloadStage.SAVING;
-            default -> throw new IllegalArgumentException("Invalid download option");
+        }
+    }
+
+    @JsonIgnore
+    public void setDownloadingError(DownloadOption downloadOption) {
+        switch (downloadOption) {
+            case VideoQuality vq -> videoStage = ContentDownloadStage.ERROR;
+            case AudioOnlyQuality va-> audioStage = ContentDownloadStage.ERROR;
         }
     }
 

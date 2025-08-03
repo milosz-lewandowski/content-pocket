@@ -20,6 +20,7 @@ public class ChannelUiState {
     private String channelName;
     private String url;
     private LocalDateTime lastFetched;
+    @Setter
     private ChannelSettings channelSettings;
     @Setter
     private ChannelFetchingStage fetchingStage;

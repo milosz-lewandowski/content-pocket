@@ -1,13 +1,20 @@
 package pl.mewash.contentlaundry.service;
 
+import javafx.scene.control.Alert;
 import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
 import pl.mewash.contentlaundry.commands.DownloadOption;
 import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
 import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
+import pl.mewash.contentlaundry.models.channel.ChannelSettings;
 import pl.mewash.contentlaundry.models.content.FetchedContent;
 import pl.mewash.contentlaundry.models.general.AdvancedOptions;
+import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
+import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
+import pl.mewash.contentlaundry.utils.AlertUtils;
 import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,18 +32,34 @@ public class DownloadService {
         this.logConsumer = consumer;
     }
 
-    public Path downloadFetched(FetchedContent fetchedContent, DownloadOption downloadOption, String basePathString,
-                                AdvancedOptions advancedOptions) throws IOException, InterruptedException {
-        String url = fetchedContent.getUrl();
+    public void downloadFetched(FetchedContent content, DownloadOption downloadOption, String subsBasePath) {
+        ChannelFetchRepo repository = ChannelFetchRepo.getInstance();
 
-        //TODO: here do all required contents history and tracking management
+        ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
+        GroupingMode byFormatGrouping = channelSettings.isSeparateDirPerFormat()
+                ? GroupingMode.GROUP_BY_FORMAT
+                : GroupingMode.NO_GROUPING;
+        AdvancedOptions advOpt = new AdvancedOptions(
+                false, byFormatGrouping, channelSettings.isAddDownloadDateDir(), MultithreadingMode.MEDIUM);
 
-        // run download
-        return downloadWithSettings(url, downloadOption, basePathString, advancedOptions);
+        try {
+            Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
+            if (!Files.exists(channelBasePath)) Files.createDirectories(channelBasePath);
 
+            Path savedPath = downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), advOpt);
+
+            content.addAndSetDownloaded(downloadOption, savedPath);
+            repository.updateContent(content);
+        } catch (Exception e) {
+            e.printStackTrace();
+            content.setDownloadingError(downloadOption);
+            repository.updateContent(content);
+            AlertUtils.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
 
-    public Path downloadWithSettings(String url, DownloadOption downloadSettings, String baseDirString, AdvancedOptions advancedOptions) throws IOException, InterruptedException {
+    public Path downloadWithSettings(String url, DownloadOption downloadSettings, String baseDirString,
+                                     AdvancedOptions advancedOptions) throws IOException, InterruptedException {
         appendLog("log.washing_and_drying", url, downloadSettings.getShortDescription());
 
         // building paths

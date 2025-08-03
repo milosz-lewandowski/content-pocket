@@ -1,7 +1,6 @@
 package pl.mewash.contentlaundry.service;
 
 import javafx.scene.control.Alert;
-import pl.mewash.contentlaundry.commands.CommandBuilder;
 import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
 import pl.mewash.contentlaundry.models.content.FetchedContent;
@@ -20,42 +19,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class SubscriptionsProcessor {
-
-    public static SubscribedChannel checkAndGetChannelName(String channelUrl) {
-        try {
-            Path tempFile = Files.createTempFile("yt_channel", ".txt");
-
-//            ProcessBuilder checkChannelProcess = ProcessFactoryV2.buildCheckChannelCommand(channelUrl, tempFile);
-            ProcessBuilder checkChannelProcess = ProcessFactoryV2.buildCheckChannelAndLatestContent(channelUrl, tempFile);
-            checkChannelProcess.redirectOutput(tempFile.toFile());
-            checkChannelProcess.redirectError(ProcessBuilder.Redirect.DISCARD);
-
-            Process process = checkChannelProcess.start();
-            String channelName;
-            String responseLine;
-
-            int exitCode = process.waitFor();
-//            channelName = Files.readString(tempFile, StandardCharsets.UTF_8).trim();
-            responseLine = Files.readString(tempFile, StandardCharsets.UTF_8).trim();
-
-            String[] lines = responseLine.split(CommandBuilder.PrintToFileOptions.CHANNEL_NAME_LATEST_CONTENT.getSplitRegex());
-            channelName = lines[0].trim();
-            String latestContentString = lines[1].trim();
-
-            Files.deleteIfExists(tempFile);
-
-            if (exitCode != 0 || channelName.isBlank()) {
-                AlertUtils.showAlertAndAwait("Channel check failed", "Could not retrieve channel name.", Alert.AlertType.ERROR);
-                return null;
-            }
-//            return SubscribedChannel.withBasicProperties(channelName, channelUrl);
-            return SubscribedChannel.withLatestContent(channelName, channelUrl, latestContentString);
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            AlertUtils.showAlertAndAwait("Error of channel check", e.getMessage(), Alert.AlertType.ERROR);
-            return null;
-        }
-    }
 
     public Optional<FetchingResults> fetchUploadsAfter(SubscribedChannel channel, LocalDateTime dateAfter, Duration timeout) {
         long currentTimeout = timeout.getSeconds();
