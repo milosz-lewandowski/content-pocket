@@ -151,14 +151,24 @@ public class CommandBuilder {
     }
 
     @Getter
-    @AllArgsConstructor
     public enum PrintToFileOptions {
-        CHANNEL_NAME("%(channel)s", null),
+        CHANNEL_NAME("%(channel)s"),
         CHANNEL_NAME_LATEST_CONTENT("%(channel)s ||| %(upload_date)s", "\\|\\|\\|"),
-        CONTENT_TITLE("%(title)s", null),
-        CONTENT_PROPERTIES("%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s", "\\|\\|\\|");
-        final String value;
-        final String splitRegex;
+        CONTENT_TITLE("%(title)s"),
+        CONTENT_PROPERTIES("%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s", "\\|\\|\\|")
+        ;
+
+        PrintToFileOptions(String value) {
+            this.value = value;
+        }
+
+        PrintToFileOptions(String value, String splitRegex) {
+            this.value = value;
+            this.splitRegex = splitRegex;
+        }
+
+        private final String value;
+        private String splitRegex;
     }
 
 

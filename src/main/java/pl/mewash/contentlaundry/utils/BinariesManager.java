@@ -137,8 +137,7 @@ public class BinariesManager {
         MACOS;
     }
 
-    @FunctionalInterface
-    interface ToolPathSupplier {
+    sealed interface ToolPathSupplier permits WindowsLocations, MacosLocations {
         String compilePath();
     }
 

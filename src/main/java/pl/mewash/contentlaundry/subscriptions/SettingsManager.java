@@ -14,6 +14,7 @@ public class SettingsManager {
         if (!Files.exists(ConfigPaths.SETTINGS_FILE)) return new GeneralSettings();
 
         try {
+            ConfigPaths.ensureConfigDirExists();
             return mapper.readValue(ConfigPaths.SETTINGS_FILE.toFile(), GeneralSettings.class);
         } catch (IOException e) {
             System.err.println("Failed to load settings: " + e.getMessage());
@@ -23,6 +24,7 @@ public class SettingsManager {
 
     public static void saveSettings(GeneralSettings settings) {
         try {
+            ConfigPaths.ensureConfigDirExists();
             mapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValue(ConfigPaths.SETTINGS_FILE.toFile(), settings);
