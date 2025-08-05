@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry.commands;
+package pl.mewash.commands.internals;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

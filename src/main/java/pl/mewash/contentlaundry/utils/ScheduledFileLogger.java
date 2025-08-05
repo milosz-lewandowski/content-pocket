@@ -1,5 +1,6 @@
 package pl.mewash.contentlaundry.utils;
 
+import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.contentlaundry.subscriptions.ConfigPaths;
 
 import java.io.BufferedReader;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScheduledFileLogger {
+public class ScheduledFileLogger implements CommandLogger {
 
     // local thread buffer for related logs grouping
     private static final List<ThreadBuffer> localThreadBuffersList = new CopyOnWriteArrayList<>();
@@ -179,5 +180,10 @@ public class ScheduledFileLogger {
                 buffer.clear();
             }
         }
+    }
+
+    @Override
+    public void log(String message) {
+        appendSingleLine(message);
     }
 }

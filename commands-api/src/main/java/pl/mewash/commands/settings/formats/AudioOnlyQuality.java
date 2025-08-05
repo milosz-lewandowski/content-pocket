@@ -1,8 +1,7 @@
-package pl.mewash.contentlaundry.commands;
+package pl.mewash.commands.settings.formats;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +48,7 @@ public enum AudioOnlyQuality implements DownloadOption {
     final Formats formats;
     @Getter final String buttonTitle;
     final boolean useFFmpeg;
-    @Getter final boolean canEmbedMetadata;
+    final boolean canEmbedMetadata;
     final String description;
     final List<String> conversionCommands;
 
@@ -64,6 +63,10 @@ public enum AudioOnlyQuality implements DownloadOption {
 
     public Formats getFormat() {
         return this.formats;
+    }
+
+    public boolean getCanEmbedMetadata() {
+        return canEmbedMetadata;
     }
 
 

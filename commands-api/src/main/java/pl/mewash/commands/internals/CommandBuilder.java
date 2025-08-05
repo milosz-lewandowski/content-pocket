@@ -1,11 +1,12 @@
-package pl.mewash.contentlaundry.commands;
+package pl.mewash.commands.internals;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import pl.mewash.contentlaundry.AppContext;
-import pl.mewash.contentlaundry.models.general.AdvancedOptions;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
-import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
+import pl.mewash.commands.api.CommandLogger;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.Formats;
+import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.response.ResponseProperties;
+import pl.mewash.commands.settings.storage.StorageOptions;
+
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -16,22 +17,21 @@ import java.util.List;
 
 public class CommandBuilder {
 
-    private static final String COMMAND_YT_DLP = AppContext.getInstance().getYtDlpCommand();
-    private static final String COMMAND_FFMPEG = AppContext.getInstance().getFfMpegCommand();
-
     private final List<String> commandList;
     private List<String> outputCommand;
     private List<String> printCommand;
     private String url;
-    private boolean logToConsole = false;
+    private boolean printToConsole = false;
+
     private boolean logToFile = false;
+    private CommandLogger logger;
 
     private CommandBuilder() {
         this.commandList = new ArrayList<>();
     }
 
-    public static CommandBuilder newYtDlpCommand() {
-        return new CommandBuilder().addSingleCommand(COMMAND_YT_DLP);
+    public static CommandBuilder newYtDlpCommand(String ytDlpCommandPath) {
+        return new CommandBuilder().addSingleCommand(ytDlpCommandPath);
     }
 
     public CommandBuilder addSingleCommand(String command) {
@@ -39,12 +39,13 @@ public class CommandBuilder {
         return this;
     }
 
-    public CommandBuilder logCommandToConsole() {
-        this.logToConsole = true;
+    public CommandBuilder printCommandToConsole(boolean printToConsole) {
+        this.printToConsole = printToConsole;
         return this;
     }
 
-    public CommandBuilder logCommandToFile() {
+    public CommandBuilder logCommandToFile(CommandLogger logger) {
+        this.logger = logger;
         this.logToFile = true;
         return this;
     }
@@ -79,33 +80,33 @@ public class CommandBuilder {
         return this.addCommandList(audioQuality.getDownloadConversionCommands());
     }
 
-    public CommandBuilder setPrintToFile(PrintToFileOptions option, Path filePath) {
+    public CommandBuilder setPrintToFile(ResponseProperties printProperties, Path filePath) {
         if (this.printCommand != null) {
             throw new IllegalStateException("you specify only one print command");
         } else {
             this.printCommand = List.of("--print-to-file",
-                    option.getValue(),
+                    printProperties.getValue(),
                     filePath.toAbsolutePath().toString());
             return this;
         }
     }
 
-    public CommandBuilder setOutputCommand(AdvancedOptions advancedOptions, Formats format) {
+    public CommandBuilder setOutputCommand(StorageOptions storageOptions, Formats format) {
         if (this.outputCommand != null) {
             throw new IllegalStateException("you specify only one output path");
         } else {
-            String formattedOutputPath = getOutputPathParam(advancedOptions, format);
+            String formattedOutputPath = getOutputPathParam(storageOptions, format);
             this.outputCommand = List.of("--output", formattedOutputPath);
             return this;
         }
     }
 
-    public CommandBuilder setFFMpegPath() {
-        return this.addParametrizedCommand("--ffmpeg-location", COMMAND_FFMPEG);
+    public CommandBuilder setFFMpegPath(String ffmpegCommandPath) {
+        return this.addParametrizedCommand("--ffmpeg-location", ffmpegCommandPath);
     }
 
-    public CommandBuilder setOptionalFFMpegPath(boolean needsFFmpeg) {
-        if (needsFFmpeg) return this.setFFMpegPath();
+    public CommandBuilder setOptionalFFMpegPath(String ffmpegCommandPath, boolean needsFFmpeg) {
+        if (needsFFmpeg) return this.setFFMpegPath(ffmpegCommandPath);
         else return this;
     }
 
@@ -129,8 +130,8 @@ public class CommandBuilder {
         } else {
             addCommandList(printCommand);
             addSingleCommand(url);
-            if (logToConsole) System.out.println(String.join(" ", this.commandList));
-            if (logToFile) ScheduledFileLogger.appendSingleLine(String.join(" ", this.commandList));
+            if (printToConsole) System.out.println(String.join(" ", this.commandList));
+            if (logToFile && logger != null) logger.log(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }
@@ -144,52 +145,31 @@ public class CommandBuilder {
             if (printCommand != null) addCommandList(printCommand);
             addCommandList(outputCommand);
             addSingleCommand(url);
-            if (logToConsole) System.out.println(String.join(" ", this.commandList));
-            if (logToFile) ScheduledFileLogger.appendSingleLine(String.join(" ", this.commandList));
+            if (printToConsole) System.out.println(String.join(" ", this.commandList));
+            if (logToFile && logger != null) logger.log(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }
 
-    @Getter
-    public enum PrintToFileOptions {
-        CHANNEL_NAME("%(channel)s"),
-        CHANNEL_NAME_LATEST_CONTENT("%(channel)s ||| %(upload_date)s", "\\|\\|\\|"),
-        CONTENT_TITLE("%(title)s"),
-        CONTENT_PROPERTIES("%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s", "\\|\\|\\|")
-        ;
 
-        PrintToFileOptions(String value) {
-            this.value = value;
-        }
-
-        PrintToFileOptions(String value, String splitRegex) {
-            this.value = value;
-            this.splitRegex = splitRegex;
-        }
-
-        private final String value;
-        private String splitRegex;
-    }
-
-
-    private static String getOutputPathParam(AdvancedOptions advancedOptions, Formats format) {
+    private static String getOutputPathParam(StorageOptions storageOptions, Formats format) {
         String formatDir = format.fileExtension + "/";
         String fileTitleWithExtension = "%(title)s.%(ext)s";
         String titleDir = "%(title)s/";
         String titleDirWithExtension = "%(title)s-" + formatDir;
-        String dateDir = advancedOptions.withDateDir() ? LocalDate.now() + "/" : "";
+        String dateDir = storageOptions.withDateDir() ? LocalDate.now() + "/" : "";
 
-        return switch (advancedOptions.groupingMode()) {
+        return switch (storageOptions.groupingMode()) {
 
-            case GROUP_BY_FORMAT -> advancedOptions.withMetadata()
+            case GROUP_BY_FORMAT -> storageOptions.withMetadata()
                     ? formatDir + dateDir + titleDir + fileTitleWithExtension
                     : formatDir + dateDir + fileTitleWithExtension;
 
-            case GROUP_BY_CONTENT -> advancedOptions.withMetadata()
+            case GROUP_BY_CONTENT -> storageOptions.withMetadata()
                     ? dateDir + titleDir + titleDirWithExtension + fileTitleWithExtension
                     : dateDir + titleDir + fileTitleWithExtension;
 
-            case NO_GROUPING -> advancedOptions.withMetadata()
+            case NO_GROUPING -> storageOptions.withMetadata()
                     ? dateDir + titleDirWithExtension + fileTitleWithExtension
                     : dateDir + fileTitleWithExtension;
         };

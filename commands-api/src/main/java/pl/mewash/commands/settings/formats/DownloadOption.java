@@ -1,7 +1,7 @@
-package pl.mewash.contentlaundry.commands;
+package pl.mewash.commands.settings.formats;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,

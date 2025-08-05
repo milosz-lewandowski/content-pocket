@@ -1,8 +1,8 @@
 package pl.mewash.contentlaundry.models.channel;
 
 import lombok.*;
-import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
-import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.VideoQuality;
 
 import java.time.Period;
 

@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry.models.general.enums;
+package pl.mewash.commands.settings.storage;
 
 public enum GroupingMode {
     GROUP_BY_FORMAT,

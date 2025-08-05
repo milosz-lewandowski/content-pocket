@@ -1,8 +1,8 @@
 package pl.mewash.contentlaundry.models.general;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.contentlaundry.models.general.enums.Formats;
-import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 
 import java.util.List;

@@ -5,15 +5,17 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Popup;
-import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
-import pl.mewash.contentlaundry.commands.VideoQuality;
-import pl.mewash.contentlaundry.models.general.AdvancedOptions;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.storage.GroupingMode;
+import pl.mewash.commands.settings.storage.StorageOptions;
+import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.models.general.GeneralSettings;
-import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
 import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 import pl.mewash.contentlaundry.utils.InputUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -154,7 +156,7 @@ public class MainController {
     protected void startLaundry() {
         List<String> refinedUrlList = refineInputToUrlList(urlInput.getText());
 
-        DownloadService service = new DownloadService();  // Service selection
+        DownloadService service = new DownloadService(AppContext.getInstance(), new ScheduledFileLogger());  // Service selection
         service.setLogConsumer(this::appendLog); // Logger injection
 
         String basePath = pathField.getText().trim();
@@ -164,7 +166,7 @@ public class MainController {
             return;
         }
 
-        AdvancedOptions advancedOptions = getAdvancedOptions();
+        StorageOptions storageOptions = getStorageOptions();
 
 //        EnumSet<Formats> selectedFormats = getSelectedFormats();
         EnumSet<VideoQuality> selectedVideoQuality = getSelectedVideoQuality();
@@ -190,26 +192,12 @@ public class MainController {
             try {
                 List<Future<?>> tasksCompleted = new CopyOnWriteArrayList<>();
                 for (String url : refinedUrlList) {
-//                    for (Formats format : selectedFormats) {
-//                        Future<?> task = workersThreadPool.submit(() -> {
-//                            try {
-//                                service.download(url, format, basePath, advancedOptions);
-//                                completedCount.incrementAndGet();
-//                            } catch (Exception e) {
-//                                System.err.printf("❌ Failed to download [%s] as [%s]%n", url, format);
-//                                appendToOutputLog("Failed to download [" + url + "]: " + e.getMessage());
-//                                e.printStackTrace();
-//                                failedCount.incrementAndGet();
-//                            }
-//                        });
-//                        tasksCompleted.add(task);
-//                    }
                     for (VideoQuality videoQuality : selectedVideoQuality) {
                         Future<?> task = workersThreadPool.submit(() -> {
                             try {
                                 String qualityPath = basePath + "/" + videoQuality.getResolution().toString() + "/";
                                 Files.createDirectories(Paths.get(qualityPath));
-                                service.downloadWithSettings(url, videoQuality, qualityPath, advancedOptions);
+                                service.downloadWithSettings(url, videoQuality, qualityPath, storageOptions);
                                 completedCount.incrementAndGet();
                             } catch (Exception e) {
                                 System.err.printf("❌ Failed to download [%s] as [%s]%n", url, videoQuality);
@@ -223,7 +211,7 @@ public class MainController {
                     for (AudioOnlyQuality audioOnlyQuality : selectedAudios) {
                         Future<?> task = workersThreadPool.submit(() -> {
                             try {
-                                service.downloadWithSettings(url, audioOnlyQuality, basePath, advancedOptions);
+                                service.downloadWithSettings(url, audioOnlyQuality, basePath, storageOptions);
                                 completedCount.incrementAndGet();
                             } catch (Exception e) {
                                 System.err.printf("❌ Failed to download [%s] as [%s]%n", url, audioOnlyQuality);
@@ -307,16 +295,7 @@ public class MainController {
                 : initialUrlsList;
     }
 
-    private AdvancedOptions getAdvancedOptions() {
-        GroupingMode groupingMode;
-        if (noGroupingRadio.isSelected()) {
-            groupingMode = GroupingMode.NO_GROUPING;
-        } else if (groupByContentRadio.isSelected()) {
-            groupingMode = GroupingMode.GROUP_BY_CONTENT;
-        } else if (groupByFormatRadio.isSelected()) {
-            groupingMode = GroupingMode.GROUP_BY_FORMAT;
-        } else groupingMode = GroupingMode.GROUP_BY_FORMAT;
-
+    private MultithreadingMode getMultithreadingMode() {
         MultithreadingMode multithreadingMode;
         if (singleThreadRadio.isSelected()) {
             multithreadingMode = MultithreadingMode.SINGLE;
@@ -327,29 +306,30 @@ public class MainController {
         } else if (maximumThreadsRadio.isSelected()) {
             multithreadingMode = MultithreadingMode.MAXIMUM;
         } else multithreadingMode = MultithreadingMode.SINGLE;
+        return multithreadingMode;
+    }
+
+    private StorageOptions getStorageOptions() {
+        GroupingMode groupingMode;
+        if (noGroupingRadio.isSelected()) {
+            groupingMode = GroupingMode.NO_GROUPING;
+        } else if (groupByContentRadio.isSelected()) {
+            groupingMode = GroupingMode.GROUP_BY_CONTENT;
+        } else if (groupByFormatRadio.isSelected()) {
+            groupingMode = GroupingMode.GROUP_BY_FORMAT;
+        } else groupingMode = GroupingMode.GROUP_BY_FORMAT;
 
         boolean withMetadata = !fileOnlyRadio.isSelected();
 
-        return new AdvancedOptions(
+        return new StorageOptions(
                 withMetadata,
                 groupingMode,
-                addDateCheckbox.isSelected(),
-                multithreadingMode
+                addDateCheckbox.isSelected()
         );
     }
 
-//    @Deprecated
-//    private EnumSet<Formats> getSelectedFormats() {
-//        EnumSet<Formats> selectedFormats = EnumSet.noneOf(Formats.class);
-//        if (mp3CheckBox.isSelected()) selectedFormats.add(Formats.MP3);
-//        if (wavCheckBox.isSelected()) selectedFormats.add(Formats.WAV);
-//        if (mp4CheckBox.isSelected()) selectedFormats.add(Formats.MP4);
-//        return selectedFormats;
-//    }
-
     private ExecutorService getExecutorSetup(int downloadsCount) {
-        int calculatedAvailableThreads = getAdvancedOptions()
-                .multithreadingMode()
+        int calculatedAvailableThreads = getMultithreadingMode()
                 .calculateThreads();
         int fixedThreads = Math.min(downloadsCount, calculatedAvailableThreads);
         appendToOutputLog("Parallel worker threads: " + fixedThreads);

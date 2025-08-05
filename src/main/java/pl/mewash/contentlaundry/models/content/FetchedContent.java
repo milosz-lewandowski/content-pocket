@@ -2,13 +2,12 @@ package pl.mewash.contentlaundry.models.content;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
-import pl.mewash.contentlaundry.commands.CommandBuilder;
-import pl.mewash.contentlaundry.commands.DownloadOption;
-import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.response.ContentProperties;
 
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -93,25 +92,17 @@ public final class FetchedContent {
     }
 
     public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelName) {
-        String splitRegex = CommandBuilder.PrintToFileOptions.CONTENT_PROPERTIES.getSplitRegex();
-        String[] parts = propertiesResponse.split(splitRegex);
-//        String[] parts = propertiesResponse.split("\\|\\|\\|");
+        ContentProperties contentProperties = ContentProperties.CONTENT_PROPERTIES;
+        ContentProperties.ContentResponseDto contentResponseDto = contentProperties.parseResponseToDto(propertiesResponse);
 
-        String dateString = parts[0].trim();
-        String title = parts[1].trim();
-        String url = parts[2].trim();
-        String id = parts[3].trim();
-
-        LocalDate publishedDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        LocalDateTime publishedDateTime = LocalDateTime.of(publishedDate, LocalTime.MIN);
 
         return FetchedContent.builder()
-                .title(title)
-                .url(url)
+                .title(contentResponseDto.getTitle())
+                .url(contentResponseDto.getUrl())
                 .audioStage(ContentDownloadStage.GET)
                 .videoStage(ContentDownloadStage.GET)
-                .published(publishedDateTime)
-                .id(id)
+                .published(LocalDateTime.of(contentResponseDto.getPublishedDate(), LocalTime.MIN))
+                .id(contentResponseDto.getId())
                 .channelName(channelName)
                 .build();
     }

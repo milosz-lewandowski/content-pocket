@@ -1,7 +1,11 @@
 package pl.mewash.contentlaundry.service;
 
 import javafx.scene.control.Alert;
-import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
+import pl.mewash.commands.api.CommandLogger;
+import pl.mewash.commands.api.ProcessFactory;
+import pl.mewash.commands.api.ProcessFactoryProvider;
+import pl.mewash.commands.settings.response.ContentProperties;
+import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
 import pl.mewash.contentlaundry.models.channel.enums.ChannelFetchingStage;
@@ -23,7 +27,16 @@ import java.util.concurrent.TimeUnit;
 
 public class FetchService {
 
-    private final ChannelFetchRepo repository = ChannelFetchRepo.getInstance();
+    private final ChannelFetchRepo repository;
+    private final ProcessFactory processFactory;
+
+    public FetchService(CommandLogger commandLogger){
+        AppContext appContext = AppContext.getInstance();
+        repository = ChannelFetchRepo.getInstance();
+        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
+                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, true
+        );
+    }
 
     public ChannelFetchParams fetch(String channelName, ChannelFetchParams fetchParams) {
         SubscribedChannel channel = repository.getChannel(channelName);
@@ -65,10 +78,12 @@ public class FetchService {
     public Optional<FetchingResults> runFetchUploadsAfter(SubscribedChannel channel, LocalDateTime dateAfter, Duration timeout) {
         long currentTimeout = timeout.getSeconds();
         try {
+            ContentProperties responseProperties = ContentProperties.CONTENT_PROPERTIES;
+
             Path tempFile = Files.createTempFile("fetch_uploads_temp", ".txt");
 
-            ProcessBuilder builder = ProcessFactoryV2.buildFetchUploadListCommand(
-                    channel.getUrl(), dateAfter, tempFile.toAbsolutePath());
+            ProcessBuilder builder = processFactory.fetchContentsPublishedAfter(
+                    channel.getUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
 
             // Redirect error output to console
 //            builder.redirectError(ProcessBuilder.Redirect.INHERIT);

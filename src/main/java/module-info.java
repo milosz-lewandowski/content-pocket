@@ -5,6 +5,7 @@ module pl.mewash.contentlaundry {
     requires com.fasterxml.jackson.datatype.jsr310;
     requires static lombok;
     requires java.desktop;
+    requires pl.mewash.commands;
 
 
     opens pl.mewash.contentlaundry to javafx.fxml;
@@ -29,6 +30,4 @@ module pl.mewash.contentlaundry {
     opens pl.mewash.contentlaundry.models.channel.enums to javafx.fxml;
     exports pl.mewash.contentlaundry.models.ui;
     opens pl.mewash.contentlaundry.models.ui to javafx.fxml;
-    exports pl.mewash.contentlaundry.commands;
-    opens pl.mewash.contentlaundry.commands to javafx.fxml;
 }

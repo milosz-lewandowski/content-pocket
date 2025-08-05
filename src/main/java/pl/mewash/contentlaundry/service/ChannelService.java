@@ -1,22 +1,35 @@
 package pl.mewash.contentlaundry.service;
 
 import javafx.scene.control.Alert;
-import pl.mewash.contentlaundry.commands.CommandBuilder;
-import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
+import pl.mewash.commands.api.CommandLogger;
+import pl.mewash.commands.api.ProcessFactory;
+import pl.mewash.commands.api.ProcessFactoryProvider;
+import pl.mewash.commands.settings.response.ChannelProperties;
+import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.controller.ChannelSettingsDialogLauncher;
 import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
 import pl.mewash.contentlaundry.models.channel.ChannelSettings;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
 import pl.mewash.contentlaundry.models.ui.ChannelUiState;
 import pl.mewash.contentlaundry.utils.AlertUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 public class ChannelService {
+
+    private final ProcessFactory processFactory;
+
+    public ChannelService(AppContext appContext, CommandLogger commandLogger){
+        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
+                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, true
+        );
+    }
 
     private final ChannelFetchRepo repository = ChannelFetchRepo.getInstance();
 
@@ -38,20 +51,22 @@ public class ChannelService {
         try {
             Path tempFile = Files.createTempFile("yt_channel", ".txt");
 
-            ProcessBuilder checkChannelProcess = ProcessFactoryV2.buildCheckChannelAndLatestContent(channelUrl, tempFile);
+            ChannelProperties responseProperties = ChannelProperties.CHANNEL_NAME_LATEST_CONTENT;
+
+            ProcessBuilder checkChannelProcess = processFactory
+                    .fetchChannelBasicData(channelUrl, responseProperties, tempFile);
             checkChannelProcess.redirectOutput(tempFile.toFile());
             checkChannelProcess.redirectError(ProcessBuilder.Redirect.DISCARD);
 
             Process process = checkChannelProcess.start();
             String channelName;
-            String responseLine;
 
             int exitCode = process.waitFor();
-            responseLine = Files.readString(tempFile, StandardCharsets.UTF_8).trim();
+            String responseLine = Files.readString(tempFile, StandardCharsets.UTF_8).trim();
 
-            String[] lines = responseLine.split(CommandBuilder.PrintToFileOptions.CHANNEL_NAME_LATEST_CONTENT.getSplitRegex());
-            channelName = lines[0].trim();
-            String latestContentString = lines[1].trim();
+            ChannelProperties.ChannelResponseDto channelResponseDto = responseProperties.parseResponseToDto(responseLine);
+            channelName = channelResponseDto.getChannelName();
+
 
             Files.deleteIfExists(tempFile);
 
@@ -59,7 +74,7 @@ public class ChannelService {
                 AlertUtils.showAlertAndAwait("Channel check failed", "Could not retrieve channel name.", Alert.AlertType.ERROR);
                 return Optional.empty();
             }
-            return Optional.of(SubscribedChannel.withLatestContent(channelName, channelUrl, latestContentString));
+            return Optional.of(SubscribedChannel.withLatestContent(channelName, channelUrl, channelResponseDto.getLatestContentDate()));
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             AlertUtils.showAlertAndAwait("Error of channel check", e.getMessage(), Alert.AlertType.ERROR);

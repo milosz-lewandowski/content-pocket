@@ -1,16 +1,18 @@
 package pl.mewash.contentlaundry.service;
 
 import javafx.scene.control.Alert;
-import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
-import pl.mewash.contentlaundry.commands.DownloadOption;
-import pl.mewash.contentlaundry.commands.ProcessFactoryV2;
-import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.commands.api.CommandLogger;
+import pl.mewash.commands.api.ProcessFactory;
+import pl.mewash.commands.api.ProcessFactoryProvider;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.storage.GroupingMode;
+import pl.mewash.commands.settings.storage.StorageOptions;
+import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
 import pl.mewash.contentlaundry.models.channel.ChannelSettings;
 import pl.mewash.contentlaundry.models.content.FetchedContent;
-import pl.mewash.contentlaundry.models.general.AdvancedOptions;
-import pl.mewash.contentlaundry.models.general.enums.GroupingMode;
-import pl.mewash.contentlaundry.models.general.enums.MultithreadingMode;
 import pl.mewash.contentlaundry.utils.AlertUtils;
 import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
@@ -26,6 +28,13 @@ import java.util.function.BiConsumer;
 
 public class DownloadService {
 
+    private final ProcessFactory processFactory;
+
+    public DownloadService(AppContext appContext, CommandLogger commandLogger){
+        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
+                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, true);
+    }
+
     private BiConsumer<String, Object[]> logConsumer;
 
     public void setLogConsumer(BiConsumer<String, Object[]> consumer) {
@@ -39,14 +48,14 @@ public class DownloadService {
         GroupingMode byFormatGrouping = channelSettings.isSeparateDirPerFormat()
                 ? GroupingMode.GROUP_BY_FORMAT
                 : GroupingMode.NO_GROUPING;
-        AdvancedOptions advOpt = new AdvancedOptions(
-                false, byFormatGrouping, channelSettings.isAddDownloadDateDir(), MultithreadingMode.MEDIUM);
+        StorageOptions storage = new StorageOptions(
+                false, byFormatGrouping, channelSettings.isAddDownloadDateDir());
 
         try {
             Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
             if (!Files.exists(channelBasePath)) Files.createDirectories(channelBasePath);
 
-            Path savedPath = downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), advOpt);
+            Path savedPath = downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), storage);
 
             content.addAndSetDownloaded(downloadOption, savedPath);
             repository.updateContent(content);
@@ -59,7 +68,7 @@ public class DownloadService {
     }
 
     public Path downloadWithSettings(String url, DownloadOption downloadSettings, String baseDirString,
-                                     AdvancedOptions advancedOptions) throws IOException, InterruptedException {
+                                     StorageOptions storageOptions) throws IOException, InterruptedException {
         appendLog("log.washing_and_drying", url, downloadSettings.getShortDescription());
 
         // building paths
@@ -70,10 +79,8 @@ public class DownloadService {
 
         // Detect download type and get process
         ProcessBuilder processBuilder = switch (downloadSettings) {
-            case VideoQuality vq -> ProcessFactoryV2.videoWithQualityDownload(url, vq, advancedOptions, tempTitleFile);
-//            case VideoQuality vq -> ProcessFactoryV2.videoWithQualityDownloadForceH264(url, vq, advancedOptions, tempTitleFile);
-            case AudioOnlyQuality aq -> ProcessFactoryV2.audioOnlyDownloadCommand(url, aq, advancedOptions, tempTitleFile);
-            default -> throw new IllegalStateException("Settings type not recognized: " + downloadSettings);
+            case VideoQuality vq -> processFactory.downloadVideoWithAudioStream(url, vq, storageOptions, tempTitleFile);
+            case AudioOnlyQuality aq -> processFactory.downloadAudioStream(url, aq, storageOptions, tempTitleFile);
         };
 
         // Run process

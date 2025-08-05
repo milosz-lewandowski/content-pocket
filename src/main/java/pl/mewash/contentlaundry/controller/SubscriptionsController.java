@@ -17,9 +17,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.stage.DirectoryChooser;
 import javafx.util.Duration;
-import pl.mewash.contentlaundry.commands.AudioOnlyQuality;
-import pl.mewash.contentlaundry.commands.DownloadOption;
-import pl.mewash.contentlaundry.commands.VideoQuality;
+import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.contentlaundry.AppContext;
 import pl.mewash.contentlaundry.models.channel.ChannelFetchRepo;
 import pl.mewash.contentlaundry.models.channel.ChannelSettings;
 import pl.mewash.contentlaundry.models.channel.SubscribedChannel;
@@ -35,6 +36,7 @@ import pl.mewash.contentlaundry.service.DownloadService;
 import pl.mewash.contentlaundry.service.FetchService;
 import pl.mewash.contentlaundry.subscriptions.SettingsManager;
 import pl.mewash.contentlaundry.utils.AlertUtils;
+import pl.mewash.contentlaundry.utils.ScheduledFileLogger;
 
 import java.awt.*;
 import java.io.File;
@@ -74,14 +76,20 @@ public class SubscriptionsController {
     private GeneralSettings generalSettings;
 
     private ChannelFetchRepo repository;
-    private final FetchService fetchService = new FetchService();
-    private final ChannelService channelService = new ChannelService();
-    private final DownloadService downloadService = new DownloadService();
+    private FetchService fetchService;
+    private ChannelService channelService;
+    private DownloadService downloadService;
 
     @FXML
     protected void initialize() {
+        AppContext appContext = AppContext.getInstance();
         repository = ChannelFetchRepo.getInstance();
         repository.load();
+
+        ScheduledFileLogger scheduledFileLogger = new ScheduledFileLogger();
+        fetchService = new FetchService(scheduledFileLogger);
+        channelService = new ChannelService(appContext, scheduledFileLogger);
+        downloadService = new DownloadService(appContext, scheduledFileLogger);
 
         generalSettings = SettingsManager.load();
         if (Objects.nonNull(generalSettings.subsLastSelectedPath) && !generalSettings.subsLastSelectedPath.isBlank()) {

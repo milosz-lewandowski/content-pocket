@@ -1,8 +1,7 @@
-package pl.mewash.contentlaundry.commands;
+package pl.mewash.commands.settings.formats;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import pl.mewash.contentlaundry.models.general.enums.Formats;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +30,7 @@ public enum VideoQuality implements DownloadOption {
     }
 
     private String bestVideoAudioQualityWithFallbacks() {
-        return Arrays.stream(VideoQuality.HighQualityVideoAudioSettings.values())
+        return Arrays.stream(HighQualityVideoAudioSettings.values())
                 .map(fallback -> fallback.withResolution(this.resolution))
                 .collect(Collectors.joining("/"));
     }

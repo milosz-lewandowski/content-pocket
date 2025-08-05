@@ -7,7 +7,6 @@ import pl.mewash.contentlaundry.models.content.FetchedContent;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,9 +36,9 @@ public class SubscribedChannel {
                 .build();
     }
 
-    public static SubscribedChannel withLatestContent(String channelName, String channelUrl, String latestContentString) {
-        LocalDate publishedDate = LocalDate.parse(latestContentString, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        LocalDateTime publishedDateTime = LocalDateTime.of(publishedDate, LocalTime.MIN);
+    public static SubscribedChannel withLatestContent(String channelName, String channelUrl, LocalDate latestPublished) {
+
+        LocalDateTime publishedDateTime = LocalDateTime.of(latestPublished, LocalTime.MIN);
 
         return SubscribedChannel.builder()
                 .channelName(channelName)
@@ -58,13 +57,6 @@ public class SubscribedChannel {
         fetchedContentMap.put(fetchedContent.getId(), fetchedContent);
     }
 
-//    public void addContentDownloadedAs(String contentId, DownloadOption downloadOption) {
-//        fetchedContentMap.get(contentId).addAndSetDownloaded(downloadOption);
-//    }
-
-//    public double calculateContentPerDayDensity(){
-//
-//    }
 
     public LocalDateTime calculateNextFetchOlderInputDate(){
         LocalDateTime oldestContent = findOldestFetchedContent().getPublished();
