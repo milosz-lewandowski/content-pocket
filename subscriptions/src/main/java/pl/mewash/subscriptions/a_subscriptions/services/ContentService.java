@@ -1,0 +1,53 @@
+package pl.mewash.subscriptions.a_subscriptions.services;
+
+import javafx.scene.control.Alert;
+import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.storage.GroupingMode;
+import pl.mewash.commands.settings.storage.StorageOptions;
+import pl.mewash.common.AppContext;
+import pl.mewash.common.DownloadService;
+import pl.mewash.common.ScheduledFileLogger;
+import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
+import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
+import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
+import pl.mewash.subscriptions.a_subscriptions.models.content.FetchedContent;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class ContentService {
+
+    private final DownloadService downloadService;
+
+    public ContentService() {
+        this.downloadService = new DownloadService(AppContext.getInstance(), new ScheduledFileLogger());
+    }
+
+    public void downloadFetched(FetchedContent content, DownloadOption downloadOption, String subsBasePath) {
+        ChannelFetchRepo repository = ChannelFetchRepo.getInstance();
+
+        ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
+        GroupingMode byFormatGrouping = channelSettings.isSeparateDirPerFormat()
+                ? GroupingMode.GROUP_BY_FORMAT
+                : GroupingMode.NO_GROUPING;
+        StorageOptions storage = new StorageOptions(
+                false, byFormatGrouping, channelSettings.isAddDownloadDateDir());
+
+        try {
+            Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
+            if (!Files.exists(channelBasePath)) Files.createDirectories(channelBasePath);
+
+            Path savedPath = downloadService.downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), storage);
+
+            content.addAndSetDownloaded(downloadOption, savedPath);
+            repository.updateContent(content);
+        } catch (Exception e) {
+            e.printStackTrace();
+            content.setDownloadingError(downloadOption);
+            repository.updateContent(content);
+            AlertUtils.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
+}

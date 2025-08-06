@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<SplitPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="pl.mewash.subscriptions.a_subscriptions.controllers.SubscriptionsController"
+           dividerPositions="0.40">
+
+    <VBox spacing="10" style="-fx-padding: 10;">
+        <HBox spacing="10">
+            <TextField fx:id="channelUrlInput" promptText="Paste channel URL…" HBox.hgrow="ALWAYS"/>
+            <Button fx:id="checkAddButton" text="Add" onAction="#handleAddChannel"/>
+            <!--            <Button text="Delete" onAction="#handleDeleteSelectedChannel"/>-->
+        </HBox>
+
+        <ListView fx:id="channelListView" VBox.vgrow="ALWAYS">
+            <items>
+            </items>
+        </ListView>
+    </VBox>
+
+    <VBox spacing="10" style="-fx-padding: 10;">
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="%label.save_to_dir"/>
+            <TextField fx:id="subsPathField" prefWidth="300"/>
+            <Button text="%button.browse_dirs" onAction="#handleBrowse"/>
+        </HBox>
+<!--        <HBox spacing="10">-->
+<!--            <Label text="Fetched contents will be shown here" />-->
+<!--        </HBox>-->
+        <ListView fx:id="fetchedContentsListView" VBox.vgrow="ALWAYS">
+
+            <items>
+
+            </items>
+        </ListView>
+    </VBox>
+
+</SplitPane>

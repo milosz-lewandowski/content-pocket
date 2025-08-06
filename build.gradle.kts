@@ -40,6 +40,9 @@ javafx {
 
 dependencies {
     implementation(project(":commands-api"))
+    implementation(project(":common"))
+    implementation(project(":subscriptions"))
+    implementation(project(":batch"))
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
     implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
