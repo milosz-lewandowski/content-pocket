@@ -4,14 +4,13 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public enum Formats {
-    M4A("m4a", true),
-    MP3("mp3", true),
-    WAV("wav", true),
-    ORIGINAL_SOURCE("original codec", true),
-    MP4("mp4",false);
+    M4A("m4a"),
+    MP3("mp3"),
+    WAV("wav"),
+    ORIGINAL_SOURCE("original codec"),
+    MP4("mp4");
 
-    public final String fileExtension;
-    public final boolean audioFormat;
+    private final String fileExtension;
 
     public String getExtension() {
         return fileExtension;

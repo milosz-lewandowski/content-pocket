@@ -8,11 +8,6 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public enum CommandBundles {
-//    FORCE_H264_RECODING(false, List.of(
-//            "--recode-video", "mp4",
-//            "--audio-format", "aac"
-////            "--postprocessor-args", "-c:v libx264 -preset medium -crf 23 -c:a aac -b:a 256k"
-//    )),
     EXTRACT_BEST_AUDIO(false, List.of(
             "--merge-output-format", "mp4",
             "--audio-format", "aac",

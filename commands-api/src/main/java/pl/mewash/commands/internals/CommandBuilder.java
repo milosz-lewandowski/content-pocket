@@ -85,7 +85,7 @@ public class CommandBuilder {
             throw new IllegalStateException("you specify only one print command");
         } else {
             this.printCommand = List.of("--print-to-file",
-                    printProperties.getValue(),
+                    printProperties.getPattern(),
                     filePath.toAbsolutePath().toString());
             return this;
         }
@@ -153,23 +153,23 @@ public class CommandBuilder {
 
 
     private static String getOutputPathParam(StorageOptions storageOptions, Formats format) {
-        String formatDir = format.fileExtension + "/";
+        String formatDir = format.getExtension() + "/";
         String fileTitleWithExtension = "%(title)s.%(ext)s";
         String titleDir = "%(title)s/";
         String titleDirWithExtension = "%(title)s-" + formatDir;
-        String dateDir = storageOptions.withDateDir() ? LocalDate.now() + "/" : "";
+        String dateDir = storageOptions.withDownloadedDateDir() ? LocalDate.now() + "/" : "";
 
         return switch (storageOptions.groupingMode()) {
 
-            case GROUP_BY_FORMAT -> storageOptions.withMetadata()
+            case GROUP_BY_FORMAT -> storageOptions.withMetadataFiles()
                     ? formatDir + dateDir + titleDir + fileTitleWithExtension
                     : formatDir + dateDir + fileTitleWithExtension;
 
-            case GROUP_BY_CONTENT -> storageOptions.withMetadata()
+            case GROUP_BY_CONTENT -> storageOptions.withMetadataFiles()
                     ? dateDir + titleDir + titleDirWithExtension + fileTitleWithExtension
                     : dateDir + titleDir + fileTitleWithExtension;
 
-            case NO_GROUPING -> storageOptions.withMetadata()
+            case NO_GROUPING -> storageOptions.withMetadataFiles()
                     ? dateDir + titleDirWithExtension + fileTitleWithExtension
                     : dateDir + fileTitleWithExtension;
         };

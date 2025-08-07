@@ -1,11 +1,13 @@
 package pl.mewash.commands.settings.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+@AllArgsConstructor
 public enum ContentProperties implements ResponseProperties {
 
     CONTENT_TITLE("%(title)s") {
@@ -16,11 +18,11 @@ public enum ContentProperties implements ResponseProperties {
                     .build();
         }
     },
-    CONTENT_PROPERTIES("%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s",  "\\|\\|\\|") {
+    CONTENT_PROPERTIES("%(upload_date)s ||| %(title)s ||| %(webpage_url)s ||| %(id)s") {
         @Override
         public ContentResponseDto parseResponseToDto(String responseLine) {
 
-            String[] parts = responseLine.split(this.splitRegex);
+            String[] parts = responseLine.split(splitRegex);
             return ContentResponseDto.builder()
                     .publishedDate(LocalDate.parse(parts[0].trim(), DateTimeFormatter.ofPattern("yyyyMMdd")))
                     .title(parts[1].trim())
@@ -30,17 +32,10 @@ public enum ContentProperties implements ResponseProperties {
         }
     };
 
-    ContentProperties(String value) {
-        this.value = value;
-    }
 
-    ContentProperties(String value, String splitRegex) {
-        this.value = value;
-        this.splitRegex = splitRegex;
-    }
+    @Getter private final String pattern;
 
-    @Getter private final String value;
-    protected String splitRegex;
+    private static final String splitRegex = "\\|\\|\\|";
 
     public abstract ContentResponseDto parseResponseToDto(String responseLine);
 

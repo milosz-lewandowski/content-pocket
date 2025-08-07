@@ -1,12 +1,13 @@
 package pl.mewash.commands.settings.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-
+@AllArgsConstructor
 public enum ChannelProperties implements ResponseProperties {
     CHANNEL_NAME("%(channel)s") {
         @Override
@@ -17,10 +18,10 @@ public enum ChannelProperties implements ResponseProperties {
                     .build();
         }
     },
-    CHANNEL_NAME_LATEST_CONTENT("%(channel)s ||| %(upload_date)s", "\\|\\|\\|") {
+    CHANNEL_NAME_LATEST_CONTENT("%(channel)s ||| %(upload_date)s") {
         @Override
         public ChannelResponseDto parseResponseToDto(String responseLine) {
-            String[] lines = responseLine.split(this.splitRegex);
+            String[] lines = responseLine.split(splitRegex);
 
             return ChannelResponseDto.builder()
                     .channelName(lines[0].trim())
@@ -29,17 +30,9 @@ public enum ChannelProperties implements ResponseProperties {
         }
     };
 
-    ChannelProperties(String value) {
-        this.value = value;
-    }
+    @Getter private final String pattern;
 
-    ChannelProperties(String value, String splitRegex) {
-        this.value = value;
-        this.splitRegex = splitRegex;
-    }
-
-    @Getter private final String value;
-    protected String splitRegex;
+    private static final String splitRegex = "\\|\\|\\|";
 
     public abstract ChannelResponseDto parseResponseToDto(String responseLine);
 

@@ -4,5 +4,5 @@ import java.util.Map;
 
 public sealed interface ResponseProperties permits ChannelProperties, ContentProperties {
 
-    String getValue();
+    String getPattern();
 }

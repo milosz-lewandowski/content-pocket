@@ -1,8 +1,8 @@
 package pl.mewash.commands.settings.storage;
 
-public record StorageOptions(boolean withMetadata,
+public record StorageOptions(boolean withMetadataFiles,
                              GroupingMode groupingMode,
-                             boolean withDateDir) {
+                             boolean withDownloadedDateDir) {
 
     public static StorageOptions getDefaultNoGrouping() {
         return new StorageOptions(false, GroupingMode.NO_GROUPING, false);
