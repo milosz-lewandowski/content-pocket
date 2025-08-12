@@ -3,26 +3,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<StackPane xmlns:fx="http://javafx.com/fxml"
+<StackPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="pl.mewash.contentlaundry.MainController"
            prefWidth="1024.0" prefHeight="768.0">
-    <TabPane>
-        <tabs>
-            <Tab text="%tab.title.batch" closable="false">
-                <fx:include source="../../../../../../batch/src/main/resources/pl/mewash/batch/batch-view.fxml"/>
-            </Tab>
-            <Tab text="%tab.title.subscriptions" closable="false">
-                <fx:include source="../../../../../../subscriptions/src/main/resources/pl/mewash/subscriptions/subscriptions-view.fxml"/>
-            </Tab>
-        </tabs>
-    </TabPane>
-    <HBox alignment="TOP_RIGHT"
-            style="-fx-padding: 6;"
-          StackPane.alignment="TOP_RIGHT"
-          pickOnBounds="false">
-        <Label fx:id="creditsLabel"
-               text="❔"
-               style="-fx-font-size: 14; -fx-text-fill: gray; -fx-cursor: hand;"
-        />
+    <TabPane fx:id="tabs"/>
+    <HBox alignment="TOP_RIGHT" style="-fx-padding: 6;" StackPane.alignment="TOP_RIGHT" pickOnBounds="false">
+        <Label fx:id="creditsLabel" text="❔" style="-fx-font-size: 14; -fx-text-fill: gray; -fx-cursor: hand;"/>
     </HBox>
 </StackPane>

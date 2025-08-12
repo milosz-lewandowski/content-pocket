@@ -10,7 +10,6 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-import pl.mewash.batch.BatchController;
 import pl.mewash.common.AppContext;
 import pl.mewash.common.BinariesManager;
 
