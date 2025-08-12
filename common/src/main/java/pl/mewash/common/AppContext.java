@@ -16,6 +16,8 @@ public class AppContext {
     private String YtDlpCommand;
     private String FfMpegCommand;
 
+    private ScheduledFileLogger fileLogger;
+
     private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
 
     private AppContext() {}
@@ -35,6 +37,8 @@ public class AppContext {
                 YT_DLP.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
         this.FfMpegCommand = BinariesManager.BinariesNames.
                 FFMPEG.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
+
+        fileLogger = new ScheduledFileLogger();
 
         this.initialized = true;
     }
