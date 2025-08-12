@@ -36,9 +36,7 @@ public enum CommandBundles {
             "--extract-audio",
             "--audio-quality", "0"
     )),
-    BEST_AUDIO_CODEC(false, List.of(
-
-    ));
+    ;
 
     final boolean withParam;
     final List<String> params;

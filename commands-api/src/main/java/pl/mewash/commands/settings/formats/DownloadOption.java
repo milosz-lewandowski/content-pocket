@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = VideoQuality.class, name = "video")
 })
 public sealed interface DownloadOption permits VideoQuality, AudioOnlyQuality{
-    String getFormatExtension();
-    String getShortDescription();
+    String getOptionName();
+    String getDirName();
+    String getTitleDiff();
 }

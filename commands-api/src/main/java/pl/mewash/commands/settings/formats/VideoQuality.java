@@ -5,44 +5,46 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public enum VideoQuality implements DownloadOption {
-    MAXIMUM("2160", "MP4 up to 4K"),
-    HIGH("1440", "MP4 up to 1440p)"),
-    STANDARD("1080", "MP4 up to 1080p)"),
-//        COMPACT("720"),
-//        SMALL("480"),
-//        ULTRA_SMALL("360")
+    MAXIMUM("2160", "MP4 up to 4K", "mp4", "(as 4K)"),
+    HIGH("1440", "MP4 up to 1440p)", "mp4", "(as 1440p)"),
+    STANDARD("1080", "MP4 up to 1080p)", "mp4", "(as 1080p)"),
+    COMPACT("720", "MP4 up to 720p)", "mp4", "(as 720p)"),
     ;
-    @Getter final String resolution;
-    @Getter final String buttonTitle;
+
+    @Getter private final String resolution;
+    @Getter private final String buttonTitle;
+
+    @Getter private final String dirName;
+    @Getter private final String titleDiff;
+
+    @Getter final static Predicate<Set<DownloadOption>> conflictsPredicate = (options) -> options
+        .stream()
+        .filter(dOption -> dOption instanceof VideoQuality)
+        .count() > 1;
 
     public List<String> getDownloadCommand() {
         String parameter = switch (this) {
-            case MAXIMUM, HIGH, STANDARD -> bestVideoAudioQualityWithFallbacks();
-//                case COMPACT -> null;
-//                case SMALL -> null;
-//                case ULTRA_SMALL -> null;
+            case MAXIMUM, HIGH, STANDARD, COMPACT -> getForceH264Fallbacks();
         };
         return List.of("-f", parameter);
     }
 
-    private String bestVideoAudioQualityWithFallbacks() {
-        return Arrays.stream(HighQualityVideoAudioSettings.values())
-                .map(fallback -> fallback.withResolution(this.resolution))
-                .collect(Collectors.joining("/"));
+    private String getForceH264Fallbacks() {
+        return VideoAndAudioStreamFallbacks
+            .getEnforceH264Fallbacks().stream()
+            .map(fallback -> fallback.withResolution(this.resolution))
+            .collect(Collectors.joining("/"));
     }
 
     @Override
-    public String getFormatExtension() {
-        return Formats.MP4.getExtension();
-    }
-
-    @Override
-    public String getShortDescription() {
-        return "Video: MP4 with best quality up to  " + this.getResolution();
+    public String getOptionName() {
+        return resolution + "p " + dirName;
     }
 
     @Override
@@ -51,24 +53,27 @@ public enum VideoQuality implements DownloadOption {
     }
 
     @AllArgsConstructor
-    enum HighQualityVideoAudioSettings {
-        FORCE_H264_AAC("bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
-        FORCE_H264_BEST_AUDIO("bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
+    enum VideoAndAudioStreamFallbacks {
+        FORCE_H264_VID_AAC_AUDIO(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
+        FORCE_H264_VID_ANY_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
 
-//        FORCE_AAC_AUDIO("bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
-//        ANY_BEST_AUDIO("bestvideo[height<=%s]+bestaudio"),
-//        MERGED_MP4("best[height<=%s][ext=mp4]"),
-//        ANY_BEST_VIDEO("best[height<=%s]")
+        ANY_BV_FORCE_AAC_AUDIO(false, "bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
+        ANY_BV_ANY_BA(false, "bestvideo[height<=%s]+bestaudio"),
+        FORCE_MERGED_MP4(false, "best[height<=%s][ext=mp4]"),
+        ANY_BEST(false, "best[height<=%s]")
         ;
-        final String placeholder;
+
+        private final boolean enforcesH264;
+        private final String template;
 
         private String withResolution(String resolution) {
-            return String.format(placeholder, resolution);
+            return String.format(template, resolution);
         }
 
+        static Set<VideoAndAudioStreamFallbacks> getEnforceH264Fallbacks() {
+            return Arrays.stream(values())
+                    .filter(fallback -> fallback.enforcesH264)
+                    .collect(Collectors.toSet());
+        }
     }
-
-
-
-
 }

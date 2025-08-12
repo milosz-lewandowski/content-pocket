@@ -2,7 +2,7 @@ package pl.mewash.commands.internals;
 
 import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
-import pl.mewash.commands.settings.formats.Formats;
+import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.response.ResponseProperties;
 import pl.mewash.commands.settings.storage.StorageOptions;
@@ -85,18 +85,17 @@ public class CommandBuilder {
             throw new IllegalStateException("you specify only one print command");
         } else {
             this.printCommand = List.of("--print-to-file",
-                    printProperties.getPattern(),
-                    filePath.toAbsolutePath().toString());
+                printProperties.getPattern(),
+                filePath.toAbsolutePath().toString());
             return this;
         }
     }
 
-    public CommandBuilder setOutputCommand(StorageOptions storageOptions, Formats format) {
+    public CommandBuilder setOutputCommand(StorageOptions storageOptions, DownloadOption downloadOption) {
         if (this.outputCommand != null) {
             throw new IllegalStateException("you specify only one output path");
         } else {
-            String formattedOutputPath = getOutputPathParam(storageOptions, format);
-            this.outputCommand = List.of("--output", formattedOutputPath);
+            this.outputCommand = resolveStorageOutputPatterns(storageOptions, downloadOption);
             return this;
         }
     }
@@ -151,27 +150,57 @@ public class CommandBuilder {
         }
     }
 
+    private static List<String> resolveStorageOutputPatterns(StorageOptions storageOptions, DownloadOption downloadOption) {
+        String mediaTemplate = buildStoragePathPattern(storageOptions, downloadOption, false);
+        if (storageOptions.withMetadataFiles()) {
+            String metadataTemplate = buildStoragePathPattern(storageOptions, downloadOption, true);
+            return List.of(
+                "--output", mediaTemplate,
+                "--output", "description:" + metadataTemplate,
+                "--output", "infojson:" + metadataTemplate
+            );
+        } else return List.of("--output", mediaTemplate);
+    }
 
-    private static String getOutputPathParam(StorageOptions storageOptions, Formats format) {
-        String formatDir = format.getExtension() + "/";
-        String fileTitleWithExtension = "%(title)s.%(ext)s";
-        String titleDir = "%(title)s/";
-        String titleDirWithExtension = "%(title)s-" + formatDir;
+    private static String buildStoragePathPattern(StorageOptions storageOptions, DownloadOption downloadOption,
+                                                  boolean metadataFilePattern) {
+
+        String diffedFormatDir = switch (downloadOption) {
+            case VideoQuality vq -> storageOptions.multipleVidResolutions()
+                ? vq.getDirName() + "/" + vq.getResolution() + "p" + "/"
+                : vq.getDirName() + "/";
+            case AudioOnlyQuality aq -> aq.getDirName() + "/";
+        };
+
         String dateDir = storageOptions.withDownloadedDateDir() ? LocalDate.now() + "/" : "";
+
+        String titleDir = "%(title)s" + "/";
+        String metadataDir = storageOptions.withMetadataFiles()
+            ? titleDir
+            : "";
+
+        String pureTitle = "%(title)s.%(ext)s";
+        String diffedTitle = metadataFilePattern
+            ? pureTitle
+            : switch (downloadOption) {
+            case VideoQuality vq -> storageOptions.multipleVidResolutions()
+                ? "%(title)s" + vq.getTitleDiff() + ".%(ext)s"
+                : pureTitle;
+            case AudioOnlyQuality aq -> storageOptions.audioNamesConflict()
+                ? "%(title)s" + aq.getTitleDiff() + ".%(ext)s"
+                : pureTitle;
+        };
 
         return switch (storageOptions.groupingMode()) {
 
-            case GROUP_BY_FORMAT -> storageOptions.withMetadataFiles()
-                    ? formatDir + dateDir + titleDir + fileTitleWithExtension
-                    : formatDir + dateDir + fileTitleWithExtension;
+            // distinct at format dir level
+            case GROUP_BY_FORMAT -> diffedFormatDir + dateDir + metadataDir + pureTitle;
 
-            case GROUP_BY_CONTENT -> storageOptions.withMetadataFiles()
-                    ? dateDir + titleDir + titleDirWithExtension + fileTitleWithExtension
-                    : dateDir + titleDir + fileTitleWithExtension;
+            // distinct at title level
+            case GROUP_BY_CONTENT -> dateDir + titleDir + diffedTitle;
 
-            case NO_GROUPING -> storageOptions.withMetadataFiles()
-                    ? dateDir + titleDirWithExtension + fileTitleWithExtension
-                    : dateDir + fileTitleWithExtension;
+            // distinct at metadata dir or title level
+            case NO_GROUPING -> dateDir + metadataDir + diffedTitle;
         };
     }
 }
