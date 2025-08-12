@@ -5,7 +5,7 @@
 <ScrollPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fitToWidth="true"
-            fx:controller="pl.mewash.batch.BatchController">
+            fx:controller="pl.mewash.batch.ui.BatchController">
         <VBox spacing="10" alignment="TOP_CENTER" style="-fx-padding: 20;">
 
             <HBox spacing="10" alignment="CENTER">
@@ -33,15 +33,16 @@
                 <CheckBox fx:id="maximumMP4checkbox" text="MP4 (4K)"/>
                 <CheckBox fx:id="highMP4checkbox" text="MP4 (1440p)"/>
                 <CheckBox fx:id="standardMP4checkbox" text="MP4 (1080p)"/>
+                <CheckBox fx:id="compactMP4checkbox" text="MP4 (720p)"/>
             </HBox>
 
             <HBox spacing="10" alignment="CENTER">
                 <Label style="-fx-font-weight: bold;" text="Audio: "/>
                 <CheckBox fx:id="m4aHqCheckbox" text="M4A (High Quality)"/>
-                <CheckBox fx:id="m4aCompressedCheckbox" text="M4A (Compressed)"/>
+                <CheckBox fx:id="m4aCompressedCheckbox" text="M4A (Small Size)"/>
                 <CheckBox fx:id="mp3HqCheckbox" text="MP3 (Good Quality)"/>
                 <CheckBox fx:id="wavNewCheckbox" text="WAV (Converted from lossy)"/>
-                <CheckBox fx:id="nativeCheckbox" text="Original Codec (Best Source Quality)"/>
+                <CheckBox fx:id="nativeCheckbox" text="Original codec (No lossy conversion)"/>
             </HBox>
 
             <TitledPane text="%menu.advanced_options" expanded="false">
@@ -200,8 +201,8 @@
                 </VBox>
             </TitledPane>
 
-            <Button fx:id="startStopButton" text="%button.start_laundry"
-                    onAction="#handleStartStopLaundry">
+            <Button fx:id="laundryButton" text="%button.start_laundry"
+                    onAction="#handleLaundryButtonActions">
                 <tooltip>
                     <Tooltip text="%tooltip.start_laundry"/>
                 </tooltip>

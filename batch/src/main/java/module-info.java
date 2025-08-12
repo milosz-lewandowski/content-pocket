@@ -6,7 +6,10 @@ module pl.mewash.batch {
     requires pl.mewash.commands;
     requires pl.mewash.common;
 
+    provides pl.mewash.common.tabs.spi.TabPlugin
+        with pl.mewash.batch.api.BatchTabPlugin;
 
-    opens pl.mewash.batch to javafx.fxml;
-    exports pl.mewash.batch;
+    opens pl.mewash.batch.ui to javafx.fxml;
+    exports pl.mewash.batch.api;
+
 }
