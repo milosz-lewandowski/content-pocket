@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.a_subscriptions.controllers;
+package pl.mewash.subscriptions.ui;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -22,6 +22,7 @@ import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.common.*;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
+import pl.mewash.subscriptions.a_subscriptions.controllers.ChannelSettingsDialogLauncher;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
@@ -83,10 +84,9 @@ public class SubscriptionsController {
         repository = ChannelFetchRepo.getInstance();
         repository.load();
 
-        ScheduledFileLogger scheduledFileLogger = new ScheduledFileLogger();
-        fetchService = new FetchService(scheduledFileLogger);
-        channelService = new ChannelService(appContext, scheduledFileLogger);
-        contentService = new ContentService();
+        fetchService = new FetchService(appContext);
+        channelService = new ChannelService(appContext);
+        contentService = new ContentService(appContext);
 
         generalSettings = SettingsManager.load();
         if (Objects.nonNull(generalSettings.subsLastSelectedPath) && !generalSettings.subsLastSelectedPath.isBlank()) {
@@ -113,6 +113,12 @@ public class SubscriptionsController {
     @FXML
     protected void handleBrowse() {
         DirectoryChooser chooser = new DirectoryChooser();
+        String currentPath = subsPathField.getText().trim();
+        File initialDir = new File(currentPath);
+        if (initialDir.exists() && initialDir.isDirectory()) {
+            chooser.setInitialDirectory(initialDir);
+        }
+
         File selectedDirectory = chooser.showDialog(null);
         if (selectedDirectory != null) {
             String selectedPath = selectedDirectory.getAbsolutePath();
@@ -205,6 +211,7 @@ public class SubscriptionsController {
                     setText(null);
                 } else {
                     Label title = new Label(content.getDisplayTitle());
+                    ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
 
                     Button audioButton = ButtonFactory.getAudioContentButton(content);
                     audioButton.setOnAction(e -> handleContentOptionButton(content,
@@ -255,7 +262,7 @@ public class SubscriptionsController {
         List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelName);
         currentFetchedContents.clear();
         currentFetchedContents.addAll(fetchedContents);
-        Platform.runLater(fetchedContentsListView::refresh);
+        loadFetchedUploadsListOnUi();
     }
 
     private void handleManageChannelSettings(ChannelUiState channelState) {
@@ -315,7 +322,7 @@ public class SubscriptionsController {
     }
 
 
-    // --- Button factory inner class ---
+    // --- Button factory ---
 
     private static class ButtonFactory {
         static Button getCopyContentUrlButton(String contentUrl) {
@@ -370,8 +377,8 @@ public class SubscriptionsController {
     private Optional<String> getSubsBasePathWithAlert() {
         String path = subsPathField.getText().trim();
         if (path.isEmpty()) {
-            System.err.println("⚠ No download path selected!");
-            AlertUtils.showAlertAndAwait("No download path selected", "Select a download path", Alert.AlertType.INFORMATION);
+            AlertUtils.showAlertAndAwait("No download path selected",
+                "Select a download path", Alert.AlertType.INFORMATION);
             return Optional.empty();
         }
         return Optional.of(path);
@@ -380,7 +387,8 @@ public class SubscriptionsController {
     private Optional<String> getChannelUrlInputWithAlert() {
         String channelUrl = channelUrlInput.getText().trim();
         if (channelUrl.isEmpty()) {
-            AlertUtils.showAlertAndAwait("Input URL Required", "Please enter a channel URL.", Alert.AlertType.INFORMATION);
+            AlertUtils.showAlertAndAwait("Channel URL required",
+                "Enter a channel URL.", Alert.AlertType.INFORMATION);
             return Optional.empty();
         }
         return Optional.of(channelUrl);

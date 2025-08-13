@@ -44,9 +44,11 @@ public class ChannelUiState {
 
     @JsonIgnore
     public String getFetchButtonTitle() {
-        return this.getFetchingStage() == ChannelFetchingStage.FETCH_OLDER
-                ? this.getFetchOlderStage().getButtonTitle()
-                : this.getFetchingStage().getButtonTitle();
+        if (channelSettings.isFullFetch()) {
+            setFetchingStage(ChannelFetchingStage.FETCH_OLDER);
+            setFetchOlderStage(ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS);
+        }
+        return fetchingStage.getButtonTitleWithOlderResolved(fetchOlderStage);
     }
 
     public ChannelFetchParams copyCurrentFetchParams() {

@@ -22,6 +22,7 @@ public class ChannelSettings {
     private boolean autoDownloadAudio;
     private boolean autoDownloadVideo;
 
+    private boolean addContentDescriptionFiles;
     private boolean addDownloadDateDir;
     private boolean separateDirPerFormat;
 

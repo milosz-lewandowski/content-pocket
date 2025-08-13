@@ -1,7 +1,6 @@
 package pl.mewash.subscriptions.a_subscriptions.services;
 
 import javafx.scene.control.Alert;
-import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ChannelProperties;
@@ -23,9 +22,9 @@ public class ChannelService {
 
     private final ProcessFactory processFactory;
 
-    public ChannelService(AppContext appContext, CommandLogger commandLogger){
+    public ChannelService(AppContext appContext) {
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, true
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), appContext.getFileLogger(), true
         );
     }
 
@@ -52,7 +51,7 @@ public class ChannelService {
             ChannelProperties responseProperties = ChannelProperties.CHANNEL_NAME_LATEST_CONTENT;
 
             ProcessBuilder checkChannelProcess = processFactory
-                    .fetchChannelBasicData(channelUrl, responseProperties, tempFile);
+                .fetchChannelBasicData(channelUrl, responseProperties, tempFile);
             checkChannelProcess.redirectOutput(tempFile.toFile());
             checkChannelProcess.redirectError(ProcessBuilder.Redirect.DISCARD);
 
@@ -82,7 +81,7 @@ public class ChannelService {
 
     private ChannelSettings showChannelSettingsSetupPopup() {
         Optional<ChannelSettings> settings = ChannelSettingsDialogLauncher
-                .showDialogAndWait(ChannelSettings.defaultSettings());
+            .showDialogAndWait(ChannelSettings.defaultSettings());
         return settings.orElse(ChannelSettings.defaultSettings());
     }
 }

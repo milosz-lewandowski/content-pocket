@@ -1,7 +1,6 @@
 package pl.mewash.subscriptions.a_subscriptions.services;
 
 import javafx.scene.control.Alert;
-import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
@@ -10,8 +9,8 @@ import pl.mewash.common.ScheduledFileLogger;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchingStage;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchParams;
+import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchingStage;
 import pl.mewash.subscriptions.a_subscriptions.models.content.FetchedContent;
 import pl.mewash.subscriptions.a_subscriptions.models.content.FetchingResults;
 
@@ -30,11 +29,10 @@ public class FetchService {
     private final ChannelFetchRepo repository;
     private final ProcessFactory processFactory;
 
-    public FetchService(CommandLogger commandLogger){
-        AppContext appContext = AppContext.getInstance();
+    public FetchService(AppContext appContext) {
         repository = ChannelFetchRepo.getInstance();
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, true
+                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), appContext.getFileLogger(), false
         );
     }
 

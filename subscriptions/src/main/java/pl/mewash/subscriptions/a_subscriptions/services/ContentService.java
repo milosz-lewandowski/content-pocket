@@ -6,7 +6,6 @@ import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.AppContext;
 import pl.mewash.common.DownloadService;
-import pl.mewash.common.ScheduledFileLogger;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
@@ -21,28 +20,32 @@ public class ContentService {
 
     private final DownloadService downloadService;
 
-    public ContentService() {
-        this.downloadService = new DownloadService(AppContext.getInstance(), new ScheduledFileLogger());
+    public ContentService(AppContext appContext) {
+        this.downloadService = new DownloadService(AppContext.getInstance());
     }
 
     public void downloadFetched(FetchedContent content, DownloadOption downloadOption, String subsBasePath) {
         ChannelFetchRepo repository = ChannelFetchRepo.getInstance();
 
         ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
-        GroupingMode byFormatGrouping = channelSettings.isSeparateDirPerFormat()
-                ? GroupingMode.GROUP_BY_FORMAT
-                : GroupingMode.NO_GROUPING;
+
         StorageOptions storage = new StorageOptions(
-                false, byFormatGrouping, channelSettings.isAddDownloadDateDir());
+            channelSettings.isAddContentDescriptionFiles(),
+            channelSettings.isSeparateDirPerFormat() ? GroupingMode.GROUP_BY_FORMAT : GroupingMode.NO_GROUPING,
+            channelSettings.isAddDownloadDateDir(),
+            false, false
+        );
 
         try {
             Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
             if (!Files.exists(channelBasePath)) Files.createDirectories(channelBasePath);
 
-            Path savedPath = downloadService.downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), storage);
+            Path savedPath = downloadService
+                    .downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), storage);
 
             content.addAndSetDownloaded(downloadOption, savedPath);
             repository.updateContent(content);
+
         } catch (Exception e) {
             e.printStackTrace();
             content.setDownloadingError(downloadOption);

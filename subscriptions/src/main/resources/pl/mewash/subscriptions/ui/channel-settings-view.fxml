@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<DialogPane xmlns:fx="http://javafx.com/fxml" fx:controller="pl.mewash.subscriptions.controllers.a_subscriptions.ChannelSettingsController">
+<DialogPane xmlns:fx="http://javafx.com/fxml" fx:controller="pl.mewash.subscriptions.ui.ChannelSettingsController">
     <content>
         <VBox spacing="10" style="-fx-padding: 10;">
 
@@ -16,10 +16,10 @@
 
             <TitledPane text="Download Buttons Settings" expanded="true">
                 <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
-                    <Label text="Select Audio codec:" />
+                    <Label text="Select Audio codec:"/>
                     <ComboBox fx:id="audioQualityCombo"/>
 
-                    <Label text="Select Video Quality:" />
+                    <Label text="Select Video Quality:"/>
                     <ComboBox fx:id="videoQualityCombo"/>
                 </VBox>
             </TitledPane>
@@ -33,16 +33,13 @@
 
             <TitledPane text="Downloads Storage Settings" expanded="true">
                 <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
+                    <CheckBox fx:id="addContentDescriptionFiles" text="Add files with content description."/>
                     <CheckBox fx:id="addDownloadDateDir" text="Add directory with date of download"/>
                     <CheckBox fx:id="separateDirPerFormat" text="Keep audio and video in separate directories"/>
                 </VBox>
             </TitledPane>
-
-            <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10;">
-                <Button fx:id="okButton" text="Apply"/>
-                <Button fx:id="cancelButton" text="Cancel"/>
-            </HBox>
-
         </VBox>
     </content>
+    <ButtonType text="Apply" buttonData="APPLY"/>
+    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
 </DialogPane>

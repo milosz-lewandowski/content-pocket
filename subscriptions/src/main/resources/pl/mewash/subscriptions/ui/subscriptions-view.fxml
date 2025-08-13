@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <SplitPane xmlns:fx="http://javafx.com/fxml"
-           fx:controller="pl.mewash.subscriptions.a_subscriptions.controllers.SubscriptionsController"
+           fx:controller="pl.mewash.subscriptions.ui.SubscriptionsController"
            dividerPositions="0.40">
 
     <VBox spacing="10" style="-fx-padding: 10;">
@@ -13,10 +13,7 @@
             <!--            <Button text="Delete" onAction="#handleDeleteSelectedChannel"/>-->
         </HBox>
 
-        <ListView fx:id="channelListView" VBox.vgrow="ALWAYS">
-            <items>
-            </items>
-        </ListView>
+        <ListView fx:id="channelListView" VBox.vgrow="ALWAYS"/>
     </VBox>
 
     <VBox spacing="10" style="-fx-padding: 10;">
@@ -25,15 +22,8 @@
             <TextField fx:id="subsPathField" prefWidth="300"/>
             <Button text="%button.browse_dirs" onAction="#handleBrowse"/>
         </HBox>
-<!--        <HBox spacing="10">-->
-<!--            <Label text="Fetched contents will be shown here" />-->
-<!--        </HBox>-->
-        <ListView fx:id="fetchedContentsListView" VBox.vgrow="ALWAYS">
-
-            <items>
-
-            </items>
-        </ListView>
+<!--        TODO: Add channel bar-->
+        <ListView fx:id="fetchedContentsListView" VBox.vgrow="ALWAYS"/>
     </VBox>
 
 </SplitPane>
