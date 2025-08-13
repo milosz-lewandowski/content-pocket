@@ -25,7 +25,7 @@ public enum AudioOnlyQuality implements DownloadOption {
                     "--audio-format", "mp3",
                     "--audio-quality", "0"
             )),
-    M4A("m4a high quality", "m4a_HQ", "(HQ)",
+    M4A("m4a high quality", "m4a_hq", "(HQ)",
         "M4A (High Quality)",
             true, true, "M4A (AAC codec) up to 320 kbps",
             List.of(
@@ -38,7 +38,7 @@ public enum AudioOnlyQuality implements DownloadOption {
                     "--audio-format", "m4a",
                     "--audio-quality", "0"
             )),
-    M4A_SMALL_SIZE("m4a small size", "m4a_SmSize", "(SmSize)",
+    M4A_SMALL_SIZE("m4a small size", "m4a_sm_size", "(SmSize)",
         "M4A (Small Size)",
             true, true, "M4A (AAC codec) up to 160 kbps in",
             List.of(
@@ -50,7 +50,7 @@ public enum AudioOnlyQuality implements DownloadOption {
                     bestaudio""",
                     "--extract-audio",
                     "--audio-format", "m4a",
-                    "--audio-quality", "5"
+                    "--audio-quality", "7"
             )),
     WAV("wav", "wav",  "",
         "WAV (Converted from lossy)",
@@ -64,7 +64,7 @@ public enum AudioOnlyQuality implements DownloadOption {
                     "--audio-format", "wav"
             )),
     ORIGINAL_SOURCE("original source codec", "original", "(as original)",
-        "Original Codec (Best Source Quality)",
+        "Original codec (No lossy conversion)",
             false, false, "Original source codec (no lossy conversion)",
             List.of(
                     "-f", """

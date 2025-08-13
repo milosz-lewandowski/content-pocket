@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public enum VideoQuality implements DownloadOption {
     MAXIMUM("2160", "MP4 up to 4K", "mp4", "(as 4K)"),
-    HIGH("1440", "MP4 up to 1440p)", "mp4", "(as 1440p)"),
-    STANDARD("1080", "MP4 up to 1080p)", "mp4", "(as 1080p)"),
-    COMPACT("720", "MP4 up to 720p)", "mp4", "(as 720p)"),
+    HIGH("1440", "MP4 up to 1440p", "mp4", "(as 1440p)"),
+    STANDARD("1080", "MP4 up to 1080p", "mp4", "(as 1080p)"),
+    COMPACT("720", "MP4 up to 720p", "mp4", "(as 720p)"),
     ;
 
     @Getter private final String resolution;
