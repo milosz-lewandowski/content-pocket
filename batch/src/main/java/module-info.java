@@ -1,3 +1,5 @@
+import pl.mewash.common.spi.tabs.TabPlugin;
+
 module pl.mewash.batch {
     requires static lombok;
     requires javafx.controls;
@@ -6,7 +8,7 @@ module pl.mewash.batch {
     requires pl.mewash.commands;
     requires pl.mewash.common;
 
-    provides pl.mewash.common.tabs.spi.TabPlugin
+    provides TabPlugin
         with pl.mewash.batch.api.BatchTabPlugin;
 
     opens pl.mewash.batch.ui to javafx.fxml;

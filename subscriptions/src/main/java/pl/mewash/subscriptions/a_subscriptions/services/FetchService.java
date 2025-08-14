@@ -4,8 +4,8 @@ import javafx.scene.control.Alert;
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
-import pl.mewash.common.AppContext;
-import pl.mewash.common.ScheduledFileLogger;
+import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
@@ -28,11 +28,13 @@ public class FetchService {
 
     private final ChannelFetchRepo repository;
     private final ProcessFactory processFactory;
+    private final FileLogger fileLogger;
 
     public FetchService(AppContext appContext) {
+        fileLogger = appContext.getFileLogger();
         repository = ChannelFetchRepo.getInstance();
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), appContext.getFileLogger(), false
+                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, false
         );
     }
 
@@ -92,7 +94,7 @@ public class FetchService {
 //            System.out.println("process started, before logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
             // TODO: causes thread blocking until process finished and fully consumed. at this moment this disables timeout reaching at all
-            ScheduledFileLogger.consumeAndLogProcessOutputToFile(process);
+            fileLogger.consumeAndLogProcessOutputToFile(process);
 //            System.out.println("process started, after logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
 //            System.out.println("process before wait for");

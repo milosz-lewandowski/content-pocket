@@ -1,4 +1,4 @@
-package pl.mewash.common.tabs.spi;
+package pl.mewash.common.spi.tabs;
 
 public interface TabPlugin {
 

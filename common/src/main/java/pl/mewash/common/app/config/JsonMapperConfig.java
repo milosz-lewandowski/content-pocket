@@ -1,4 +1,4 @@
-package pl.mewash.common;
+package pl.mewash.common.app.config;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;

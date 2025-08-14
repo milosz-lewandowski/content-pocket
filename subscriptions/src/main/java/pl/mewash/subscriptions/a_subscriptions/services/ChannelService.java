@@ -4,7 +4,7 @@ import javafx.scene.control.Alert;
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ChannelProperties;
-import pl.mewash.common.AppContext;
+import pl.mewash.common.app.context.AppContext;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.controllers.ChannelSettingsDialogLauncher;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
@@ -24,7 +24,8 @@ public class ChannelService {
 
     public ChannelService(AppContext appContext) {
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), appContext.getFileLogger(), true
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(),
+            appContext.getFileLogger()::appendSingleLine, true
         );
     }
 

@@ -1,4 +1,4 @@
-package pl.mewash.common;
+package pl.mewash.common.app.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import pl.mewash.commands.settings.storage.GroupingMode;

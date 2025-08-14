@@ -6,6 +6,13 @@ module pl.mewash.common {
 
     requires pl.mewash.commands;
 
-    exports pl.mewash.common;
-    exports pl.mewash.common.tabs.spi;
+    exports pl.mewash.common.app.binaries;
+    exports pl.mewash.common.app.config;
+    exports pl.mewash.common.app.context;
+    exports pl.mewash.common.app.lifecycle;
+    exports pl.mewash.common.app.settings;
+
+    exports pl.mewash.common.downloads.api;
+    exports pl.mewash.common.logging.api;
+    exports pl.mewash.common.spi.tabs;
 }

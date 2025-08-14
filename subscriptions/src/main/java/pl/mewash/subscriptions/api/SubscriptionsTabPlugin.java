@@ -1,6 +1,6 @@
 package pl.mewash.subscriptions.api;
 
-import pl.mewash.common.tabs.spi.TabPlugin;
+import pl.mewash.common.spi.tabs.TabPlugin;
 
 public final class SubscriptionsTabPlugin implements TabPlugin {
     @Override

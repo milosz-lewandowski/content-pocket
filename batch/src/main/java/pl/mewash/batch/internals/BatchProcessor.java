@@ -4,7 +4,7 @@ import pl.mewash.batch.internals.models.BatchJobParams;
 import pl.mewash.batch.internals.models.BatchProcessingState;
 import pl.mewash.batch.internals.models.MultithreadingMode;
 import pl.mewash.commands.settings.formats.DownloadOption;
-import pl.mewash.common.DownloadService;
+import pl.mewash.common.downloads.api.DownloadService;
 
 import java.util.List;
 import java.util.Queue;

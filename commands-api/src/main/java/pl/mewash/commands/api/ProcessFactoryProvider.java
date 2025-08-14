@@ -2,6 +2,8 @@ package pl.mewash.commands.api;
 
 import pl.mewash.commands.services.DefaultProcessFactory;
 
+import java.util.function.Consumer;
+
 public class ProcessFactoryProvider {
 
     public static ProcessFactory createDefault(String ytDlpCommandPath, String ffmpegCommandPath) {
@@ -9,8 +11,8 @@ public class ProcessFactoryProvider {
 
     }
 
-    public static ProcessFactory createDefaultWithLogger(String ytDlpCommandPath, String ffmpegCommandPath, CommandLogger logger) {
-        return new DefaultProcessFactory(ytDlpCommandPath, ffmpegCommandPath, logger, false);
+    public static ProcessFactory createDefaultWithLogger(String ytDlpCommandPath, String ffmpegCommandPath, Consumer<String> commandLogger) {
+        return new DefaultProcessFactory(ytDlpCommandPath, ffmpegCommandPath, commandLogger, false);
 
     }
 
@@ -19,7 +21,7 @@ public class ProcessFactoryProvider {
     }
 
     public static ProcessFactory createDefaultWithConsolePrintAndLogger(String ytDlpCommandPath, String ffmpegCommandPath,
-                                                                        CommandLogger logger, boolean printToConsole) {
-        return new DefaultProcessFactory(ytDlpCommandPath, ffmpegCommandPath, logger, printToConsole);
+                                                                        Consumer<String> commandLogger, boolean printToConsole) {
+        return new DefaultProcessFactory(ytDlpCommandPath, ffmpegCommandPath, commandLogger, printToConsole);
     }
 }

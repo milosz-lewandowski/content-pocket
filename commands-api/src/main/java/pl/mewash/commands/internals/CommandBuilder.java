@@ -1,6 +1,5 @@
 package pl.mewash.commands.internals;
 
-import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
@@ -14,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class CommandBuilder {
 
@@ -23,8 +23,8 @@ public class CommandBuilder {
     private String url;
     private boolean printToConsole = false;
 
-    private boolean logToFile = false;
-    private CommandLogger logger;
+    private boolean logWithLogger = false;
+    private Consumer<String> commandLogger;
 
     private CommandBuilder() {
         this.commandList = new ArrayList<>();
@@ -44,9 +44,9 @@ public class CommandBuilder {
         return this;
     }
 
-    public CommandBuilder logCommandToFile(CommandLogger logger) {
-        this.logger = logger;
-        this.logToFile = true;
+    public CommandBuilder logCommandWithLogger(Consumer<String> logger) {
+        this.commandLogger = logger;
+        this.logWithLogger = true;
         return this;
     }
 
@@ -130,7 +130,7 @@ public class CommandBuilder {
             addCommandList(printCommand);
             addSingleCommand(url);
             if (printToConsole) System.out.println(String.join(" ", this.commandList));
-            if (logToFile && logger != null) logger.log(String.join(" ", this.commandList));
+            if (logWithLogger && commandLogger != null) commandLogger.accept(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }
@@ -145,7 +145,7 @@ public class CommandBuilder {
             addCommandList(outputCommand);
             addSingleCommand(url);
             if (printToConsole) System.out.println(String.join(" ", this.commandList));
-            if (logToFile && logger != null) logger.log(String.join(" ", this.commandList));
+            if (logWithLogger && commandLogger != null) commandLogger.accept(String.join(" ", this.commandList));
             return new ProcessBuilder(this.commandList);
         }
     }

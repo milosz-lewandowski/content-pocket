@@ -1,3 +1,5 @@
+import pl.mewash.common.spi.tabs.TabPlugin;
+
 module pl.mewash.subscriptions {
     requires static lombok;
     requires javafx.controls;
@@ -9,7 +11,7 @@ module pl.mewash.subscriptions {
     requires pl.mewash.commands;
     requires pl.mewash.common;
 
-    provides pl.mewash.common.tabs.spi.TabPlugin
+    provides TabPlugin
         with pl.mewash.subscriptions.api.SubscriptionsTabPlugin;
 
     opens pl.mewash.subscriptions.ui to javafx.fxml;

@@ -1,3 +1,5 @@
+import pl.mewash.common.spi.tabs.TabPlugin;
+
 module pl.mewash.contentlaundry {
     requires static lombok;
     requires javafx.controls;
@@ -6,7 +8,7 @@ module pl.mewash.contentlaundry {
 
     requires pl.mewash.common;
 
-    uses pl.mewash.common.tabs.spi.TabPlugin;
+    uses TabPlugin;
 
     opens pl.mewash.contentlaundry to javafx.fxml;
     exports pl.mewash.contentlaundry;

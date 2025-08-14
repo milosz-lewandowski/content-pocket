@@ -1,6 +1,8 @@
-package pl.mewash.common;
+package pl.mewash.common.app.settings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import pl.mewash.common.app.config.ConfigPaths;
+import pl.mewash.common.app.config.JsonMapperConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;

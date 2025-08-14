@@ -1,6 +1,5 @@
 package pl.mewash.commands.services;
 
-import pl.mewash.commands.api.CommandLogger;
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.internals.CommandBuilder;
 import pl.mewash.commands.internals.CommandBundles;
@@ -12,19 +11,20 @@ import pl.mewash.commands.settings.storage.StorageOptions;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.function.Consumer;
 
 public class DefaultProcessFactory implements ProcessFactory {
 
     private final String ytDlpCommandPath;
     private final String ffmpegCommandPath;
-    private final CommandLogger logger;
+    private final Consumer<String> commandLogger;
     private final boolean printToConsole;
 
-    public DefaultProcessFactory(String ytDlpCommandPath, String ffmpegCommandPath, CommandLogger logger,
+    public DefaultProcessFactory(String ytDlpCommandPath, String ffmpegCommandPath, Consumer<String> commandLogger,
                                  boolean printToConsole) {
         this.ytDlpCommandPath = ytDlpCommandPath;
         this.ffmpegCommandPath = ffmpegCommandPath;
-        this.logger = logger;
+        this.commandLogger = commandLogger;
         this.printToConsole = printToConsole;
     }
 
@@ -33,7 +33,7 @@ public class DefaultProcessFactory implements ProcessFactory {
                 .addCommandBundle(CommandBundles.CHECK_CHANNEL_NAME)
                 .setPrintToFile(channelProperties, tempFile)
                 .setUrl(channelUrl)
-                .logCommandToFile(logger)
+                .logCommandWithLogger(commandLogger)
                 .printCommandToConsole(printToConsole)
                 .buildReadOnlyProcess();
     }
@@ -45,7 +45,7 @@ public class DefaultProcessFactory implements ProcessFactory {
                 .addCommandBundle(CommandBundles.FETCH_CHANNEL_CONTENT)
                 .setPrintToFile(contentProperties, tempFile)
                 .setUrl(channelUrl)
-                .logCommandToFile(logger)
+                .logCommandWithLogger(commandLogger)
                 .printCommandToConsole(printToConsole)
                 .buildReadOnlyProcess();
     }
@@ -60,7 +60,7 @@ public class DefaultProcessFactory implements ProcessFactory {
                 .setPrintToFile(ContentProperties.CONTENT_TITLE, tempFile)
                 .setOutputCommand(storageOptions, audioQuality)
                 .setUrl(url)
-                .logCommandToFile(logger)
+                .logCommandWithLogger(commandLogger)
                 .printCommandToConsole(printToConsole)
                 .buildDownloadProcess();
     }
@@ -76,7 +76,7 @@ public class DefaultProcessFactory implements ProcessFactory {
                 .setFFMpegPath(ffmpegCommandPath)
                 .setOutputCommand(storageOptions, videoQuality)
                 .setUrl(url)
-                .logCommandToFile(logger)
+                .logCommandWithLogger(commandLogger)
                 .printCommandToConsole(printToConsole)
                 .buildDownloadProcess();
     }

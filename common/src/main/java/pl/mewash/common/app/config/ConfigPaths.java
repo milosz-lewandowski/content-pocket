@@ -1,4 +1,4 @@
-package pl.mewash.common;
+package pl.mewash.common.app.config;
 
 import java.io.IOException;
 import java.nio.file.Files;

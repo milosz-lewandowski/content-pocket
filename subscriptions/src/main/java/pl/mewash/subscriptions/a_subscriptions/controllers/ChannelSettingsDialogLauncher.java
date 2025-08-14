@@ -1,12 +1,13 @@
 package pl.mewash.subscriptions.a_subscriptions.controllers;
 
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.*;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
 import pl.mewash.subscriptions.ui.ChannelSettingsController;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.Optional;
 
 public class ChannelSettingsDialogLauncher {
@@ -28,7 +29,6 @@ public class ChannelSettingsDialogLauncher {
                     ? controller.getSelectedSettings()
                     : null
             );
-
 
             return dialog.showAndWait();
 

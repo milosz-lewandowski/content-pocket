@@ -1,6 +1,7 @@
-package pl.mewash.common;
+package pl.mewash.common.logging.impl;
 
-import pl.mewash.commands.api.CommandLogger;
+import pl.mewash.common.app.config.ConfigPaths;
+import pl.mewash.common.logging.api.FileLogger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,61 +20,45 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScheduledFileLogger implements CommandLogger {
+public class ScheduledFileLogger implements FileLogger {
+
+    // constants
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private static final Duration WRITE_INTERVAL = Duration.ofSeconds(5);
+
+    // singleton instance
+    private static final ScheduledFileLogger INSTANCE = new ScheduledFileLogger();
+    public static ScheduledFileLogger getInstance() {
+        return INSTANCE;
+    }
 
     // local thread buffer for related logs grouping
-    private static final List<ThreadBuffer> localThreadBuffersList = new CopyOnWriteArrayList<>();
-    private static final ThreadLocal<ThreadBuffer> threadBuffer = ThreadLocal.withInitial(ThreadBuffer::new);
+    private final List<ThreadBuffer> localThreadBuffersList = new CopyOnWriteArrayList<>();
+    private final ThreadLocal<ThreadBuffer> threadBuffer = ThreadLocal.withInitial(() -> new ThreadBuffer(this));
 
     // shared buffer to scheduled file logging
-    private static final ConcurrentLinkedQueue<String> sharedLogBuffer = new ConcurrentLinkedQueue<>();
-    private static final Object logFileLock = new Object();
-
-    // logger time formatter
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private final ConcurrentLinkedQueue<String> sharedLogBuffer = new ConcurrentLinkedQueue<>();
+    private final Object logFileLock = new Object();
 
     // scheduled writer thread setup
-    private static final AtomicBoolean writerStarted = new AtomicBoolean(false);
-    private static final Duration WRITE_INTERVAL = Duration.ofSeconds(5);
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+    private final AtomicBoolean writerStarted = new AtomicBoolean(false);
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "scheduled-file-logger-thread");
         t.setDaemon(true);
         return t;
     });
 
-    static {
+    private ScheduledFileLogger() {
         setupScheduledLogFileWriter();
     }
 
-    private static void setupScheduledLogFileWriter() {
-        if (writerStarted.getAndSet(true)) return;
-
-        scheduler.scheduleAtFixedRate(
-                ScheduledFileLogger::flushLogsToFile,
-                WRITE_INTERVAL.toMillis(),
-                WRITE_INTERVAL.toMillis(),
-                TimeUnit.MILLISECONDS
-        );
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                scheduler.shutdown();
-                scheduler.awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-
-            localThreadBuffersList.forEach(ThreadBuffer::flush);
-
-            flushLogsToFile();
-        }));
+    @Override
+    public void appendSingleLine(String message) {
+        appendMultiLineStringList(List.of(message));
     }
 
-    public static void appendSingleLine(String message) {
-        appendStringList(List.of(message));
-    }
-
-    public static void appendStringList(List<String> list) {
+    @Override
+    public void appendMultiLineStringList(List<String> list) {
         String time = LocalDateTime.now().format(TIME_FORMAT);
         String threadName = shortThreadName();
         for (String l : list) {
@@ -81,7 +66,8 @@ public class ScheduledFileLogger implements CommandLogger {
         }
     }
 
-    public static void consumeAndLogProcessOutputToFile(Process process) {
+    @Override
+    public void consumeAndLogProcessOutputToFile(Process process) {
         ThreadBuffer localThreadBuffer = threadBuffer.get();
 
         try (BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -114,7 +100,31 @@ public class ScheduledFileLogger implements CommandLogger {
         }
     }
 
-    private static void flushLogsToFile() {
+    private void setupScheduledLogFileWriter() {
+        if (writerStarted.getAndSet(true)) return;
+
+        scheduler.scheduleAtFixedRate(
+            this::flushLogsToFile,
+            WRITE_INTERVAL.toMillis(),
+            WRITE_INTERVAL.toMillis(),
+            TimeUnit.MILLISECONDS
+        );
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                scheduler.shutdown();
+                scheduler.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+
+            localThreadBuffersList.forEach(ThreadBuffer::flush);
+
+            flushLogsToFile();
+        }));
+    }
+
+    private void flushLogsToFile() {
         try {
             Path logDir = ConfigPaths.getLogsDir();
             String date = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
@@ -155,13 +165,14 @@ public class ScheduledFileLogger implements CommandLogger {
         return line.contains("% of") || line.matches(".*\\d+\\.\\d+%.*") || line.contains("frame=");
     }
 
-
     private static class ThreadBuffer {
         private final List<String> buffer = new ArrayList<>();
         private long lastFlush = System.currentTimeMillis();
+        private final ScheduledFileLogger owner;
 
-        ThreadBuffer() {
-            localThreadBuffersList.add(this);
+        ThreadBuffer(ScheduledFileLogger owner) {
+            this.owner = owner;
+            owner.localThreadBuffersList.add(this);
         }
 
         void add(String message) {
@@ -175,14 +186,9 @@ public class ScheduledFileLogger implements CommandLogger {
 
         void flush() {
             if (!buffer.isEmpty()) {
-                sharedLogBuffer.addAll(buffer);
+                owner.sharedLogBuffer.addAll(buffer);
                 buffer.clear();
             }
         }
-    }
-
-    @Override
-    public void log(String message) {
-        appendSingleLine(message);
     }
 }

@@ -4,8 +4,8 @@ package pl.mewash.subscriptions;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.scene.control.Alert;
-import pl.mewash.common.ConfigPaths;
-import pl.mewash.common.JsonMapperConfig;
+import pl.mewash.common.app.config.ConfigPaths;
+import pl.mewash.common.app.config.JsonMapperConfig;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
 

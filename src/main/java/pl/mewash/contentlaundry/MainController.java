@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Popup;
-import pl.mewash.common.tabs.spi.TabPlugin;
+import pl.mewash.common.spi.tabs.TabPlugin;
 
 import java.net.URL;
 import java.util.Comparator;

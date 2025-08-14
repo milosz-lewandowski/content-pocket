@@ -1,6 +1,10 @@
-package pl.mewash.common;
+package pl.mewash.common.app.context;
 
 import lombok.Getter;
+import pl.mewash.common.app.binaries.BinariesManager;
+import pl.mewash.common.app.lifecycle.OnCloseHandler;
+import pl.mewash.common.logging.api.FileLogger;
+import pl.mewash.common.logging.api.LoggersProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +20,7 @@ public class AppContext {
     private String YtDlpCommand;
     private String FfMpegCommand;
 
-    private ScheduledFileLogger fileLogger;
+    private FileLogger fileLogger;
 
     private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
 
@@ -38,7 +42,7 @@ public class AppContext {
         this.FfMpegCommand = BinariesManager.BinariesNames.
                 FFMPEG.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
 
-        fileLogger = new ScheduledFileLogger();
+        fileLogger = LoggersProvider.getFileLogger();
 
         this.initialized = true;
     }

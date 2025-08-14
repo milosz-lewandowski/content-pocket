@@ -7,18 +7,24 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
-import pl.mewash.batch.internals.utils.BatchAlerts;
-import pl.mewash.batch.internals.utils.InputUtils;
-import pl.mewash.batch.internals.models.MultithreadingMode;
+import pl.mewash.batch.internals.BatchProcessor;
 import pl.mewash.batch.internals.models.BatchJobParams;
 import pl.mewash.batch.internals.models.BatchProcessingState;
-import pl.mewash.batch.internals.BatchProcessor;
+import pl.mewash.batch.internals.models.MultithreadingMode;
+import pl.mewash.batch.internals.utils.BatchAlerts;
+import pl.mewash.batch.internals.utils.InputUtils;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.commands.settings.storage.StorageOptions;
-import pl.mewash.common.*;
+import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.app.settings.GeneralSettings;
+import pl.mewash.common.app.settings.SettingsManager;
+import pl.mewash.common.downloads.api.DownloadService;
+import pl.mewash.common.downloads.api.DownloadServiceProvider;
+import pl.mewash.common.app.lifecycle.OnCloseHandler;
+import pl.mewash.common.logging.api.FileLogger;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -85,6 +91,8 @@ public class BatchController implements OnCloseHandler {
     private ScheduledExecutorService uiLoggerScheduledThread;
     protected boolean uiLoggerThreadStarted = false;
 
+    private FileLogger fileLogger;
+
 
     private GeneralSettings generalSettings;
     private BatchProcessor batchProcessor;
@@ -93,10 +101,11 @@ public class BatchController implements OnCloseHandler {
     protected void initialize() {
         AppContext appContext = AppContext.getInstance();
         appContext.registerOnCloseHandler(this);
+        fileLogger = appContext.getFileLogger();
         generalSettings = SettingsManager.load();
 
-        DownloadService downloadService = new DownloadService(appContext);
-        downloadService.injectLogger(this::appendLog);
+        DownloadService downloadService = DownloadServiceProvider
+            .getDefaultDownloadServiceWithResourceLogger(appContext, this::appendLog);
 
         batchProcessor = new BatchProcessor(this::appendToUiLogBuffer, this::logErrToFileAndSout, downloadService);
         batchProcessor.injectUpdateButtonAction((state) -> {
@@ -327,12 +336,11 @@ public class BatchController implements OnCloseHandler {
     }
 
     private void logErrToFileAndSout(String message) {
-        ScheduledFileLogger.appendSingleLine(message);
+        fileLogger.appendSingleLine(message);
         System.err.println(message);
-
     }
 
-    // --- Field value helper methods ---
+    // --- Text fields helper methods ---
 
     private Optional<String> getBasePathWithEmptyCheck() {
         String path = pathField.getText().trim();

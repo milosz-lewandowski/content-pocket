@@ -1,6 +1,10 @@
-package pl.mewash.common;
+package pl.mewash.common.app.binaries;
 
 import lombok.AllArgsConstructor;
+import pl.mewash.common.app.settings.GeneralSettings;
+import pl.mewash.common.app.settings.SettingsManager;
+import pl.mewash.common.logging.api.FileLogger;
+import pl.mewash.common.logging.api.LoggersProvider;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -11,6 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BinariesManager {
+
+    private final FileLogger fileLogger = LoggersProvider.getFileLogger();
 
     public SupportedPlatforms getPlatform() {
         String os = System.getProperty("os.name").toLowerCase();
@@ -57,57 +63,13 @@ public class BinariesManager {
         Path absolutePath = path.toAbsolutePath();
         location = absolutePath.toString();
 
-        ScheduledFileLogger.appendSingleLine("Binaries found at: " + location);
+        fileLogger.appendSingleLine("Binaries found at: " + location);
         System.out.println("Binaries found at: " + location);
         generalSettings.binariesDirConfirmed = true;
         generalSettings.binariesDirPath = location;
         SettingsManager.saveSettings(generalSettings);
         return location;
     }
-
-//    public String resolveValidatedToolsDir(Stage mainStage) {
-//        GeneralSettings generalSettings = SettingsManager.load();
-//        String directoryPath = null;
-//
-//        // if binaries confirmed
-//        if (generalSettings.binariesDirConfirmed) {
-//            directoryPath = generalSettings.binariesDirPath;
-//            return directoryPath;
-//        }
-//
-//        // if not confirmed - check default locations
-//        directoryPath = switch (getPlatform()) {
-//            case MACOS -> findValidToolLocation(MacosLocations.values());
-//            case WINDOWS -> findValidToolLocation(WindowsLocations.values());
-//        };
-//
-//        // if not found at default - ask for path in alert
-//        if (directoryPath == null) {
-//            String selectedBinariesPath = AlertUtils
-//                    .showBinariesNotFoundAlert(mainStage);
-//            boolean confirmedNew = verifyBinariesInDir(selectedBinariesPath);
-//            if (confirmedNew) directoryPath = selectedBinariesPath;
-//        }
-//
-//        // if validated save and return
-//        if (directoryPath != null) {
-//            Path path = Paths.get(directoryPath);
-//            Path absolutePath = path.toAbsolutePath();
-//            directoryPath = absolutePath.toString();
-//
-//            ScheduledFileLogger.appendSingleLine("Binaries found at: " + directoryPath);
-//            System.out.println("Binaries found at: " + directoryPath);
-//            generalSettings.binariesDirConfirmed = true;
-//            generalSettings.binariesDirPath = directoryPath;
-//            SettingsManager.saveSettings(generalSettings);
-//            return directoryPath;
-//        } else {
-//            AlertUtils.showAlertAndAwait("Binaries missing Error",
-//                    "To use this application you need to have installed yt-dlp, ffmpeg and ffprobe installed",
-//                    Alert.AlertType.ERROR);
-//            return null;
-//        }
-//    }
 
     private <T extends Enum<T> & ToolPathSupplier> String findValidToolLocation(T[] locations) {
         return Arrays.stream(locations)
@@ -132,7 +94,7 @@ public class BinariesManager {
             if (existingPaths.isEmpty()) logs.add("no binaries found at above location");
             if (!existingPaths.isEmpty() && existingPaths.size() < 3)
                 logs.add("MISSING BINARIES! Found only " + existingPaths.size());
-            ScheduledFileLogger.appendStringList(logs);
+            fileLogger.appendMultiLineStringList(logs);
             return false;
         }
 
@@ -143,7 +105,7 @@ public class BinariesManager {
 
         boolean result = versionMessages.size() == 3;
         if (!result) logs.add("Not all binaries returned version info!");
-        ScheduledFileLogger.appendStringList(logs);
+        fileLogger.appendMultiLineStringList(logs);
         return result;
     }
 

@@ -4,8 +4,9 @@ import javafx.scene.control.Alert;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.commands.settings.storage.StorageOptions;
-import pl.mewash.common.AppContext;
-import pl.mewash.common.DownloadService;
+import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.downloads.api.DownloadService;
+import pl.mewash.common.downloads.api.DownloadServiceProvider;
 import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
 import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
@@ -21,7 +22,7 @@ public class ContentService {
     private final DownloadService downloadService;
 
     public ContentService(AppContext appContext) {
-        this.downloadService = new DownloadService(AppContext.getInstance());
+        downloadService = DownloadServiceProvider.getDefaultDownloadService(appContext);
     }
 
     public void downloadFetched(FetchedContent content, DownloadOption downloadOption, String subsBasePath) {

@@ -1,4 +1,4 @@
-package pl.mewash.common;
+package pl.mewash.common.downloads.impl;
 
 import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
@@ -6,6 +6,9 @@ import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.storage.StorageOptions;
+import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.downloads.api.DownloadService;
+import pl.mewash.common.logging.api.FileLogger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,18 +18,23 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
-public class DownloadService {
+public class DefaultDownloadService implements DownloadService {
 
     private final ProcessFactory processFactory;
-
-    public DownloadService(AppContext appContext) {
-        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), appContext.getFileLogger(), false);
-    }
+    private final FileLogger fileLogger;
 
     private BiConsumer<String, Object[]> logConsumer;
+
+    public DefaultDownloadService(AppContext appContext) {
+        fileLogger = appContext.getFileLogger();
+        Consumer<String> commandLogger = fileLogger::appendSingleLine;
+        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, false);
+    }
 
     public void injectLogger(BiConsumer<String, Object[]> consumer) {
         this.logConsumer = consumer;
@@ -52,10 +60,10 @@ public class DownloadService {
         processBuilder.directory(tempDirPath.toFile());
         Process process = processBuilder.start();
 
-        // redirect and log process output stream to file while process is running
-        ScheduledFileLogger.consumeAndLogProcessOutputToFile(process);
+        // Redirect and log process output stream to file while process is running
+        fileLogger.consumeAndLogProcessOutputToFile(process);
 
-        // wait for process finished
+        // Wait for process finished
         int exitCode = process.waitFor();
 
         // Get UTF-8 file title and delete temp file
@@ -95,43 +103,44 @@ public class DownloadService {
 
         AtomicReference<Path> firstMovedFile = new AtomicReference<>();
 
-        Files.walk(tempDir)
-            .filter(path -> !path.equals(tempDir))
-            .forEach(source -> {
-                try {
-                    Path relativePath = tempDir.relativize(source);
-                    Path target = basePath.resolve(relativePath);
+        try (Stream<Path> paths = Files.walk(tempDir)) {
+            paths.filter(path -> !path.equals(tempDir))
+                .forEach(source -> {
+                    try {
+                        Path relativePath = tempDir.relativize(source);
+                        Path target = basePath.resolve(relativePath);
 
-                    if (Files.isDirectory(source)) {
-                        Files.createDirectories(target);
-                    } else {
-                        Files.createDirectories(target.getParent());
-                        Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                        if (Files.isDirectory(source)) {
+                            Files.createDirectories(target);
+                        } else {
+                            Files.createDirectories(target.getParent());
+                            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
 
-                        if (isMetadataFile.test(source) && Files.exists(target)) return; // skip if metadata file exists
+                            if (isMetadataFile.test(source) && Files.exists(target))
+                                return; // skip if metadata file exists
 
-                        firstMovedFile.compareAndSet(null, target);
+                            firstMovedFile.compareAndSet(null, target);
+                        }
+                    } catch (IOException ioe) {
+                        fileLogger.appendSingleLine(ioe.getMessage());
                     }
-                } catch (IOException ioe) {
-                    ioe.printStackTrace();
-                }
-            });
-        return firstMovedFile.get();
+                });
+            return firstMovedFile.get();
+        }
     }
 
     private void cleanupTempDir(Path tempDir) {
-        try {
-            Files.walk(tempDir)
-                .sorted((a, b) -> b.compareTo(a))  // delete children first
+        try (Stream<Path> paths = Files.walk(tempDir)) {
+            paths.sorted((a, b) -> b.compareTo(a))  // delete children first
                 .forEach(path -> {
                     try {
                         Files.deleteIfExists(path);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        fileLogger.appendSingleLine(e.getMessage());
                     }
                 });
         } catch (IOException e) {
-            e.printStackTrace();
+            fileLogger.appendSingleLine(e.getMessage());
         }
     }
 }
