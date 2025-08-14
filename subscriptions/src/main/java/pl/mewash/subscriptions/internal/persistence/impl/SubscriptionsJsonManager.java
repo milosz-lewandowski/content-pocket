@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions;
+package pl.mewash.subscriptions.internal.persistence.impl;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.scene.control.Alert;
 import pl.mewash.common.app.config.ConfigPaths;
 import pl.mewash.common.app.config.JsonMapperConfig;
-import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
+import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
 
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChannelManager {
+public class SubscriptionsJsonManager {
     private static final ObjectMapper mapper = JsonMapperConfig.getPrettyMapper();
 
     public static List<SubscribedChannel> loadChannels() throws IOException {
@@ -31,7 +31,7 @@ public class ChannelManager {
             ConfigPaths.ensureConfigDirExists();
             mapper.writeValue(ConfigPaths.SUBSCRIPTIONS_FILE.toFile(), channels);
         } catch (IOException e) {
-            AlertUtils.showAlertAndAwait("Subscription saving error",
+            DialogLauncher.showAlertAndAwait("Subscription saving error",
                     "Error encountered while saving subscribed channels",
                     Alert.AlertType.ERROR);
             e.printStackTrace();

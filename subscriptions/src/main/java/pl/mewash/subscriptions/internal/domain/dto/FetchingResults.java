@@ -1,4 +1,6 @@
-package pl.mewash.subscriptions.a_subscriptions.models.content;
+package pl.mewash.subscriptions.internal.domain.dto;
+
+import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 
 import java.util.List;
 

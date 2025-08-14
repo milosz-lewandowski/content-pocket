@@ -1,10 +1,10 @@
-package pl.mewash.subscriptions.a_subscriptions.models.channel.enums;
+package pl.mewash.subscriptions.internal.domain.state;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public enum ChannelValidationStage {
     ADD_NEW("Add", false),
     CHECKING("Checking", true)

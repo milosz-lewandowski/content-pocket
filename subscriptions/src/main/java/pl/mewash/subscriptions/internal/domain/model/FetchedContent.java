@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.a_subscriptions.models.content;
+package pl.mewash.subscriptions.internal.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
@@ -6,6 +6,7 @@ import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.response.ContentProperties;
+import pl.mewash.subscriptions.internal.domain.state.ContentDownloadStage;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ public final class FetchedContent {
     private LocalDateTime published;
     private String id;
     private String channelName;
+    private String channelUrl;
 
     private ContentDownloadStage audioStage;
     private String audioPath;
@@ -56,14 +58,8 @@ public final class FetchedContent {
         return switch (downloadOption) {
             case VideoQuality vq -> videoStage == ContentDownloadStage.SAVED;
             case AudioOnlyQuality va-> audioStage == ContentDownloadStage.SAVED;
-            default -> throw new IllegalArgumentException("Invalid download option");
         };
     }
-
-//    @JsonIgnore
-//    public boolean isAudioDownloaded(){
-//        return downloadedAs.stream().anyMatch(option -> option instanceof AudioOnlyQuality);
-//    }
 
     @JsonIgnore
     public void setDownloadingStage(DownloadOption downloadOption) {
@@ -74,7 +70,7 @@ public final class FetchedContent {
     }
 
     @JsonIgnore
-    public void setDownloadingError(DownloadOption downloadOption) {
+    public void setDownloadingErrorState(DownloadOption downloadOption) {
         switch (downloadOption) {
             case VideoQuality vq -> videoStage = ContentDownloadStage.ERROR;
             case AudioOnlyQuality va-> audioStage = ContentDownloadStage.ERROR;
@@ -91,7 +87,7 @@ public final class FetchedContent {
         return this;
     }
 
-    public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelName) {
+    public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelUrl) {
         ContentProperties contentProperties = ContentProperties.CONTENT_PROPERTIES;
         ContentProperties.ContentResponseDto contentResponseDto = contentProperties.parseResponseToDto(propertiesResponse);
 
@@ -103,7 +99,7 @@ public final class FetchedContent {
                 .videoStage(ContentDownloadStage.GET)
                 .published(LocalDateTime.of(contentResponseDto.getPublishedDate(), LocalTime.MIN))
                 .id(contentResponseDto.getId())
-                .channelName(channelName)
+                .channelUrl(channelUrl)
                 .build();
     }
 }

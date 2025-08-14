@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.a_subscriptions.services;
+package pl.mewash.subscriptions.internal.service;
 
 import javafx.scene.control.Alert;
 import pl.mewash.commands.api.ProcessFactory;
@@ -6,13 +6,14 @@ import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
-import pl.mewash.subscriptions.a_subscriptions.AlertUtils;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelFetchRepo;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchParams;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchingStage;
-import pl.mewash.subscriptions.a_subscriptions.models.content.FetchedContent;
-import pl.mewash.subscriptions.a_subscriptions.models.content.FetchingResults;
+import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
+import pl.mewash.subscriptions.internal.domain.dto.ChannelFetchParams;
+import pl.mewash.subscriptions.internal.domain.state.ChannelFetchingStage;
+import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
+import pl.mewash.subscriptions.internal.domain.dto.FetchingResults;
+import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
+import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,52 +27,45 @@ import java.util.concurrent.TimeUnit;
 
 public class FetchService {
 
-    private final ChannelFetchRepo repository;
+    private final SubscriptionsRepository repository;
     private final ProcessFactory processFactory;
     private final FileLogger fileLogger;
 
     public FetchService(AppContext appContext) {
         fileLogger = appContext.getFileLogger();
-        repository = ChannelFetchRepo.getInstance();
+        repository = SubscriptionsJsonRepo.getInstance();
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
                 appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, false
         );
     }
 
-    public ChannelFetchParams fetch(String channelName, ChannelFetchParams fetchParams) {
-        SubscribedChannel channel = repository.getChannel(channelName);
+    public ChannelFetchParams fetch(String channelUrl, ChannelFetchParams fetchParams) {
+        SubscribedChannel channel = repository.getChannel(channelUrl);
 
         LocalDateTime dateAfter = calculateDateAfter(channel, fetchParams.stage(), fetchParams.fetchOlder());
         Duration timeout = calculateTimeout();
 
         Optional<FetchingResults> resultsOp = runFetchUploadsAfter(channel, dateAfter, timeout);
 
-//        System.out.println(" after fetch in Fetch Service");
         if (resultsOp.isPresent()) {
             FetchingResults results = resultsOp.get();
             List<FetchedContent> fetchedContents = results.fetchedContents();
-//            System.out.println(" results present in Fetch Service");
-
-            // if required insert timeout logic
 
             channel.setLastFetched(LocalDateTime.now());
             channel.appendFetchedContents(fetchedContents);
             channel.setPreviousFetchOlderRangeDate(dateAfter);
-            repository.updateChannel(channel);
-//            System.out.println("after channel update in Fetch Service");
 
-            SubscribedChannel updatedChannel = repository.getChannel(channelName); // test if re-synchro helps
-//            System.out.println(" updatedChannel present in Fetch Service");
+            repository.updateChannel(channel);
+
+            SubscribedChannel updatedChannel = repository.getChannel(channelUrl); // test if re-synchro helps
 
             LocalDateTime oldestContentOrPreviousFetchDateAfter = updatedChannel.calculateNextFetchOlderInputDate();
             ChannelFetchingStage fetchButtonStage = ChannelFetchingStage.FETCH_OLDER;
             ChannelFetchingStage.FetchOlderRange fetchOlderRange = fetchButtonStage
                     .getOlderRange(oldestContentOrPreviousFetchDateAfter);
-//            System.out.println(" fetchOlderRange present in Fetch Service: " + fetchOlderRange.getButtonTitle());
 
             return new ChannelFetchParams(ChannelFetchingStage.FETCH_OLDER, fetchOlderRange);
 
-            // if fetch failed return error state
         } else return new ChannelFetchParams(ChannelFetchingStage.FETCH_ERROR, null);
     }
 
@@ -85,56 +79,33 @@ public class FetchService {
             ProcessBuilder builder = processFactory.fetchContentsPublishedAfter(
                     channel.getUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
 
-            // Redirect error output to console
-//            builder.redirectError(ProcessBuilder.Redirect.INHERIT);
-//            builder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-
-            long startTime = System.currentTimeMillis();
             Process process = builder.start();
-//            System.out.println("process started, before logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
-            // TODO: causes thread blocking until process finished and fully consumed. at this moment this disables timeout reaching at all
             fileLogger.consumeAndLogProcessOutputToFile(process);
-//            System.out.println("process started, after logger: " + (System.currentTimeMillis() - startTime) / 1000);
 
-//            System.out.println("process before wait for");
             boolean finished = process.waitFor(timeout.getSeconds(), TimeUnit.SECONDS);
-//            System.out.println("process after wait for, process finished: " + finished);
-//            System.out.println("process after wait for, process finished: " + (System.currentTimeMillis() - startTime) / 1000);
-
 
             List<String> lines = Files.readAllLines(tempFile, StandardCharsets.UTF_8);
-//            System.out.println("lines saved : "+ (System.currentTimeMillis() - startTime) / 1000);
-//            lines.forEach(System.out::println);
-
-
             List<FetchedContent> fetchedContents = lines.stream()
-                    .map(line -> FetchedContent.fromContentPropertiesResponse(line, channel.getChannelName()))
+                    .map(line -> FetchedContent.fromContentPropertiesResponse(line, channel.getUrl()))
                     .toList();
-
-//            System.out.println("fetched contents : "+ (System.currentTimeMillis() - startTime) / 1000);
-//            fetchedContents.forEach(System.out::println);
 
             Files.deleteIfExists(tempFile);
 
             if (!finished) {
-
-//                System.out.println("entered destroy process: " + (System.currentTimeMillis() - startTime) / 1000);
-
                 process.descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
 
                 long estimatedTimeout = calculateEstimatedTimeout(fetchedContents, dateAfter, currentTimeout);
-//                System.out.println("destroyed process: " + (System.currentTimeMillis() - startTime) / 1000);
-//                System.out.println("destroyed process, calcuilated timeout: " + estimatedTimeout);
-
                 return Optional.of(new FetchingResults(fetchedContents, false, estimatedTimeout));
             }
+
             Files.deleteIfExists(tempFile);
             return Optional.of(new FetchingResults(fetchedContents, true, 0));
+
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            AlertUtils.showAlertAndAwait("Fetch Error", e.getMessage(), Alert.AlertType.ERROR);
+            fileLogger.appendSingleLine(e.getMessage());
+            DialogLauncher.showAlertAndAwait("Fetch Error", e.getMessage(), Alert.AlertType.ERROR);
             return Optional.empty();
         }
     }
@@ -153,7 +124,6 @@ public class FetchService {
         return (long) estimated + 10;
     }
 
-    // FIXME: insert logic
     private Duration calculateTimeout(){
         return Duration.ofSeconds(180);
     }
@@ -182,7 +152,8 @@ public class FetchService {
             }
             case FETCH_OLDER -> fetchOlderRange.calculateDateAfter();
 
-            default -> throw new IllegalStateException("Channel in " + stage + " stage cannot be fetched " + channel.getChannelName());
+            default -> throw new IllegalStateException("Channel in " + stage + " stage cannot be fetched " + channel
+                .getChannelName());
         };
     }
 }

@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.a_subscriptions.models.channel;
+package pl.mewash.subscriptions.internal.domain.model;
 
 import lombok.*;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
@@ -25,12 +25,6 @@ public class ChannelSettings {
     private boolean addContentDescriptionFiles;
     private boolean addDownloadDateDir;
     private boolean separateDirPerFormat;
-
-//    private boolean hidePreviouslyFetched;
-//    private boolean hideOnBothDownloads;
-//    private boolean hideOnAnyDownload;
-
-//    private Duration defaultTimeout;
 
     private Period initialFetchPeriod;
 

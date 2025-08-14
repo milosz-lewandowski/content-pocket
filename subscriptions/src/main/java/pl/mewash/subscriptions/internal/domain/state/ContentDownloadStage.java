@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.a_subscriptions.models.content;
+package pl.mewash.subscriptions.internal.domain.state;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -14,6 +14,6 @@ module pl.mewash.subscriptions {
     provides TabPlugin
         with pl.mewash.subscriptions.api.SubscriptionsTabPlugin;
 
-    opens pl.mewash.subscriptions.ui to javafx.fxml;
     exports pl.mewash.subscriptions.api;
+    opens pl.mewash.subscriptions.ui to javafx.fxml;
 }

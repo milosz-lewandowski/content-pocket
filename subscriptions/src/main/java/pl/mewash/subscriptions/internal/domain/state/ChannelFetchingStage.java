@@ -1,16 +1,14 @@
-package pl.mewash.subscriptions.a_subscriptions.models.channel.enums;
+package pl.mewash.subscriptions.internal.domain.state;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Arrays;
 
-@Getter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public enum ChannelFetchingStage {
     FIRST_FETCH("Fetch", false),
     FETCH_LATEST("Fetch Latest", false),
@@ -18,8 +16,8 @@ public enum ChannelFetchingStage {
     FETCH_OLDER("Check OlderRange", false),
     FETCH_ERROR("Fetch Error", true);
 
-    private final String buttonTitle;
-    private final boolean isDisabled;
+    @Getter private final String buttonTitle;
+    @Getter private final boolean isDisabled;
 
     public String getButtonTitleWithOlderResolved(FetchOlderRange olderRange) {
         return this.equals(FETCH_OLDER)
@@ -47,11 +45,11 @@ public enum ChannelFetchingStage {
             return LocalDateTime.now().minus(this.dateRange);
         }
 
-        public static FetchOlderRange getFirstWithTriggerPeriodLongerThanCompared(LocalDate oldestContentPublishedDate) {
+        public static FetchOlderRange getFirstWithTriggerPeriod(LocalDate oldestContentPublDate) {
             return Arrays.stream(values())
                 .filter(range -> {
-                    boolean isBefore = oldestContentPublishedDate.isBefore(LocalDate.now().minus(range.triggerPeriodStart));
-                    boolean isAfter = oldestContentPublishedDate.isAfter(LocalDate.now().minus(range.triggerPeriodEnd));
+                    boolean isBefore = oldestContentPublDate.isBefore(LocalDate.now().minus(range.triggerPeriodStart));
+                    boolean isAfter = oldestContentPublDate.isAfter(LocalDate.now().minus(range.triggerPeriodEnd));
                     return isAfter && isBefore;
                 })
                 .findFirst()
@@ -59,9 +57,9 @@ public enum ChannelFetchingStage {
         }
     }
 
-    public FetchOlderRange getOlderRange(LocalDateTime oldestContentOrPreviousFetchDateAfter) {
+    public FetchOlderRange getOlderRange(LocalDateTime oldestContentOrPrevFetchDateAfter) {
         if (this != FETCH_OLDER) throw new IllegalStateException("Fetching in wrong stage");
-        return FetchOlderRange.getFirstWithTriggerPeriodLongerThanCompared(oldestContentOrPreviousFetchDateAfter.toLocalDate());
+        return FetchOlderRange.getFirstWithTriggerPeriod(oldestContentOrPrevFetchDateAfter.toLocalDate());
     }
 
 

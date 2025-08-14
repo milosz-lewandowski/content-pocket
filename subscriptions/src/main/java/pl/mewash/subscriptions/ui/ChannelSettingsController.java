@@ -5,7 +5,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.VideoQuality;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
+import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
 
 import java.time.Period;
 

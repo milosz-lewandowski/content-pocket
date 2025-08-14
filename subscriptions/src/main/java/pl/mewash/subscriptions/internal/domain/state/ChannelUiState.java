@@ -1,14 +1,13 @@
-package pl.mewash.subscriptions.a_subscriptions.models.ui;
+package pl.mewash.subscriptions.internal.domain.state;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.ChannelSettings;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.SubscribedChannel;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchingStage;
-import pl.mewash.subscriptions.a_subscriptions.models.channel.enums.ChannelFetchParams;
+import pl.mewash.subscriptions.internal.domain.dto.ChannelFetchParams;
+import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 
 import java.time.LocalDateTime;
 
