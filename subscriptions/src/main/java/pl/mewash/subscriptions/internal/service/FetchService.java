@@ -52,19 +52,36 @@ public class FetchService {
             List<FetchedContent> fetchedContents = results.fetchedContents();
 
             channel.setLastFetched(LocalDateTime.now());
-            channel.appendFetchedContents(fetchedContents);
-            channel.setPreviousFetchOlderRangeDate(dateAfter);
+            boolean foundNew = channel.appendFetchedContentsIfNotPresent(fetchedContents);
+            LocalDateTime previousOldestRange = channel.getPreviousFetchOlderRangeDate().isBefore(dateAfter)
+                ? channel.getPreviousFetchOlderRangeDate()
+                : dateAfter;
+            channel.setPreviousFetchOlderRangeDate(previousOldestRange);
+
+            // TODO: figure out if there is any way to ensure oldest video was fetched before full range
+            ChannelFetchingStage.FetchOlderRange currentOlderRange = fetchParams.fetchOlder();
+            if (!foundNew && currentOlderRange == ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS) {
+                channel.setFetchedSinceOldest(true);
+            } else if (currentOlderRange == ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS) {
+                channel.setFetchedSinceOldest(true);
+            }
 
             repository.updateChannel(channel);
 
             SubscribedChannel updatedChannel = repository.getChannel(channelUrl); // test if re-synchro helps
 
             LocalDateTime oldestContentOrPreviousFetchDateAfter = updatedChannel.calculateNextFetchOlderInputDate();
-            ChannelFetchingStage fetchButtonStage = ChannelFetchingStage.FETCH_OLDER;
-            ChannelFetchingStage.FetchOlderRange fetchOlderRange = fetchButtonStage
-                    .getOlderRange(oldestContentOrPreviousFetchDateAfter);
 
-            return new ChannelFetchParams(ChannelFetchingStage.FETCH_OLDER, fetchOlderRange);
+            ChannelFetchingStage resultFetchButtonState = channel.isFetchedSinceOldest()
+                ? ChannelFetchingStage.ALL_FETCHED
+                : ChannelFetchingStage.FETCH_OLDER;
+
+            ChannelFetchingStage.FetchOlderRange fetchOlderRange = resultFetchButtonState ==
+                ChannelFetchingStage.ALL_FETCHED
+                ? ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS
+                : resultFetchButtonState.getOlderRange(oldestContentOrPreviousFetchDateAfter);
+
+            return new ChannelFetchParams(resultFetchButtonState, fetchOlderRange);
 
         } else return new ChannelFetchParams(ChannelFetchingStage.FETCH_ERROR, null);
     }
@@ -150,7 +167,7 @@ public class FetchService {
                         ? mostRecentFetchedContent.minusDays(1)
                         : lastFetchedDate.minusDays(1);
             }
-            case FETCH_OLDER -> fetchOlderRange.calculateDateAfter();
+            case FETCH_OLDER, ALL_FETCHED -> fetchOlderRange.calculateDateAfter();
 
             default -> throw new IllegalStateException("Channel in " + stage + " stage cannot be fetched " + channel
                 .getChannelName());

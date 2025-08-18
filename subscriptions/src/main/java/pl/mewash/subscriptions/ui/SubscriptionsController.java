@@ -12,9 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.util.Duration;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
@@ -36,6 +34,7 @@ import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
 import pl.mewash.subscriptions.internal.service.ChannelService;
 import pl.mewash.subscriptions.internal.service.ContentService;
 import pl.mewash.subscriptions.internal.service.FetchService;
+import pl.mewash.subscriptions.ui.components.ContentsSummaryBar;
 import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
 
 import java.awt.*;
@@ -48,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 public class SubscriptionsController {
 
@@ -70,6 +70,7 @@ public class SubscriptionsController {
     @FXML private ListView<ChannelUiState> channelListView; // or ObservableList<String>, depending on usage
 
     // fetched contents list
+    @FXML private StackPane contentsBarPane;
     private final ObservableList<FetchedContent> currentFetchedContents = FXCollections.observableArrayList();
     @FXML public ListView<FetchedContent> fetchedContentsListView;
 
@@ -101,6 +102,7 @@ public class SubscriptionsController {
         channelsUiStates.addAll(repository.loadChannelsUiList());
         loadChannelsListOnUi();
 
+        loadFetchedUploadsListOnUi();
         fetchedContentsListView.setItems(currentFetchedContents);
 
         channelsUiStates.forEach(channelUiState -> {
@@ -178,8 +180,7 @@ public class SubscriptionsController {
                     Label title = new Label(channelState.getChannelName());
 
                     // Fetch Button
-                    Button fetchButton = new Button(channelState.getFetchButtonTitle());
-                    fetchButton.setDisable(channelState.getFetchingStage().isDisabled());
+                    Button fetchButton = ButtonFactory.getFetchButton(channelState);
                     fetchButton.setOnAction(e -> submitFetchTask(channelState));
 
                     // Manage Button
@@ -188,7 +189,7 @@ public class SubscriptionsController {
 
                     // View Button
                     Button viewButton = new Button("View");
-                    viewButton.setOnAction(e -> handleViewContents(channelState.getUrl()));
+                    viewButton.setOnAction(e -> handleViewContents(channelState));
 
                     HBox buttonsBox = new HBox(6, fetchButton, manageButton, viewButton);
 
@@ -214,7 +215,6 @@ public class SubscriptionsController {
                     setText(null);
                 } else {
                     Label title = new Label(content.getDisplayTitle());
-                    ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelUrl());
 
                     Button audioButton = ButtonFactory.getAudioContentButton(content);
                     audioButton.setOnAction(e -> handleContentOptionButton(content,
@@ -238,6 +238,11 @@ public class SubscriptionsController {
     // --- Cell buttons actions ---
 
     private void submitFetchTask(ChannelUiState channelState) {
+        if (channelState.getFetchingStage() == ChannelFetchingStage.ALL_FETCHED
+            && DialogLauncher.showFullFetchRetryAlert()) {
+            return;
+        }
+
         virtualTasksExecutor.submit(() -> {
 
             ChannelFetchParams currentFetchParams = channelState.copyCurrentFetchParams();
@@ -255,17 +260,46 @@ public class SubscriptionsController {
 
                 Optional<FetchedContent> currentView = fetchedContentsListView.getItems().stream().findAny();
                 if (currentView.isPresent() && currentView.get().getChannelUrl().equals(channelState.getUrl())) {
-                    handleViewContents(channelState.getUrl());
+                    handleViewContents(channelState);
                 }
             });
         });
     }
 
-    private void handleViewContents(String channelUrl) {
-        List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelUrl);
+    private void handleViewContents(ChannelUiState channelState) {
+        List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelState.getUrl());
+        SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
+
+        Predicate<ChannelFetchingStage> fetchedLatest = (stage) ->
+            stage == ChannelFetchingStage.ALL_FETCHED || stage == ChannelFetchingStage.FETCH_OLDER;
+
+
+        ContentsSummaryBar.Params barParams = ContentsSummaryBar.Params.builder()
+            .channelName(channelState.getChannelName())
+            .contentsCount(fetchedContents.size())
+            .lastFetchDate(subscribedChannel.getLastFetched())
+            .fetchedLatest(fetchedLatest.test(channelState.getFetchingStage()))
+            .fetchedSince(subscribedChannel.getPreviousFetchOlderRangeDate())
+            .fetchedOldest(subscribedChannel.isFetchedSinceOldest())
+            .savedAudios((int) fetchedContents.stream()
+                .filter(fc -> fc.getAudioStage() == ContentDownloadStage.SAVED).count())
+            .savedVideos((int) fetchedContents.stream()
+                .filter(fc -> fc.getVideoStage() == ContentDownloadStage.SAVED).count())
+            .build();
+
+        GridPane bar = new ContentsSummaryBar().buildGridPane(barParams);
+
+
+        // make it stretch horizontally inside the StackPane
+        bar.setMaxWidth(Double.MAX_VALUE);
+        bar.prefWidthProperty().bind(contentsBarPane.widthProperty());
+        StackPane.setAlignment(bar, Pos.CENTER_LEFT);
+
+        // replace the placeholder content
+        contentsBarPane.getChildren().setAll(bar);
+
         currentFetchedContents.clear();
-        currentFetchedContents.addAll(fetchedContents);
-        loadFetchedUploadsListOnUi();
+        currentFetchedContents.setAll(fetchedContents);
     }
 
     private void handleManageChannelSettings(ChannelUiState channelState) {
@@ -371,6 +405,14 @@ public class SubscriptionsController {
             if (audioStage == ContentDownloadStage.SAVED) audioButton
                     .setStyle("-fx-background-color: #cccccc;");
             return audioButton;
+        }
+
+        static Button getFetchButton(ChannelUiState channelState) {
+            Button fetchButton = new Button(channelState.getFetchButtonTitle());
+            fetchButton.setDisable(channelState.getFetchingStage().isDisabled());
+            if (channelState.getFetchingStage() == ChannelFetchingStage.ALL_FETCHED)
+                fetchButton.setStyle("-fx-background-color: #cccccc;");
+            return fetchButton;
         }
     }
 

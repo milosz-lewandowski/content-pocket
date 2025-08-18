@@ -22,7 +22,8 @@
             <TextField fx:id="subsPathField" prefWidth="300"/>
             <Button text="%button.browse_dirs" onAction="#handleBrowse"/>
         </HBox>
-<!--        TODO: Add channel bar-->
+        <Separator/>
+        <StackPane fx:id="contentsBarPane"/>
         <ListView fx:id="fetchedContentsListView" VBox.vgrow="ALWAYS"/>
     </VBox>
 

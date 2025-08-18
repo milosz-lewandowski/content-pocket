@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry;
+package pl.mewash.contentlaundry.app;
 
 import javafx.application.Application;
 import javafx.application.Platform;

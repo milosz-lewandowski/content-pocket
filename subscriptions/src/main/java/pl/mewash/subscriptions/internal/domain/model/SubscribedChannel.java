@@ -8,8 +8,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -27,6 +29,7 @@ public class SubscribedChannel {
     // fetch params
     private LocalDateTime latestContentOnChannelDate;
     private LocalDateTime previousFetchOlderRangeDate;
+    private boolean fetchedSinceOldest;
 
     @Builder.Default
     private ConcurrentHashMap<String, FetchedContent> fetchedContentMap = new ConcurrentHashMap<>();
@@ -63,10 +66,13 @@ public class SubscribedChannel {
             .build();
     }
 
-    public void appendFetchedContents(List<FetchedContent> fetchedContents) {
-        fetchedContents.stream()
-            .filter(fetchedContent -> !fetchedContentMap.containsKey(fetchedContent.getId()))
-            .forEach(fetchedContent -> fetchedContentMap.put(fetchedContent.getId(), fetchedContent));
+    public boolean appendFetchedContentsIfNotPresent(List<FetchedContent> fetchedContents) {
+        Map<String, FetchedContent> newOnes = fetchedContents.stream()
+            .filter(fc -> !fetchedContentMap.containsKey(fc.getId()))
+            .collect(Collectors.toMap(FetchedContent::getId, fc -> fc));
+
+        fetchedContentMap.putAll(newOnes);
+        return !newOnes.isEmpty();
     }
 
     public void updateFetchedContent(FetchedContent fetchedContent) {

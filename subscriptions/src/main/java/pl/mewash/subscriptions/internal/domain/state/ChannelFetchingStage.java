@@ -14,6 +14,7 @@ public enum ChannelFetchingStage {
     FETCH_LATEST("Fetch Latest", false),
     FETCHING("Fetching", true),
     FETCH_OLDER("Check OlderRange", false),
+    ALL_FETCHED("All Fetched", false),
     FETCH_ERROR("Fetch Error", true);
 
     @Getter private final String buttonTitle;
@@ -33,7 +34,7 @@ public enum ChannelFetchingStage {
         LAST_YEAR(Period.ofYears(1), "Fetch 1 Year", Period.ofMonths(4).minusDays(1), Period.ofMonths(9)),
         LAST_3_YEARS(Period.ofYears(3), "Fetch 3 Years", Period.ofMonths(9).minusDays(1), Period.ofYears(2)),
         LAST_10_YEARS(Period.ofYears(10), "Fetch 10 Years", Period.ofYears(2).minusDays(1), Period.ofYears(5)),
-        LAST_25_YEARS(Period.ofYears(25), "Fetch All", Period.ofYears(5).minusDays(1), Period.ofYears(25)),
+        LAST_25_YEARS(Period.ofYears(25), "Fetch All", Period.ofYears(5).minusDays(1), Period.ofYears(30)),
         ;
 
         private final Period dateRange;
@@ -53,12 +54,12 @@ public enum ChannelFetchingStage {
                     return isAfter && isBefore;
                 })
                 .findFirst()
-                .orElseThrow();
+                .orElse(LAST_25_YEARS);
         }
     }
 
     public FetchOlderRange getOlderRange(LocalDateTime oldestContentOrPrevFetchDateAfter) {
-        if (this != FETCH_OLDER) throw new IllegalStateException("Fetching in wrong stage");
+        if (!(this == FETCH_OLDER || this == ALL_FETCHED)) throw new IllegalStateException("Fetching in wrong stage");
         return FetchOlderRange.getFirstWithTriggerPeriod(oldestContentOrPrevFetchDateAfter.toLocalDate());
     }
 
