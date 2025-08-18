@@ -10,7 +10,6 @@
         <HBox spacing="10">
             <TextField fx:id="channelUrlInput" promptText="Paste channel URL…" HBox.hgrow="ALWAYS"/>
             <Button fx:id="checkAddButton" text="Add" onAction="#handleAddChannel"/>
-            <!--            <Button text="Delete" onAction="#handleDeleteSelectedChannel"/>-->
         </HBox>
 
         <ListView fx:id="channelListView" VBox.vgrow="ALWAYS"/>

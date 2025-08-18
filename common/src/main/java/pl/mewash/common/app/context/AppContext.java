@@ -6,8 +6,11 @@ import pl.mewash.common.app.lifecycle.OnCloseHandler;
 import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.common.logging.api.LoggersProvider;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 @Getter
 public class AppContext {
@@ -60,4 +63,7 @@ public class AppContext {
             }
         }
     }
+
+    public UnaryOperator<String> getResource = (resource) -> new String(Base64.getDecoder().decode(resource),
+        StandardCharsets.UTF_8);
 }

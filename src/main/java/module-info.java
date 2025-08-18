@@ -10,5 +10,6 @@ module pl.mewash.contentlaundry {
 
     uses TabPlugin;
 
+    opens pl.mewash.contentlaundry.app to javafx.graphics;
     opens pl.mewash.contentlaundry.ui to javafx.fxml;
 }

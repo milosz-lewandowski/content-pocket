@@ -1,6 +1,8 @@
 package pl.mewash.common.app.binaries;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
 import pl.mewash.common.logging.api.FileLogger;
@@ -8,6 +10,8 @@ import pl.mewash.common.logging.api.LoggersProvider;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,15 +88,15 @@ public class BinariesManager {
         logs.add("checking location: " + location);
 
         SupportedPlatforms platform = getPlatform();
-        Map<BinariesNames, Path> existingPaths = Arrays.stream(BinariesNames.values())
+        Map<BinariesNames, Path> existingPaths = BinariesNames.getObligatorySet().stream()
                 .map(requiredBinary -> Map.entry(requiredBinary, requiredBinary.getPathByLocation(location, platform)))
                 .filter(entry -> Files.exists(entry.getValue())) // is it correct check?
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-
-        if (existingPaths.size() != 3) {
+        int obligatoryCount = BinariesNames.getObligatoryCount();
+        if (existingPaths.size() < obligatoryCount) {
             if (existingPaths.isEmpty()) logs.add("no binaries found at above location");
-            if (!existingPaths.isEmpty() && existingPaths.size() < 3)
+            if (!existingPaths.isEmpty())
                 logs.add("MISSING BINARIES! Found only " + existingPaths.size());
             fileLogger.appendMultiLineStringList(logs);
             return false;
@@ -103,7 +107,7 @@ public class BinariesManager {
                 .peek(message -> logs.add("version check result: " + message))
                 .collect(Collectors.toSet());
 
-        boolean result = versionMessages.size() == 3;
+        boolean result = versionMessages.size() >= obligatoryCount;
         if (!result) logs.add("Not all binaries returned version info!");
         fileLogger.appendMultiLineStringList(logs);
         return result;
@@ -128,7 +132,10 @@ public class BinariesManager {
         } catch (Exception e) {
             System.err.println("error while checking: " + binaryPath.toAbsolutePath());
             System.err.println(e.getMessage());
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            AppContext.getInstance().getFileLogger()
+                .appendSingleLine(sw.toString());
         }
 
         return versionMessageBuilder.isEmpty()
@@ -162,7 +169,7 @@ public class BinariesManager {
 
     @AllArgsConstructor
     public enum MacosLocations implements ToolPathSupplier {
-        USER_HOME_BIN("user.home", "bin"), // default for separate by user installation
+        USER_HOME_BIN("user.home", "bin"), // default for separate 'by user' installation
 //        HOME_DIR_BIN("home.dir", "bin"),
 //        HOME_DIR_USR_BIN("home.dir", "usr/bin"),
 //        APP_DIR_BIN("user.dir", "bin"),
@@ -180,14 +187,25 @@ public class BinariesManager {
 
     @AllArgsConstructor
     public enum BinariesNames {
-        YT_DLP("yt-dlp_macos", "yt-dlp.exe", "--version"),
-        FFMPEG("ffmpeg", "ffmpeg.exe", "-version"),
-        FFPROBE("ffprobe", "ffprobe.exe", "-version"),
+        YT_DLP("yt-dlp_macos", "yt-dlp.exe", "--version", true),
+        FFMPEG("ffmpeg", "ffmpeg.exe", "-version", true),
+        FFPROBE("ffprobe", "ffprobe.exe", "-version", false),
         ;
 
         private final String macosName;
         private final String windowsName;
         private final String versionCommand;
+        private final boolean isObligatory;
+
+        @Getter private final static int obligatoryCount = (int) Arrays.stream(values())
+            .filter(bn -> bn.isObligatory)
+            .count();
+
+        public static Set<BinariesNames> getObligatorySet() {
+            return Arrays.stream(values())
+                .filter(bn -> bn.isObligatory)
+                .collect(Collectors.toSet());
+        }
 
         public String getPlatformBinaryName(SupportedPlatforms platform) {
             return switch (platform) {

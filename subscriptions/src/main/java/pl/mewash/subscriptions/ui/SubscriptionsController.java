@@ -67,7 +67,7 @@ public class SubscriptionsController {
 
     // subscribed channels list
     private final ObservableList<ChannelUiState> channelsUiStates = FXCollections.observableArrayList();
-    @FXML private ListView<ChannelUiState> channelListView; // or ObservableList<String>, depending on usage
+    @FXML private ListView<ChannelUiState> channelListView;
 
     // fetched contents list
     @FXML private StackPane contentsBarPane;
@@ -353,7 +353,8 @@ public class SubscriptionsController {
                         Alert.AlertType.WARNING);
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            System.err.println("Open failed: " + ex.getMessage());
+            AppContext.getInstance().getFileLogger().appendSingleLine(ex.getMessage());
             DialogLauncher.showAlertAndAwait("Open failed", ex.getMessage(), Alert.AlertType.ERROR);
         }
     }
