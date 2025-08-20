@@ -29,7 +29,7 @@ public class ChannelSettingsController {
     }
 
     public void loadSettingsOnUi(ChannelSettings settings) {
-        autoFetchLastestOnStartup.setSelected(settings.isAutoFetchLastestOnStartup());
+        autoFetchLastestOnStartup.setSelected(settings.isAutoFetchLatestOnStartup());
         fullFetch.setSelected(settings.isFullFetch());
         audioQualityCombo.setValue(settings.getDefaultAudio());
         videoQualityCombo.setValue(settings.getDefaultVideo());
@@ -45,7 +45,7 @@ public class ChannelSettingsController {
             : Period.ofDays(14);
 
         return ChannelSettings.builder()
-            .autoFetchLastestOnStartup(autoFetchLastestOnStartup.isSelected())
+            .autoFetchLatestOnStartup(autoFetchLastestOnStartup.isSelected())
             .fullFetch(fullFetch.isSelected())
             .defaultAudio(audioQualityCombo.getValue())
             .defaultVideo(videoQualityCombo.getValue())

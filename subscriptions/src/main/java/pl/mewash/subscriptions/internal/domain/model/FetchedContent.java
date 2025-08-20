@@ -2,6 +2,7 @@ package pl.mewash.subscriptions.internal.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
@@ -16,17 +17,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Jacksonized
 public final class FetchedContent {
 
-    private String title;
+    private final String title;
     private String displayTitle;
-    private String url;
-    private LocalDateTime published;
-    private String id;
+    private final String url;
+    private final LocalDateTime published;
+    private final String id;
     private String channelName;
     private String channelUrl;
 
@@ -35,12 +34,29 @@ public final class FetchedContent {
     private ContentDownloadStage videoStage;
     private String videoPath;
 
-    @Builder.Default
-    private Set<DownloadOption> downloadedAs = new HashSet<>();
+    @Builder.Default private Set<DownloadOption> downloadedAs = new HashSet<>();
     private LocalDateTime lastUpdated;
 
+    public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelUrl) {
+        ContentProperties contentProperties = ContentProperties.CONTENT_PROPERTIES;
+        var contentResponseDto = contentProperties.parseResponseToDto(propertiesResponse);
+
+        return FetchedContent.builder()
+            .title(contentResponseDto.getTitle())
+            .url(contentResponseDto.getUrl())
+            .audioStage(ContentDownloadStage.GET)
+            .videoStage(ContentDownloadStage.GET)
+            .published(LocalDateTime.of(contentResponseDto.getPublishedDate(), LocalTime.MIN))
+            .lastUpdated(LocalDateTime.now())
+            .id(contentResponseDto.getId())
+            .channelUrl(channelUrl)
+            .build();
+    }
+
+    @JsonIgnore
     public void addAndSetDownloaded(DownloadOption downloadOption, Path downloadedPath) {
         downloadedAs.add(downloadOption);
+        lastUpdated = LocalDateTime.now();
         switch (downloadOption) {
             case VideoQuality vq -> {
                 videoStage = ContentDownloadStage.SAVED;
@@ -85,21 +101,5 @@ public final class FetchedContent {
 
         this.displayTitle = "(" + formatter.format(getPublished()) + ") " + getTitle();
         return this;
-    }
-
-    public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelUrl) {
-        ContentProperties contentProperties = ContentProperties.CONTENT_PROPERTIES;
-        ContentProperties.ContentResponseDto contentResponseDto = contentProperties.parseResponseToDto(propertiesResponse);
-
-
-        return FetchedContent.builder()
-                .title(contentResponseDto.getTitle())
-                .url(contentResponseDto.getUrl())
-                .audioStage(ContentDownloadStage.GET)
-                .videoStage(ContentDownloadStage.GET)
-                .published(LocalDateTime.of(contentResponseDto.getPublishedDate(), LocalTime.MIN))
-                .id(contentResponseDto.getId())
-                .channelUrl(channelUrl)
-                .build();
     }
 }

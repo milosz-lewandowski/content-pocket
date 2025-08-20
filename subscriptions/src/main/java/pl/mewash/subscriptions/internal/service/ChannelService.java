@@ -5,12 +5,12 @@ import pl.mewash.commands.api.ProcessFactory;
 import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ChannelProperties;
 import pl.mewash.common.app.context.AppContext;
-import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
-import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
+import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
+import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
 import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
-import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
+import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,35 +22,31 @@ public class ChannelService {
 
     private final ProcessFactory processFactory;
     private final SubscriptionsRepository repository;
+    private final FileLogger fileLogger;
 
     public ChannelService(AppContext appContext) {
         repository = SubscriptionsJsonRepo.getInstance();
+        fileLogger = appContext.getFileLogger();
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
             appContext.getYtDlpCommand(), appContext.getFfMpegCommand(),
-            appContext.getFileLogger()::appendSingleLine, true
+            fileLogger::appendSingleLine, true
         );
     }
 
-    public Optional<ChannelUiState> verifyAndAddChannel(String channelUrl) {
-        return runCheckChannelProcessWithValidationAndRetry(channelUrl.trim())
-            .map(verifiedChannel -> {
-                ChannelSettings settings = showChannelSettingsSetupPopup();
-                verifiedChannel.setChannelSettings(settings);
+    public Optional<SubscribedChannel> verifyAndGetChannel(String inputChannelUrl) {
 
-                repository.addChannel(verifiedChannel);
-                return repository.getChannelUiState(verifiedChannel.getUrl());
-            });
-    }
-
-    private Optional<SubscribedChannel> runCheckChannelProcessWithValidationAndRetry(String inputChannelUrl) {
-
-        return runCheckChannelProcess(inputChannelUrl)
+        return runCheckChannelProcess(inputChannelUrl.trim())
             .flatMap(initialResponse -> initialResponse.getChannelUrl().equals(inputChannelUrl)
                 ? Optional.of(initialResponse)
                     // second call ensures getting valid channel data even if content url was prompted
                 : runCheckChannelProcess(initialResponse.getChannelUrl()))
             .map(uniqueUrlResp -> SubscribedChannel.withLatestContent(inputChannelUrl,
                 uniqueUrlResp.getChannelName(), uniqueUrlResp.getChannelUrl(), uniqueUrlResp.getLatestContentDate()));
+    }
+
+    public ChannelUiState saveChannelAndGetState(SubscribedChannel subscribedChannel) {
+        repository.addChannel(subscribedChannel);
+        return repository.getChannelUiState(subscribedChannel.getUniqueUrl());
     }
 
     private Optional<ChannelProperties.ChannelResponseDto> runCheckChannelProcess(String inputChannelUrl) {
@@ -74,20 +70,16 @@ public class ChannelService {
             Files.deleteIfExists(tempFile);
 
             if (exitCode != 0 || channelResponseDto.getChannelName().isBlank()) {
-                DialogLauncher.showAlertAndAwait("Channel check failed", "Could not retrieve channel name.", Alert.AlertType.ERROR);
+                Dialogs.showAlertAndAwait("Channel check failed", "Could not retrieve channel name.", Alert.AlertType.ERROR);
                 return Optional.empty();
             }
             return Optional.of(channelResponseDto);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            DialogLauncher.showAlertAndAwait("Error of channel check", e.getMessage(), Alert.AlertType.ERROR);
+            fileLogger.logErrStackTrace(e, true);
+            Dialogs.showAlertAndAwait("Error of channel check", e.getMessage(), Alert.AlertType.ERROR);
             return Optional.empty();
         }
     }
 
-    private ChannelSettings showChannelSettingsSetupPopup() {
-        Optional<ChannelSettings> settings = DialogLauncher
-            .showChannelSettingsDialogAndWait(ChannelSettings.defaultSettings());
-        return settings.orElse(ChannelSettings.defaultSettings());
-    }
+
 }

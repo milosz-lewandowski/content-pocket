@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.scene.control.Alert;
 import pl.mewash.common.app.config.ConfigPaths;
 import pl.mewash.common.app.config.JsonMapperConfig;
+import pl.mewash.common.logging.api.LoggersProvider;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
-import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
+import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 
 import java.io.IOException;
@@ -31,10 +32,10 @@ public class SubscriptionsJsonManager {
             ConfigPaths.ensureConfigDirExists();
             mapper.writeValue(ConfigPaths.SUBSCRIPTIONS_FILE.toFile(), channels);
         } catch (IOException e) {
-            DialogLauncher.showAlertAndAwait("Subscription saving error",
+            Dialogs.showAlertAndAwait("Subscription saving error",
                     "Error encountered while saving subscribed channels",
                     Alert.AlertType.ERROR);
-            e.printStackTrace();
+            LoggersProvider.getFileLogger().logErrStackTrace(e, true);
         }
 
     }

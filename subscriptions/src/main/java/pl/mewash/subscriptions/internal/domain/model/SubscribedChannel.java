@@ -1,7 +1,10 @@
 package pl.mewash.subscriptions.internal.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,30 +17,38 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 @Getter
-@Setter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Jacksonized
 public class SubscribedChannel {
     private String channelName;
-    private String url; // globally unique id
-    private String officialUrl;
-    private String initialUrl;
-    private LocalDateTime lastFetched;
-    private ChannelSettings channelSettings;
+    private final String uniqueUrl;
+    private final String officialUrl;
+    private final String initialUrl;
 
-    // fetch params
-    private LocalDateTime latestContentOnChannelDate;
-    private LocalDateTime previousFetchOlderRangeDate;
-    private boolean fetchedSinceOldest;
+    @Setter private LocalDateTime lastFetched;
+    @Setter private ChannelSettings channelSettings;
+
+    @Setter private LocalDateTime latestContentOnChannelDate;
+    @Setter private LocalDateTime previousFetchOlderRangeDate;
+    @Setter private boolean fetchedSinceOldest;
 
     @Builder.Default
     private ConcurrentHashMap<String, FetchedContent> fetchedContentMap = new ConcurrentHashMap<>();
 
-    public static SubscribedChannel withBasicProperties(String channelName, String url) {
+    public static SubscribedChannel withLatestContent(String initialUrl, String channelName, String uniqueUrl,
+                                                      LocalDate latestPublished) {
+        LocalDateTime publishedDateTime = LocalDateTime.of(latestPublished, LocalTime.MIN);
+        String officialUrl = initialUrl.contains("@")
+            ? initialUrl
+            : null;
+
+        System.out.println("maping response to channel " + uniqueUrl);
         return SubscribedChannel.builder()
             .channelName(channelName)
-            .url(url)
+            .uniqueUrl(uniqueUrl)
+            .initialUrl(initialUrl)
+            .officialUrl(officialUrl)
+            .latestContentOnChannelDate(publishedDateTime)
             .build();
     }
 
@@ -45,25 +56,9 @@ public class SubscribedChannel {
         BiPredicate<String, String> fieldNotNullAndEqual = (fieldValue, url) -> fieldValue != null
             && fieldValue.equals(url);
 
-        return fieldNotNullAndEqual.test(url, channelUrl)
+        return fieldNotNullAndEqual.test(uniqueUrl, channelUrl)
             || fieldNotNullAndEqual.test(officialUrl, channelUrl)
             || fieldNotNullAndEqual.test(initialUrl, channelUrl);
-    }
-
-    public static SubscribedChannel withLatestContent(String initialUrl, String channelName, String uniqueUrl,
-                                                      LocalDate latestPublished) {
-
-        LocalDateTime publishedDateTime = LocalDateTime.of(latestPublished, LocalTime.MIN);
-        String officialUrl = initialUrl.contains("@")
-            ? initialUrl
-            : null;
-        return SubscribedChannel.builder()
-            .channelName(channelName)
-            .url(uniqueUrl)
-            .initialUrl(initialUrl)
-            .officialUrl(officialUrl)
-            .latestContentOnChannelDate(publishedDateTime)
-            .build();
     }
 
     public boolean appendFetchedContentsIfNotPresent(List<FetchedContent> fetchedContents) {
@@ -78,7 +73,6 @@ public class SubscribedChannel {
     public void updateFetchedContent(FetchedContent fetchedContent) {
         fetchedContentMap.put(fetchedContent.getId(), fetchedContent);
     }
-
 
     public LocalDateTime calculateNextFetchOlderInputDate() {
         LocalDateTime oldestContent = findOldestFetchedContent().getPublished();

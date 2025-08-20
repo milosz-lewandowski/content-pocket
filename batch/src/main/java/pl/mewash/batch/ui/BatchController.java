@@ -83,8 +83,8 @@ public class BatchController implements OnCloseHandler {
 
     // Laundry button and state handling
     @FXML private Button laundryButton;
-    private final ObjectProperty<BatchProcessingState> processingState =
-        new SimpleObjectProperty<>(BatchProcessingState.NOT_RUNNING);
+    private final ObjectProperty<BatchProcessingState>
+        processingState = new SimpleObjectProperty<>(BatchProcessingState.NOT_RUNNING);
 
     // Scheduled logger
     private final StringBuilder logBuffer = new StringBuilder();
@@ -123,9 +123,9 @@ public class BatchController implements OnCloseHandler {
         addDateCheckbox.setSelected(false);
         mediumThreadsRadio.setSelected(true);
 
-        if (generalSettings.batchLastSelectedPath != null && !generalSettings.batchLastSelectedPath.isBlank()) {
-            pathField.setText(generalSettings.batchLastSelectedPath);
-        }
+        String lastSelectedPath = generalSettings.getBatchLastSelectedPath();
+        if (lastSelectedPath != null && !lastSelectedPath.isBlank()) pathField
+            .setText(lastSelectedPath);
     }
 
     @FXML
@@ -156,16 +156,16 @@ public class BatchController implements OnCloseHandler {
 
         String currentPath = pathField.getText().trim();
         File initialDir = new File(currentPath);
-        if (initialDir.exists() && initialDir.isDirectory()) {
-            chooser.setInitialDirectory(initialDir);
-        }
+        if (initialDir.exists() && initialDir.isDirectory()) chooser
+            .setInitialDirectory(initialDir);
+
 
         File selectedDirectory = chooser.showDialog(null);
         if (selectedDirectory != null) {
             String selectedPath = selectedDirectory.getAbsolutePath();
             pathField.setText(selectedPath);
 
-            generalSettings.batchLastSelectedPath = selectedPath;
+            generalSettings.setBatchLastSelectedPath(selectedPath);
             SettingsManager.saveSettings(generalSettings);
         }
     }
@@ -206,9 +206,9 @@ public class BatchController implements OnCloseHandler {
         List<String> initialUrlsList = InputUtils.toUrlList(initialInput);
         int duplicatesCount = InputUtils.getDetectedDuplicatesCount(initialUrlsList);
         boolean removeDuplicates = false;
-        if (duplicatesCount > 0) {
-            removeDuplicates = BatchAlerts.getRemoveDuplicatesAlertDecision(duplicatesCount, initialUrlsList.size());
-        }
+        if (duplicatesCount > 0) removeDuplicates = BatchAlerts
+            .getRemoveDuplicatesAlertDecision(duplicatesCount, initialUrlsList.size());
+
         return removeDuplicates
             ? InputUtils.removeDuplicates(initialUrlsList)
             : initialUrlsList;
@@ -244,13 +244,10 @@ public class BatchController implements OnCloseHandler {
 
     private StorageOptions getStorageOptions(Set<DownloadOption> downloadOptions) {
         GroupingMode groupingMode;
-        if (noGroupingRadio.isSelected()) {
-            groupingMode = GroupingMode.NO_GROUPING;
-        } else if (groupByContentRadio.isSelected()) {
-            groupingMode = GroupingMode.GROUP_BY_CONTENT;
-        } else if (groupByFormatRadio.isSelected()) {
-            groupingMode = GroupingMode.GROUP_BY_FORMAT;
-        } else groupingMode = GroupingMode.GROUP_BY_FORMAT;
+        if (noGroupingRadio.isSelected()) groupingMode = GroupingMode.NO_GROUPING;
+        else if (groupByContentRadio.isSelected()) groupingMode = GroupingMode.GROUP_BY_CONTENT;
+        else if (groupByFormatRadio.isSelected()) groupingMode = GroupingMode.GROUP_BY_FORMAT;
+        else groupingMode = GroupingMode.GROUP_BY_CONTENT;
 
         boolean withMetadata = fileWithMetadataRadio.isSelected();
         return StorageOptions.withConflictsTest(
@@ -263,24 +260,20 @@ public class BatchController implements OnCloseHandler {
 
     private MultithreadingMode getMultithreadingMode() {
         MultithreadingMode multithreadingMode;
-        if (singleThreadRadio.isSelected()) {
-            multithreadingMode = MultithreadingMode.SINGLE;
-        } else if (lowThreadsRadio.isSelected()) {
-            multithreadingMode = MultithreadingMode.LOW;
-        } else if (mediumThreadsRadio.isSelected()) {
-            multithreadingMode = MultithreadingMode.MEDIUM;
-        } else if (maximumThreadsRadio.isSelected()) {
-            multithreadingMode = MultithreadingMode.MAXIMUM;
-        } else multithreadingMode = MultithreadingMode.SINGLE;
+        if (singleThreadRadio.isSelected()) multithreadingMode = MultithreadingMode.SINGLE;
+        else if (lowThreadsRadio.isSelected()) multithreadingMode = MultithreadingMode.LOW;
+        else if (mediumThreadsRadio.isSelected()) multithreadingMode = MultithreadingMode.MEDIUM;
+        else if (maximumThreadsRadio.isSelected()) multithreadingMode = MultithreadingMode.MAXIMUM;
+        else multithreadingMode = MultithreadingMode.MEDIUM;
         return multithreadingMode;
     }
 
     // --- Ui Logger setup ---
 
     private void setupAndGetUiLoggerExecutor(AtomicInteger completedCount, AtomicInteger failedCount, int totalDownloads) {
-        if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown()) {
+        if (uiLoggerScheduledThread != null && !uiLoggerScheduledThread.isShutdown())
             uiLoggerScheduledThread.shutdownNow();
-        }
+
         uiLoggerScheduledThread = Executors.newSingleThreadScheduledExecutor();
         UiLoggerJob uiTask = new UiLoggerJob(completedCount, failedCount, totalDownloads);
         uiLoggerScheduledThread.scheduleAtFixedRate(uiTask, 0, 500, TimeUnit.MILLISECONDS);
@@ -306,9 +299,7 @@ public class BatchController implements OnCloseHandler {
             String toAppend = getLogAndFlush();
             Platform.runLater(() -> {
                 progressLabel.setText("Completed: " + completed + " | Failed: " + failed + " | Total: " + totalDownloads);
-                if (!toAppend.isEmpty()) {
-                    outputLog.appendText(toAppend);
-                }
+                if (!toAppend.isEmpty()) outputLog.appendText(toAppend);
             });
         }
 

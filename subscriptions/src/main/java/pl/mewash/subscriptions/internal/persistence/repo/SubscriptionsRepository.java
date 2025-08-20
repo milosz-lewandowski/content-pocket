@@ -21,7 +21,6 @@ public interface SubscriptionsRepository {
     void updateChannel(SubscribedChannel subscribedChannel);
 
     // --- channel settings ---
-    void updateChannelSettingsFromState(ChannelUiState channelUiState);
     ChannelSettings getChannelSettings(String channelUrl);
 
     // --- contents ---

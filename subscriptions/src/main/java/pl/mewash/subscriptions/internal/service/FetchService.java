@@ -6,24 +6,22 @@ import pl.mewash.commands.api.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
-import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
-import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
-import pl.mewash.subscriptions.internal.domain.dto.ChannelFetchParams;
-import pl.mewash.subscriptions.internal.domain.state.ChannelFetchingStage;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
-import pl.mewash.subscriptions.internal.domain.dto.FetchingResults;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
+import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
+import pl.mewash.subscriptions.internal.domain.state.ProgressiveFetchRange;
+import pl.mewash.subscriptions.internal.domain.state.ProgressiveFetchStage;
+import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
-import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
+import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 public class FetchService {
 
@@ -35,142 +33,111 @@ public class FetchService {
         fileLogger = appContext.getFileLogger();
         repository = SubscriptionsJsonRepo.getInstance();
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-                appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, false
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, true
         );
     }
 
-    public ChannelFetchParams fetch(String channelUrl, ChannelFetchParams fetchParams) {
-        SubscribedChannel channel = repository.getChannel(channelUrl);
+    public boolean fetch(ChannelUiState channelState) {
+        SubscribedChannel channel = channelState.getChannel();
+        ProgressiveFetchStage initialStage = channelState.getFetchingStage().get();
+        ProgressiveFetchRange initialRange = channelState.getFetchRange();
 
-        LocalDateTime dateAfter = calculateDateAfter(channel, fetchParams.stage(), fetchParams.fetchOlder());
-        Duration timeout = calculateTimeout();
+        channelState.setFetchingStage(ProgressiveFetchStage.FETCHING);
 
-        Optional<FetchingResults> resultsOp = runFetchUploadsAfter(channel, dateAfter, timeout);
+        LocalDateTime dateAfter = calculateDateAfter(channel, initialStage, initialRange);
 
-        if (resultsOp.isPresent()) {
-            FetchingResults results = resultsOp.get();
-            List<FetchedContent> fetchedContents = results.fetchedContents();
+        FetchResults fetchResults = runFetchUploadsAfter(channel, dateAfter);
 
-            channel.setLastFetched(LocalDateTime.now());
-            boolean foundNew = channel.appendFetchedContentsIfNotPresent(fetchedContents);
-            LocalDateTime previousOldestRange = channel.getPreviousFetchOlderRangeDate().isBefore(dateAfter)
-                ? channel.getPreviousFetchOlderRangeDate()
-                : dateAfter;
-            channel.setPreviousFetchOlderRangeDate(previousOldestRange);
+        channel.setLastFetched(LocalDateTime.now());
 
-            // TODO: figure out if there is any way to ensure oldest video was fetched before full range
-            ChannelFetchingStage.FetchOlderRange currentOlderRange = fetchParams.fetchOlder();
-            if (!foundNew && currentOlderRange == ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS) {
-                channel.setFetchedSinceOldest(true);
-            } else if (currentOlderRange == ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS) {
-                channel.setFetchedSinceOldest(true);
-            }
+        LocalDateTime previousRangeDate = channel.getPreviousFetchOlderRangeDate();
+        LocalDateTime oldestFetchRange = previousRangeDate != null && previousRangeDate.isBefore(dateAfter)
+            ? previousRangeDate
+            : dateAfter;
+        channel.setPreviousFetchOlderRangeDate(oldestFetchRange);
 
-            repository.updateChannel(channel);
+        boolean foundNew = channel.appendFetchedContentsIfNotPresent(fetchResults.fetchedContents);
 
-            SubscribedChannel updatedChannel = repository.getChannel(channelUrl); // test if re-synchro helps
+        if (fetchResults.isFullFetched) channel.setFetchedSinceOldest(true);
+        else if (!foundNew && initialRange == ProgressiveFetchRange.LAST_25_YEARS) channel.setFetchedSinceOldest(true);
+        else if (initialRange == ProgressiveFetchRange.LAST_25_YEARS) channel.setFetchedSinceOldest(true);
 
-            LocalDateTime oldestContentOrPreviousFetchDateAfter = updatedChannel.calculateNextFetchOlderInputDate();
+        repository.updateChannel(channel);
 
-            ChannelFetchingStage resultFetchButtonState = channel.isFetchedSinceOldest()
-                ? ChannelFetchingStage.ALL_FETCHED
-                : ChannelFetchingStage.FETCH_OLDER;
+        LocalDateTime oldestContentOrPreviousFetchDateAfter = channel.calculateNextFetchOlderInputDate();
 
-            ChannelFetchingStage.FetchOlderRange fetchOlderRange = resultFetchButtonState ==
-                ChannelFetchingStage.ALL_FETCHED
-                ? ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS
-                : resultFetchButtonState.getOlderRange(oldestContentOrPreviousFetchDateAfter);
+        ProgressiveFetchStage resultStage = channel.isFetchedSinceOldest()
+            ? ProgressiveFetchStage.ALL_FETCHED
+            : ProgressiveFetchStage.FETCH_OLDER;
 
-            return new ChannelFetchParams(resultFetchButtonState, fetchOlderRange);
+        ProgressiveFetchRange resultRange = (resultStage == ProgressiveFetchStage.ALL_FETCHED)
+            ? ProgressiveFetchRange.LAST_25_YEARS
+            : resultStage.getProgressiveRange(oldestContentOrPreviousFetchDateAfter);
 
-        } else return new ChannelFetchParams(ChannelFetchingStage.FETCH_ERROR, null);
+        channelState.setFetchingStageWithRange(resultRange, resultStage);
+        return foundNew;
     }
 
-    public Optional<FetchingResults> runFetchUploadsAfter(SubscribedChannel channel, LocalDateTime dateAfter, Duration timeout) {
-        long currentTimeout = timeout.getSeconds();
+    private FetchResults runFetchUploadsAfter(SubscribedChannel channel, LocalDateTime dateAfter) {
         try {
             ContentProperties responseProperties = ContentProperties.CONTENT_PROPERTIES;
 
             Path tempFile = Files.createTempFile("fetch_uploads_temp", ".txt");
 
             ProcessBuilder builder = processFactory.fetchContentsPublishedAfter(
-                    channel.getUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
+                channel.getUniqueUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
 
             Process process = builder.start();
 
-            fileLogger.consumeAndLogProcessOutputToFile(process);
+            List<String> output = fileLogger.getProcessOutputAndLogToFile(process);
 
-            boolean finished = process.waitFor(timeout.getSeconds(), TimeUnit.SECONDS);
+            int finished = process.waitFor();
+
+            boolean isFullFetched = output.getLast().contains("Finished downloading playlist");
 
             List<String> lines = Files.readAllLines(tempFile, StandardCharsets.UTF_8);
             List<FetchedContent> fetchedContents = lines.stream()
-                    .map(line -> FetchedContent.fromContentPropertiesResponse(line, channel.getUrl()))
-                    .toList();
+                .map(line -> FetchedContent.fromContentPropertiesResponse(line, channel.getUniqueUrl()))
+                .toList();
 
             Files.deleteIfExists(tempFile);
-
-            if (!finished) {
-                process.descendants().forEach(ProcessHandle::destroyForcibly);
-                process.destroyForcibly();
-
-                long estimatedTimeout = calculateEstimatedTimeout(fetchedContents, dateAfter, currentTimeout);
-                return Optional.of(new FetchingResults(fetchedContents, false, estimatedTimeout));
-            }
-
-            Files.deleteIfExists(tempFile);
-            return Optional.of(new FetchingResults(fetchedContents, true, 0));
+            return new FetchResults(fetchedContents, isFullFetched);
 
         } catch (IOException | InterruptedException e) {
             fileLogger.appendSingleLine(e.getMessage());
-            DialogLauncher.showAlertAndAwait("Fetch Error", e.getMessage(), Alert.AlertType.ERROR);
-            return Optional.empty();
+            Dialogs.showAlertAndAwait("Fetch Error", e.getMessage(), Alert.AlertType.ERROR);
+            return new FetchResults(Collections.emptyList(), false);
         }
     }
 
-    private static long calculateEstimatedTimeout(List<FetchedContent> fetchedContents,
-                                                  LocalDateTime targetDate, long currentTimeout) {
-        LocalDateTime fetchedUntil = fetchedContents.stream()
-                .map(FetchedContent::getPublished)
-                .min(LocalDateTime::compareTo)
-                .orElseThrow();
-        long targetDuration = Duration.between(targetDate, LocalDateTime.now()).getSeconds();
-        long currentDuration = Duration.between(fetchedUntil, LocalDateTime.now()).getSeconds();
-        double completedProportion = (double) currentDuration / targetDuration;
-        double exactResult = currentTimeout / completedProportion;
-        double estimated = exactResult * 1.25;
-        return (long) estimated + 10;
-    }
-
-    private Duration calculateTimeout(){
-        return Duration.ofSeconds(180);
-    }
-
     private LocalDateTime calculateDateAfter(SubscribedChannel channel,
-                                             ChannelFetchingStage stage,
-                                             ChannelFetchingStage.FetchOlderRange fetchOlderRange
+                                             ProgressiveFetchStage stage,
+                                             ProgressiveFetchRange fetchRange
     ) {
         return switch (stage) {
             case FIRST_FETCH -> {
                 LocalDateTime defaultChannelDateAfter = LocalDateTime.now()
-                        .minus(channel.getChannelSettings().getInitialFetchPeriod());
+                    .minus(channel.getChannelSettings().getInitialFetchPeriod());
                 LocalDateTime latestChannelContentDate = channel.getLatestContentOnChannelDate();
 
                 yield latestChannelContentDate.isBefore(defaultChannelDateAfter)
-                        ? latestChannelContentDate.minusDays(1)
-                        : defaultChannelDateAfter;
+                    ? latestChannelContentDate.minusDays(1)
+                    : defaultChannelDateAfter;
             }
             case FETCH_LATEST -> {
                 LocalDateTime lastFetchedDate = channel.getLastFetched();
                 LocalDateTime mostRecentFetchedContent = channel.findMostRecentFetchedContent().getPublished();
 
                 yield mostRecentFetchedContent.isBefore(lastFetchedDate)
-                        ? mostRecentFetchedContent.minusDays(1)
-                        : lastFetchedDate.minusDays(1);
+                    ? mostRecentFetchedContent.minusDays(1)
+                    : lastFetchedDate.minusDays(1);
             }
-            case FETCH_OLDER, ALL_FETCHED -> fetchOlderRange.calculateDateAfter();
+            case FETCH_OLDER, ALL_FETCHED -> fetchRange.calculateDateAfter();
 
             default -> throw new IllegalStateException("Channel in " + stage + " stage cannot be fetched " + channel
                 .getChannelName());
         };
     }
+
+    record FetchResults(List<FetchedContent> fetchedContents, boolean isFullFetched) {}
 }

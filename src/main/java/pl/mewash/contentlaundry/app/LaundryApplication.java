@@ -57,7 +57,7 @@ public class LaundryApplication extends Application {
 
             // --- setup app window ---
             ResourceBundle appBundle = ResourceBundle
-                .getBundle("pl.mewash.contentlaundry.i18n.messages", Locale.getDefault());
+                .getBundle("i18n.messages", Locale.getDefault());
             stage.setTitle(appBundle.getString("app.name") + " - " + appBundle.getString("app.slogan"));
             Scene scene = new Scene(root, 1280, 800);
             stage.setScene(scene);

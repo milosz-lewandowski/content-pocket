@@ -1,62 +1,47 @@
 package pl.mewash.subscriptions.internal.domain.model;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.VideoQuality;
 
 import java.time.Period;
 
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Jacksonized
 public class ChannelSettings {
 
-    private AudioOnlyQuality defaultAudio;
-    private VideoQuality defaultVideo;
+    @Builder.Default private final AudioOnlyQuality defaultAudio = AudioOnlyQuality.MP3;
+    @Builder.Default private final VideoQuality defaultVideo = VideoQuality.STANDARD;
 
-    private boolean autoFetchLastestOnStartup;
-    private boolean fullFetch;
+    @Builder.Default private final boolean autoFetchLatestOnStartup = false;
+    @Builder.Default private final boolean fullFetch = false;
 
-    private boolean autoDownloadAudio;
-    private boolean autoDownloadVideo;
+    @Builder.Default private final boolean autoDownloadAudio = false;
+    @Builder.Default private final boolean autoDownloadVideo = false;
 
-    private boolean addContentDescriptionFiles;
-    private boolean addDownloadDateDir;
-    private boolean separateDirPerFormat;
+    @Builder.Default private final boolean addContentDescriptionFiles = false;
+    @Builder.Default private final boolean addDownloadDateDir = false;
+    @Builder.Default private final boolean separateDirPerFormat = false;
 
-    private Period initialFetchPeriod;
+    @Builder.Default private final Period initialFetchPeriod = Period.ofDays(14);
 
-    private static ChannelSettingsBuilder getBuilderWithDefaults(){
+    private static ChannelSettingsBuilder getBuilderWithDefaults() {
         return ChannelSettings.builder()
-                .defaultAudio(AudioOnlyQuality.MP3)
-                .defaultVideo(VideoQuality.STANDARD)
-                .autoFetchLastestOnStartup(false)
-                .fullFetch(false)
-                .autoDownloadAudio(false)
-                .autoDownloadVideo(false)
-                .addDownloadDateDir(false)
-                .separateDirPerFormat(false)
-                .initialFetchPeriod(Period.ofDays(14));
+            .defaultAudio(AudioOnlyQuality.MP3)
+            .defaultVideo(VideoQuality.STANDARD)
+            .autoFetchLatestOnStartup(false)
+            .fullFetch(false)
+            .autoDownloadAudio(false)
+            .autoDownloadVideo(false)
+            .addDownloadDateDir(false)
+            .separateDirPerFormat(false)
+            .initialFetchPeriod(Period.ofDays(14));
     }
 
-    public static ChannelSettings defaultSettings(){
+    public static ChannelSettings defaultSettings() {
         return getBuilderWithDefaults().build();
-    }
-
-    @Override
-    public String toString() {
-        return "ChannelSettings{" +
-                "defaultAudio=" + defaultAudio +
-                ", defaultVideo=" + defaultVideo +
-                ", autoFetchLastestOnStartup=" + autoFetchLastestOnStartup +
-                ", fullFetch=" + fullFetch +
-                ", autoDownloadAudio=" + autoDownloadAudio +
-                ", autoDownloadVideo=" + autoDownloadVideo +
-                ", addDownloadDateDir=" + addDownloadDateDir +
-                ", separateDirPerFormat=" + separateDirPerFormat +
-                ", initialFetchPeriod=" + initialFetchPeriod +
-                '}';
     }
 }

@@ -2,6 +2,9 @@ package pl.mewash.subscriptions.ui;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -21,21 +24,18 @@ import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
-import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
-import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
+import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
-import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
-import pl.mewash.subscriptions.internal.domain.dto.ChannelFetchParams;
-import pl.mewash.subscriptions.internal.domain.state.ChannelFetchingStage;
-import pl.mewash.subscriptions.internal.domain.state.ChannelValidationStage;
-import pl.mewash.subscriptions.internal.domain.state.ContentDownloadStage;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
-import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
+import pl.mewash.subscriptions.internal.domain.state.*;
+import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
+import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
 import pl.mewash.subscriptions.internal.service.ChannelService;
 import pl.mewash.subscriptions.internal.service.ContentService;
 import pl.mewash.subscriptions.internal.service.FetchService;
 import pl.mewash.subscriptions.ui.components.ContentsSummaryBar;
-import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
+import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.awt.*;
 import java.io.File;
@@ -53,9 +53,9 @@ public class SubscriptionsController {
 
     private static final AtomicInteger vThreadCounter = new AtomicInteger(1);
     private final ExecutorService virtualTasksExecutor = Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual()
-                    .name("VirT-", vThreadCounter.getAndIncrement())
-                    .factory()
+        Thread.ofVirtual()
+            .name("VirT-", vThreadCounter.getAndIncrement())
+            .factory()
     );
 
     @FXML private TextField subsPathField;
@@ -63,7 +63,8 @@ public class SubscriptionsController {
     // add/check channel element
     @FXML private TextField channelUrlInput;
     @FXML public Button checkAddButton;
-    private ChannelValidationStage channelValidationStage;
+    private final ObjectProperty<ChannelValidationStage>
+        channelValidationStage = new SimpleObjectProperty<>(ChannelValidationStage.ADD_NEW);
 
     // subscribed channels list
     private final ObservableList<ChannelUiState> channelsUiStates = FXCollections.observableArrayList();
@@ -80,10 +81,12 @@ public class SubscriptionsController {
     private FetchService fetchService;
     private ChannelService channelService;
     private ContentService contentService;
+    private FileLogger logger;
 
     @FXML
     protected void initialize() {
         AppContext appContext = AppContext.getInstance();
+        logger = appContext.getFileLogger();
         SubscriptionsJsonRepo.getInstance().load();
 
         repository = SubscriptionsJsonRepo.getInstance();
@@ -93,11 +96,16 @@ public class SubscriptionsController {
         contentService = new ContentService(appContext);
 
         generalSettings = SettingsManager.load();
-        if (Objects.nonNull(generalSettings.subsLastSelectedPath) && !generalSettings.subsLastSelectedPath.isBlank()) {
-            subsPathField.setText(generalSettings.subsLastSelectedPath);
-        }
+        String lastSelectedPath = generalSettings.getSubsLastSelectedPath();
+        if (Objects.nonNull(lastSelectedPath) && !lastSelectedPath.isBlank()) subsPathField
+            .setText(lastSelectedPath);
 
-        channelValidationStage = ChannelValidationStage.ADD_NEW;
+        channelValidationStage.set(ChannelValidationStage.ADD_NEW);
+        checkAddButton.textProperty().bind(Bindings
+            .createStringBinding(() -> channelValidationStage.get().getButtonTitle(), channelValidationStage));
+        checkAddButton.disableProperty().bind(Bindings
+            .createBooleanBinding(() -> channelValidationStage.get().isButtonDisabled(), channelValidationStage));
+
         channelListView.setItems(channelsUiStates);
         channelsUiStates.addAll(repository.loadChannelsUiList());
         loadChannelsListOnUi();
@@ -105,10 +113,9 @@ public class SubscriptionsController {
         loadFetchedUploadsListOnUi();
         fetchedContentsListView.setItems(currentFetchedContents);
 
-        channelsUiStates.forEach(channelUiState -> {
-            if (repository.getChannelSettings(channelUiState.getUrl()).isAutoFetchLastestOnStartup()) {
-                submitFetchTask(channelUiState);
-            }
+        channelsUiStates.forEach(uiState -> {
+            if (uiState.getChannel().getChannelSettings().isAutoFetchLatestOnStartup())
+                submitFetchTask(uiState);
         });
     }
 
@@ -120,16 +127,16 @@ public class SubscriptionsController {
         DirectoryChooser chooser = new DirectoryChooser();
         String currentPath = subsPathField.getText().trim();
         File initialDir = new File(currentPath);
-        if (initialDir.exists() && initialDir.isDirectory()) {
-            chooser.setInitialDirectory(initialDir);
-        }
+        if (initialDir.exists() && initialDir.isDirectory()) chooser
+            .setInitialDirectory(initialDir);
+
 
         File selectedDirectory = chooser.showDialog(null);
         if (selectedDirectory != null) {
             String selectedPath = selectedDirectory.getAbsolutePath();
             subsPathField.setText(selectedPath);
 
-            generalSettings.subsLastSelectedPath = selectedPath;
+            generalSettings.setSubsLastSelectedPath(selectedPath);
             SettingsManager.saveSettings(generalSettings);
         }
     }
@@ -139,29 +146,41 @@ public class SubscriptionsController {
         getChannelUrlInputWithAlert().ifPresent(channelUrl -> {
             if (!checkIfAlreadySubscribedWithAlert(channelUrl)) {
 
-                updateAddChannelButtonState(ChannelValidationStage.CHECKING);
+                virtualTasksExecutor.submit(() -> {
+                    updateAddChannelButtonState(ChannelValidationStage.CHECKING);
 
-                Optional<ChannelUiState> newChannelState = channelService.verifyAndAddChannel(channelUrl);
-                newChannelState.ifPresent(channelState -> {
-                    ChannelSettings channelSettings = channelState.getChannelSettings();
+                    Optional<SubscribedChannel> newChannel = channelService.verifyAndGetChannel(channelUrl);
 
-                    if (channelSettings.isFullFetch()) {
-                        channelState.setFetchingStage(ChannelFetchingStage.FETCH_OLDER);
-                        channelState.setFetchOlderStage(ChannelFetchingStage.FetchOlderRange.LAST_25_YEARS);
-                        submitFetchTask(channelState);
+                    newChannel.ifPresent(channel -> {
+                        Platform.runLater(() -> {
+                            ChannelSettings channelSettings = Dialogs
+                                .showNewChannelSettingsDialogAndWait(channel.getChannelName())
+                                .orElse(ChannelSettings.defaultSettings());
 
-                    } else if (channelSettings.isAutoFetchLastestOnStartup()) {
-                        channelState.setFetchingStage(ChannelFetchingStage.FIRST_FETCH);
-                        submitFetchTask(channelState);
-                    }
+                            channel.setChannelSettings(channelSettings);
+                            ChannelUiState channelState = channelService.saveChannelAndGetState(channel);
 
-                    channelsUiStates.add(channelState);
-                    channelListView.refresh();
+                            if (channelSettings.isFullFetch()) {
+                                channelState.setFetchingStageWithRange(
+                                    ProgressiveFetchRange.LAST_25_YEARS,
+                                    ProgressiveFetchStage.FETCH_OLDER
+                                );
+                                submitFetchTask(channelState);
+
+                            } else if (channelSettings.isAutoFetchLatestOnStartup()) {
+                                channelState.setFetchingStage(ProgressiveFetchStage.FIRST_FETCH);
+                                submitFetchTask(channelState);
+                            }
+
+                            channelsUiStates.add(channelState);
+                            channelListView.refresh();
+
+                            channelUrlInput.clear();
+                            updateAddChannelButtonState(ChannelValidationStage.ADD_NEW);
+                        });
+                    });
                 });
             }
-
-            channelUrlInput.clear();
-            updateAddChannelButtonState(ChannelValidationStage.ADD_NEW);
         });
     }
 
@@ -188,7 +207,7 @@ public class SubscriptionsController {
                     manageButton.setOnAction(e -> handleManageChannelSettings(channelState));
 
                     // View Button
-                    Button viewButton = new Button("View");
+                    Button viewButton = ButtonFactory.getViewButton(channelState);
                     viewButton.setOnAction(e -> handleViewContents(channelState));
 
                     HBox buttonsBox = new HBox(6, fetchButton, manageButton, viewButton);
@@ -218,11 +237,11 @@ public class SubscriptionsController {
 
                     Button audioButton = ButtonFactory.getAudioContentButton(content);
                     audioButton.setOnAction(e -> handleContentOptionButton(content,
-                            repository.getChannelSettings(content.getChannelUrl()).getDefaultAudio()));
+                        repository.getChannelSettings(content.getChannelUrl()).getDefaultAudio()));
 
                     Button videoButton = ButtonFactory.getVideoContentButton(content);
                     videoButton.setOnAction(e -> handleContentOptionButton(content,
-                            repository.getChannelSettings(content.getChannelUrl()).getDefaultVideo()));
+                        repository.getChannelSettings(content.getChannelUrl()).getDefaultVideo()));
 
                     Button copyButton = ButtonFactory.getCopyContentUrlButton(content.getUrl());
 
@@ -238,30 +257,18 @@ public class SubscriptionsController {
     // --- Cell buttons actions ---
 
     private void submitFetchTask(ChannelUiState channelState) {
-        if (channelState.getFetchingStage() == ChannelFetchingStage.ALL_FETCHED
-            && DialogLauncher.showFullFetchRetryAlert()) {
-            return;
-        }
+        if (channelState.getFetchingStage().get() == ProgressiveFetchStage.ALL_FETCHED
+            && Dialogs.showFullFetchRetryAlert()) return;
 
         virtualTasksExecutor.submit(() -> {
-
-            ChannelFetchParams currentFetchParams = channelState.copyCurrentFetchParams();
-
-            channelState.setFetchingStage(ChannelFetchingStage.FETCHING);
-            Platform.runLater(channelListView::refresh);
-
-            ChannelFetchParams resultStage = fetchService.fetch(channelState.getUrl(), currentFetchParams);
-
-            channelState.setFetchingStage(resultStage.stage());
-            channelState.setFetchOlderStage(resultStage.fetchOlder());
+            boolean foundNew = fetchService.fetch(channelState);
 
             Platform.runLater(() -> {
                 channelListView.refresh();
 
                 Optional<FetchedContent> currentView = fetchedContentsListView.getItems().stream().findAny();
-                if (currentView.isPresent() && currentView.get().getChannelUrl().equals(channelState.getUrl())) {
+                if (currentView.isPresent() && currentView.get().getChannelUrl().equals(channelState.getUrl()))
                     handleViewContents(channelState);
-                }
             });
         });
     }
@@ -270,15 +277,15 @@ public class SubscriptionsController {
         List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelState.getUrl());
         SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
 
-        Predicate<ChannelFetchingStage> fetchedLatest = (stage) ->
-            stage == ChannelFetchingStage.ALL_FETCHED || stage == ChannelFetchingStage.FETCH_OLDER;
+        Predicate<ProgressiveFetchStage> fetchedLatest = (stage) ->
+            stage == ProgressiveFetchStage.ALL_FETCHED || stage == ProgressiveFetchStage.FETCH_OLDER;
 
 
         ContentsSummaryBar.Params barParams = ContentsSummaryBar.Params.builder()
             .channelName(channelState.getChannelName())
             .contentsCount(fetchedContents.size())
             .lastFetchDate(subscribedChannel.getLastFetched())
-            .fetchedLatest(fetchedLatest.test(channelState.getFetchingStage()))
+            .fetchedLatest(fetchedLatest.test(channelState.getFetchingStage().get()))
             .fetchedSince(subscribedChannel.getPreviousFetchOlderRangeDate())
             .fetchedOldest(subscribedChannel.isFetchedSinceOldest())
             .savedAudios((int) fetchedContents.stream()
@@ -289,13 +296,9 @@ public class SubscriptionsController {
 
         GridPane bar = new ContentsSummaryBar().buildGridPane(barParams);
 
-
-        // make it stretch horizontally inside the StackPane
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.prefWidthProperty().bind(contentsBarPane.widthProperty());
         StackPane.setAlignment(bar, Pos.CENTER_LEFT);
-
-        // replace the placeholder content
         contentsBarPane.getChildren().setAll(bar);
 
         currentFetchedContents.clear();
@@ -306,22 +309,20 @@ public class SubscriptionsController {
         SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
 
         ChannelSettings currentSettings = subscribedChannel.getChannelSettings();
-        Optional<ChannelSettings> selectedSettings = DialogLauncher.showChannelSettingsDialogAndWait(currentSettings);
+        Optional<ChannelSettings> selectedSettings = Dialogs
+            .showEditChannelSettingsDialogAndWait(currentSettings, channelState.getChannelName());
 
         selectedSettings.ifPresent(newSettings -> {
-            channelState.setChannelSettings(newSettings);
-            repository.updateChannelSettingsFromState(channelState);
+            channelState.getChannel().setChannelSettings(newSettings);
+            repository.updateChannel(channelState.getChannel());
 
             Platform.runLater(channelListView::refresh);
         });
     }
 
     private void handleContentOptionButton(FetchedContent content, DownloadOption downloadOption) {
-        if (content.isDownloaded(downloadOption)) {
-            openInExplorer(content, downloadOption);
-        } else {
-            submitDownloadTask(content, downloadOption);
-        }
+        if (content.isDownloaded(downloadOption)) openInExplorer(content, downloadOption);
+        else submitDownloadTask(content, downloadOption);
     }
 
     private void submitDownloadTask(FetchedContent content, DownloadOption downloadOption) {
@@ -348,14 +349,12 @@ public class SubscriptionsController {
                 Path toOpen = Files.isDirectory(path) ? path : path.getParent();
                 Desktop.getDesktop().open(toOpen.toFile());
             } else {
-                DialogLauncher.showAlertAndAwait("File not found",
-                        "The saved path does not exist:\n" + path,
-                        Alert.AlertType.WARNING);
+                Dialogs.showAlertAndAwait("File not found", "The saved path does not exist: " + path, Alert
+                    .AlertType.WARNING);
             }
         } catch (Exception ex) {
-            System.err.println("Open failed: " + ex.getMessage());
-            AppContext.getInstance().getFileLogger().appendSingleLine(ex.getMessage());
-            DialogLauncher.showAlertAndAwait("Open failed", ex.getMessage(), Alert.AlertType.ERROR);
+            logger.logErrWithMessage("Could not open content location", ex, true);
+            Dialogs.showAlertAndAwait("Open failed", ex.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -395,7 +394,7 @@ public class SubscriptionsController {
             Button videoButton = new Button(videoStage.getVideoTitle());
             videoButton.setDisable(videoStage.isDisabled());
             if (videoStage == ContentDownloadStage.SAVED) videoButton
-                    .setStyle("-fx-background-color: #cccccc;");
+                .setStyle("-fx-background-color: #cccccc;");
             return videoButton;
         }
 
@@ -404,15 +403,27 @@ public class SubscriptionsController {
             Button audioButton = new Button(audioStage.getAudioTitle());
             audioButton.setDisable(audioStage.isDisabled());
             if (audioStage == ContentDownloadStage.SAVED) audioButton
-                    .setStyle("-fx-background-color: #cccccc;");
+                .setStyle("-fx-background-color: #cccccc;");
             return audioButton;
         }
 
+        static Button getViewButton(ChannelUiState channelState) {
+            Button viewButton = new Button("View");
+            viewButton.disableProperty().bind(Bindings
+                .createBooleanBinding(channelState::isBeforeFirstFetch, channelState.getFetchingStage()));
+            return viewButton;
+        }
+
         static Button getFetchButton(ChannelUiState channelState) {
-            Button fetchButton = new Button(channelState.getFetchButtonTitle());
-            fetchButton.setDisable(channelState.getFetchingStage().isDisabled());
-            if (channelState.getFetchingStage() == ChannelFetchingStage.ALL_FETCHED)
-                fetchButton.setStyle("-fx-background-color: #cccccc;");
+            Button fetchButton = new Button();
+            fetchButton.textProperty().bind(Bindings
+                .createStringBinding(channelState::getFetchButtonTitle, channelState.getFetchingStage()));
+            fetchButton.disableProperty().bind(Bindings
+                .createBooleanBinding(channelState::getButtonDisabled, channelState.getFetchingStage()));
+            fetchButton.styleProperty().bind(Bindings
+                .when(channelState.getFetchingStage().isEqualTo(ProgressiveFetchStage.ALL_FETCHED))
+                .then("-fx-background-color: #cccccc;")
+                .otherwise(""));
             return fetchButton;
         }
     }
@@ -423,7 +434,7 @@ public class SubscriptionsController {
     private Optional<String> getSubsBasePathWithAlert() {
         String path = subsPathField.getText().trim();
         if (path.isEmpty()) {
-            DialogLauncher.showAlertAndAwait("No download path selected",
+            Dialogs.showAlertAndAwait("No download path selected",
                 "Select a download path", Alert.AlertType.INFORMATION);
             return Optional.empty();
         }
@@ -433,7 +444,7 @@ public class SubscriptionsController {
     private Optional<String> getChannelUrlInputWithAlert() {
         String channelUrl = channelUrlInput.getText().trim();
         if (channelUrl.isEmpty()) {
-            DialogLauncher.showAlertAndAwait("Channel URL required",
+            Dialogs.showAlertAndAwait("Channel URL required",
                 "Enter a channel URL.", Alert.AlertType.INFORMATION);
             return Optional.empty();
         }
@@ -444,21 +455,18 @@ public class SubscriptionsController {
         Optional<SubscribedChannel> existingChannel = repository.findChannelIfUrlExists(channelUrl);
         if (existingChannel.isPresent()) {
             String name = existingChannel.get().getChannelName();
-            DialogLauncher.showAlertAndAwait("Channel already subscribed",
-                    "This channel is already saved with name: " + name,
-                    Alert.AlertType.INFORMATION);
+            Dialogs.showAlertAndAwait("Channel already subscribed",
+                "This channel is already saved with name: " + name,
+                Alert.AlertType.INFORMATION);
             Platform.runLater(() -> channelUrlInput.clear());
             return true;
         }
         return false;
     }
 
-    private void updateAddChannelButtonState(ChannelValidationStage stage) {
-        channelValidationStage = stage;
-        Platform.runLater(() -> {
-            checkAddButton.setText(stage.getButtonTitle());
-            checkAddButton.setDisable(stage.isButtonDisabled());
-        });
+    private void updateAddChannelButtonState(ChannelValidationStage validationStage) {
+        if (Platform.isFxApplicationThread()) channelValidationStage.set(validationStage);
+        else Platform.runLater(() -> channelValidationStage.set(validationStage));
     }
 }
 

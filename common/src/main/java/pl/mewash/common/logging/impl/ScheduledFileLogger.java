@@ -3,10 +3,7 @@ package pl.mewash.common.logging.impl;
 import pl.mewash.common.app.config.ConfigPaths;
 import pl.mewash.common.logging.api.FileLogger;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,8 +64,35 @@ public class ScheduledFileLogger implements FileLogger {
     }
 
     @Override
+    public void logErrStackTrace(Throwable e, boolean serr) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        appendSingleLine(sw.toString());
+        if (serr) System.err.println(sw);
+    }
+
+    @Override
+    public void logErrWithMessage(String desc, Throwable e, boolean serr) {
+        String message = desc + ": " + e.getMessage();
+        appendSingleLine(message);
+        if (serr) System.err.println(message);
+    }
+
+    @Override
     public void consumeAndLogProcessOutputToFile(Process process) {
+        logProcessOutputToFile(process);
+    }
+
+    @Override
+    public List<String> getProcessOutputAndLogToFile(Process process) {
+        return logProcessOutputToFile(process);
+    }
+
+
+    private List<String> logProcessOutputToFile(Process process) {
         ThreadBuffer localThreadBuffer = threadBuffer.get();
+
+        List<String> outputList = new ArrayList<>();
 
         try (BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
              BufferedReader stdErr = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
@@ -76,9 +100,9 @@ public class ScheduledFileLogger implements FileLogger {
             String threadName = shortThreadName();
             String line;
 
-
             while ((line = stdOut.readLine()) != null) {
                 if (!isYtDlpProgressMessageLine(line)) {
+                    outputList.add(line);
                     String time = LocalDateTime.now().format(TIME_FORMAT);
                     localThreadBuffer.add("[OUT] " + time + " [" + threadName + "]: " + line.trim());
                 }
@@ -98,6 +122,7 @@ public class ScheduledFileLogger implements FileLogger {
             localThreadBuffersList.remove(localThreadBuffer);
             threadBuffer.remove();
         }
+        return outputList;
     }
 
     private void setupScheduledLogFileWriter() {

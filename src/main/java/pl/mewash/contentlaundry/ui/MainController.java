@@ -8,10 +8,9 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Popup;
 import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.common.spi.tabs.TabPlugin;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URL;
 import java.util.List;
 import java.util.Locale;
@@ -55,12 +54,9 @@ public class MainController {
                     tabs.getTabs().add(tab);
 
                 } catch (Exception e) {
-                    System.err.println("Failed to load tab plugin " + tabProvider.id() + ": " + e.getMessage());
-
-                    StringWriter sw = new StringWriter();
-                    e.printStackTrace(new PrintWriter(sw));
-                    AppContext.getInstance().getFileLogger()
-                        .appendSingleLine(sw.toString());
+                    FileLogger logger = AppContext.getInstance().getFileLogger();
+                    logger.logErrWithMessage("Failed to load tab plugin " + tabProvider.id(), e, true);
+                    logger.logErrStackTrace(e, true);
                 }
             });
         }
@@ -68,7 +64,7 @@ public class MainController {
 
     private void setupCreditsPopup() {
         Label popupContent = new Label(AppContext.getInstance().getResource.apply(ResourceBundle
-            .getBundle("pl.mewash.contentlaundry.i18n.messages", Locale.getDefault()).getString("app.credits")));
+            .getBundle("i18n.messages", Locale.getDefault()).getString("app.credits")));
 
         popupContent.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
         popupContent.setOnMouseClicked(e -> infoPopup.hide());

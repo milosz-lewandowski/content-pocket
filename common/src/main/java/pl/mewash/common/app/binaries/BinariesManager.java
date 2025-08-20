@@ -34,8 +34,8 @@ public class BinariesManager {
         String directoryPath = null;
 
         // if binaries confirmed
-        if (generalSettings.binariesDirConfirmed) {
-            directoryPath = generalSettings.binariesDirPath;
+        if (generalSettings.isBinariesDirConfirmed()) {
+            directoryPath = generalSettings.getBinariesDirPath();
             return directoryPath;
         }
 
@@ -69,8 +69,8 @@ public class BinariesManager {
 
         fileLogger.appendSingleLine("Binaries found at: " + location);
         System.out.println("Binaries found at: " + location);
-        generalSettings.binariesDirConfirmed = true;
-        generalSettings.binariesDirPath = location;
+        generalSettings.setBinariesDirConfirmed(true);
+        generalSettings.setBinariesDirPath(location);
         SettingsManager.saveSettings(generalSettings);
         return location;
     }
@@ -170,9 +170,6 @@ public class BinariesManager {
     @AllArgsConstructor
     public enum MacosLocations implements ToolPathSupplier {
         USER_HOME_BIN("user.home", "bin"), // default for separate 'by user' installation
-//        HOME_DIR_BIN("home.dir", "bin"),
-//        HOME_DIR_USR_BIN("home.dir", "usr/bin"),
-//        APP_DIR_BIN("user.dir", "bin"),
         ;
 
         final String property;

@@ -11,7 +11,7 @@ import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
-import pl.mewash.subscriptions.ui.dialogs.DialogLauncher;
+import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -30,7 +30,7 @@ public class ContentService {
 
     public void downloadFetched(FetchedContent content, DownloadOption downloadOption, String subsBasePath) {
 
-        ChannelSettings channelSettings = repository.getChannelSettings(content.getChannelName());
+        ChannelSettings channelSettings = repository.getChannel(content.getChannelUrl()).getChannelSettings();
 
         StorageOptions storage = new StorageOptions(
             channelSettings.isAddContentDescriptionFiles(),
@@ -50,10 +50,11 @@ public class ContentService {
             repository.updateContent(content);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            AppContext.getInstance().getFileLogger()
+                    .logErrWithMessage("Downloading error of: " + content.getTitle(), e, true);
             content.setDownloadingErrorState(downloadOption);
             repository.updateContent(content);
-            DialogLauncher.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);
+            Dialogs.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 }

@@ -35,7 +35,6 @@ public class ContentsSummaryBar {
     public GridPane buildGridPane(Params params) {
         setLabelsValues(params);
 
-
         // --- main grid ---
         GridPane main = new GridPane();
         main.setHgap(20);
@@ -48,9 +47,7 @@ public class ContentsSummaryBar {
         ColumnConstraints C1 = new ColumnConstraints();
         C1.setHalignment(HPos.RIGHT);
 
-
         main.getColumnConstraints().addAll(C0, C1);
-
 
         // --- left grid ---
         GridPane l = new GridPane();
@@ -60,14 +57,13 @@ public class ContentsSummaryBar {
         l.add(new Label("Fetched Latest"),3, 0);    l.add(areLatestFetched,4, 0);
         l.add(new Label("Fetched Oldest"),3, 1);    l.add(isFetchedOldest, 4, 1);
 
-        l.add(spacerL(), 2, 0);                     l.add(spacerL(), 2, 1);
+        l.add(spacerL(), 2, 0);                        l.add(spacerL(), 2, 1);
 
         l.add(new Label("Last Fetch:"),    0, 0);   l.add(lastFetchDate,   1, 0);
         l.add(new Label("Fetched Since:"), 0, 1);   l.add(fetchedSinceDate,1, 1);
 
         GridPane.setHalignment(lastFetchDate, HPos.RIGHT);
         GridPane.setHalignment(fetchedSinceDate, HPos.RIGHT);
-
 
         // --- right grid ---
         GridPane r = new GridPane();
@@ -86,7 +82,7 @@ public class ContentsSummaryBar {
         r.add(spacerL(), 2, 0);                     r.add(spacerL(), 2, 1);
 
         r.add(channelName, 3, 0);                   GridPane.setColumnSpan(channelName, 2);
-        r.add(new Label("Contents:"),     3, 1);    r.add(totalContents,  4, 1);
+        r.add(new Label("Contents:"),     3, 1); r.add(totalContents,  4, 1);
 
         GridPane.setHalignment(channelName, HPos.RIGHT);
         GridPane.setHalignment(totalContents, HPos.RIGHT);

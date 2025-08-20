@@ -1,8 +1,9 @@
 package pl.mewash.subscriptions.internal.persistence.impl;
 
+import pl.mewash.common.app.context.AppContext;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
-import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
+import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
 
@@ -33,7 +34,7 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
             List<SubscribedChannel> loaded = SubscriptionsJsonManager.loadChannels();
             Map<String, SubscribedChannel> channelsMap = loaded.stream()
                 .collect(Collectors.toMap(
-                    SubscribedChannel::getUrl,
+                    SubscribedChannel::getUniqueUrl,
                     Function.identity(),
                     (existing, newValue) -> existing,
                     ConcurrentHashMap::new
@@ -41,7 +42,10 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
             channelsUrlsMap.clear();
             channelsUrlsMap.putAll(channelsMap);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            AppContext.getInstance().getFileLogger()
+                .logErrWithMessage("Error while loading channels from file", e, true);
+            AppContext.getInstance().getFileLogger()
+                .logErrStackTrace(e, true);
         }
     }
 
@@ -52,6 +56,7 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
     public List<ChannelUiState> loadChannelsUiList() {
         return channelsUrlsMap.values().stream()
             .map(ChannelUiState::fromChannelInit)
+            .sorted(Comparator.comparing(ChannelUiState::getChannelName, String.CASE_INSENSITIVE_ORDER))
             .toList();
     }
 
@@ -70,7 +75,7 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
     }
 
     public void addChannel(SubscribedChannel channel) {
-        channelsUrlsMap.put(channel.getUrl(), channel);
+        channelsUrlsMap.put(channel.getUniqueUrl(), channel);
         persist();
     }
 
@@ -79,14 +84,7 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
     }
 
     public void updateChannel(SubscribedChannel subscribedChannel) {
-        channelsUrlsMap.put(subscribedChannel.getUrl(), subscribedChannel);
-        persist();
-    }
-
-    public void updateChannelSettingsFromState(ChannelUiState channelUiState) {
-        SubscribedChannel subscribedChannel = channelsUrlsMap.get(channelUiState.getUrl());
-        subscribedChannel.setChannelSettings(channelUiState.getChannelSettings());
-        channelsUrlsMap.put(subscribedChannel.getUrl(), subscribedChannel);
+        channelsUrlsMap.put(subscribedChannel.getUniqueUrl(), subscribedChannel);
         persist();
     }
 
