@@ -18,17 +18,18 @@ import java.util.ResourceBundle;
 
 public class MainController {
 
-    @FXML private ResourceBundle resources;
+    private final ResourceBundle defaultAppBundle;
+    private final List<TabPlugin> tabPlugins;
+
     @FXML private Label creditsLabel;
     @FXML private TabPane tabs;
 
     private final Popup infoPopup = new Popup();
     private boolean popupShown = false;
 
-    private final List<TabPlugin> tabPlugins;
-
-    public MainController(List<TabPlugin> tabPlugins) {
+    public MainController(List<TabPlugin> tabPlugins, ResourceBundle defaultAppBundle) {
         this.tabPlugins = tabPlugins;
+        this.defaultAppBundle = defaultAppBundle;
     }
 
     @FXML
@@ -46,7 +47,10 @@ public class MainController {
             tabPlugins.forEach(tabProvider -> {
                 try {
                     URL url = tabProvider.getClass().getResource(tabProvider.fxmlPath());
-                    FXMLLoader fxmlLoader = new FXMLLoader(url, resources);
+                    ResourceBundle resultBundle = tabProvider.resBndlLocation().isPresent()
+                        ? ResourceBundle.getBundle(tabProvider.resBndlLocation().get(), Locale.getDefault())
+                        : defaultAppBundle;
+                    FXMLLoader fxmlLoader = new FXMLLoader(url, resultBundle);
                     Node content = fxmlLoader.load();
 
                     Tab tab = new Tab(tabProvider.title(), content);

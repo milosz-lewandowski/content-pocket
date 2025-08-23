@@ -19,10 +19,8 @@ public class AppContext {
 
     private String confirmedToolsDir;
     private BinariesManager.SupportedPlatforms detectedPlatform;
-
     private String YtDlpCommand;
     private String FfMpegCommand;
-
     private FileLogger fileLogger;
 
     private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();

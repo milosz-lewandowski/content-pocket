@@ -4,33 +4,36 @@ import pl.mewash.batch.internals.models.BatchJobParams;
 import pl.mewash.batch.internals.models.BatchProcessingState;
 import pl.mewash.batch.internals.models.MultithreadingMode;
 import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.downloads.api.DownloadService;
+import pl.mewash.common.logging.api.FileLogger;
 
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class BatchProcessor {
 
     private final DownloadService downloadService;
+    private final BiConsumer<String, Object[]> uiResLogger;
+    private final FileLogger fileLogger;
+
+    private volatile Consumer<BatchProcessingState> updateLaundryButtonListener;
+    private final AtomicReference<BatchProcessingState> 
+        processingState = new AtomicReference<>(BatchProcessingState.NOT_RUNNING);
+
     private BatchJobParams currentJobParams;
     private JobDispatcher jobDispatcher;
     private ThreadPoolExecutor workersPool;
 
-    private final Consumer<String> uiLogger;
-    private final Consumer<String> errorLogger;
-
-    private final AtomicReference<BatchProcessingState> processingState =
-        new AtomicReference<>(BatchProcessingState.NOT_RUNNING);
-
-    // inject button update action
-    private volatile Consumer<BatchProcessingState> updateLaundryButtonListener;
-    public void injectUpdateButtonAction(Consumer<BatchProcessingState> updateButtonEvent) {
-        assert updateButtonEvent != null;
-        this.updateLaundryButtonListener = updateButtonEvent;
+    public BatchProcessor(DownloadService downloadService, BiConsumer<String, Object[]> uiResLogger) {
+        this.downloadService = downloadService;
+        this.uiResLogger = uiResLogger;
+        fileLogger = AppContext.getInstance().getFileLogger();
     }
 
     private void updateProcessingState(BatchProcessingState state) {
@@ -38,10 +41,9 @@ public class BatchProcessor {
         updateLaundryButtonListener.accept(state);
     }
 
-    public BatchProcessor(Consumer<String> uiLogger, Consumer<String> errorLogger, DownloadService downloadService) {
-        this.uiLogger = uiLogger;
-        this.errorLogger = errorLogger;
-        this.downloadService = downloadService;
+    public void injectUpdateButtonAction(Consumer<BatchProcessingState> updateButtonEvent) {
+        assert updateButtonEvent != null;
+        this.updateLaundryButtonListener = updateButtonEvent;
     }
 
     public BatchProcessingState getProcessingState() {
@@ -50,33 +52,41 @@ public class BatchProcessor {
 
     public void gracefulShutdownAsync() {
         CompletableFuture.runAsync(() -> {
+            
             updateProcessingState(BatchProcessingState.IN_GRACEFUL_SHUTDOWN);
             jobDispatcher.stop();
+            
             if (workersPool == null) return;
             if (!workersPool.isShutdown()) workersPool.shutdown();
+            
             int remainingTasks = jobDispatcher.getRemainingQueueSize();
-            uiLogger.accept("\n--- Batch service shutting down gracefully. Completing in progress tasks and" +
-                " rejecting remaining " + remainingTasks + " tasks. ---\n");
+            logResourceToUi("log.processor.shutdown.graceful.init", remainingTasks);
 
             try {
                 if (!workersPool.awaitTermination(120, TimeUnit.SECONDS)) {
-                    uiLogger.accept("--- Graceful shutdown timed out. Forcing shutdown.--- ");
+                    logResourceToUi("log.processor.shutdown.graceful.timeout");
+                    logResourceToUi("log.processor.shutdown.force.warning");
+                    
                     updateProcessingState(BatchProcessingState.IN_FORCED_SHUTDOWN);
                     workersPool.shutdownNow();
                 } else {
-                    if (processingState.get() == BatchProcessingState.IN_GRACEFUL_SHUTDOWN) {
-                        uiLogger.accept("\n--- Graceful shutdown completed. ---\n");
-                    } else if (processingState.get() == BatchProcessingState.IN_FORCED_SHUTDOWN) {
-                        uiLogger.accept("\n--- Forced shutdown completed. ---\n");
-                    } else {
-                        uiLogger.accept("\n--- Shutdown completed in incorrect state ---\n");
-                    }
+                    
+                    if (processingState.get() == BatchProcessingState.IN_GRACEFUL_SHUTDOWN)
+                        logResourceToUi("log.processor.shutdown.graceful.completed");
+                    else if (processingState.get() == BatchProcessingState.IN_FORCED_SHUTDOWN)
+                        logResourceToUi("log.processor.shutdown.force.completed");
+                    else fileLogger
+                            .appendSingleLine("!!! processor shutdown in unexpected state: " + processingState.get());
+                    
                     updateProcessingState(BatchProcessingState.NOT_RUNNING);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                
+                logResourceToUi("log.processor.shutdown.graceful.interrupted");
+                logResourceToUi("log.processor.shutdown.force.warning");
+                
                 workersPool.shutdownNow();
-                uiLogger.accept("--- Interrupted during graceful shutdown. Forcing shutdown. ---");
                 updateProcessingState(BatchProcessingState.NOT_RUNNING);
             }
         });
@@ -87,8 +97,8 @@ public class BatchProcessor {
         if (workersPool == null) return;
         if (!workersPool.isTerminated()) workersPool.shutdownNow();
         updateProcessingState(BatchProcessingState.IN_FORCED_SHUTDOWN);
-        uiLogger.accept("\n--- Forcing shutdown on demand, aborting in progress tasks. ---\n" +
-            "--- ! this may leave temporary and partial files ! ---\n");
+        logResourceToUi("log.processor.shutdown.force.init_on_demand");
+        logResourceToUi("log.processor.shutdown.force.warning");
     }
 
     public void processBatchLaundry(BatchJobParams jobParams) {
@@ -107,7 +117,8 @@ public class BatchProcessor {
 
         if (getProcessingState() != BatchProcessingState.IN_GRACEFUL_SHUTDOWN
             && getProcessingState() != BatchProcessingState.NOT_RUNNING) {
-            uiLogger.accept("All downloads finished!");
+
+            logResourceToUi("log.processor.batch.completed");
             updateProcessingState(BatchProcessingState.NOT_RUNNING);
         }
     }
@@ -210,12 +221,17 @@ public class BatchProcessor {
 
         public void run() {
             try {
-                downloadService.downloadWithSettings(url, downloadOption, params.getBasePath(), params.getStorageOptions());
+                logResourceToUi("log.processor.job.started", url, downloadOption.getOptionName());
+                var results = downloadService
+                    .downloadWithSettings(url, downloadOption, params.getBasePath(), params.getStorageOptions());
                 params.getCompletedCount().incrementAndGet();
+                logResourceToUi("log.processor.job.completed", results.title(), downloadOption.getOptionName());
+
             } catch (Exception e) {
-                String failureMessage = String.format(" Failed to download [%s] as [%s]%n", url, downloadOption);
-                uiLogger.accept(failureMessage);
-                errorLogger.accept(failureMessage + e.getMessage());
+                logResourceToUi("log.processor.job.failed", url, downloadOption.getOptionName());
+                fileLogger.logErrWithMessage(String
+                    .format(" Failed to download [%s] as [%s]%n", url, downloadOption), e, true);
+
                 params.getFailedCount().incrementAndGet();
             }
         }
@@ -225,16 +241,18 @@ public class BatchProcessor {
         MultithreadingMode mode = params.getMultithreadingMode();
         int calculatedAvailableThreads = mode.calculateThreads();
         int fixedThreads = Math.min(params.calculateTotalDownloads(), calculatedAvailableThreads);
-        String parallelMessage = mode == MultithreadingMode.SINGLE
-            ? "Single thread: sequential downloads"
-            : "Parallel mode: " + mode.name().toLowerCase() + ", worker threads: " + fixedThreads;
-        uiLogger.accept(parallelMessage);
-
+        
+        logResourceToUi("log.processor.multithreading", mode.name(), fixedThreads);
+        
         return new ThreadPoolExecutor(
             fixedThreads, fixedThreads,
             0L, TimeUnit.MILLISECONDS,
             new SynchronousQueue<>(),
             new ThreadPoolExecutor.AbortPolicy()
         );
+    }
+
+    private void logResourceToUi(String key, Object... params) {
+        uiResLogger.accept(key, params);
     }
 }

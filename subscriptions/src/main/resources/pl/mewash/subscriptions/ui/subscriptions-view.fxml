@@ -17,9 +17,9 @@
 
     <VBox spacing="10" style="-fx-padding: 10;">
         <HBox spacing="10" alignment="CENTER_LEFT">
-            <Label text="%label.save_to_dir"/>
+            <Label text="Save to:"/>
             <TextField fx:id="subsPathField" prefWidth="300"/>
-            <Button text="%button.browse_dirs" onAction="#handleBrowse"/>
+            <Button text="Browse..." onAction="#handleBrowse"/>
         </HBox>
         <Separator/>
         <StackPane fx:id="contentsBarPane"/>

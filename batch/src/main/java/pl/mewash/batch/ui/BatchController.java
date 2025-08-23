@@ -11,20 +11,20 @@ import pl.mewash.batch.internals.BatchProcessor;
 import pl.mewash.batch.internals.models.BatchJobParams;
 import pl.mewash.batch.internals.models.BatchProcessingState;
 import pl.mewash.batch.internals.models.MultithreadingMode;
-import pl.mewash.batch.internals.utils.BatchAlerts;
+import pl.mewash.batch.internals.utils.Dialogs;
 import pl.mewash.batch.internals.utils.InputUtils;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.storage.AdditionalFiles;
 import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
+import pl.mewash.common.app.lifecycle.OnCloseHandler;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
 import pl.mewash.common.downloads.api.DownloadService;
 import pl.mewash.common.downloads.api.DownloadServiceProvider;
-import pl.mewash.common.app.lifecycle.OnCloseHandler;
-import pl.mewash.common.logging.api.FileLogger;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -61,6 +61,7 @@ public class BatchController implements OnCloseHandler {
 
     // Metadata files selection
     @FXML private RadioButton fileOnlyRadio;
+    @FXML private RadioButton fileWithDescRadio;
     @FXML private RadioButton fileWithMetadataRadio;
 
     // Grouping Selection
@@ -91,23 +92,24 @@ public class BatchController implements OnCloseHandler {
     private ScheduledExecutorService uiLoggerScheduledThread;
     protected boolean uiLoggerThreadStarted = false;
 
-    private FileLogger fileLogger;
-
-
     private GeneralSettings generalSettings;
+
     private BatchProcessor batchProcessor;
 
     @FXML
     protected void initialize() {
+        if (resources == null) resources = ResourceBundle
+            .getBundle("pl.mewash.batch.i18n.messages", Locale.US);
+
         AppContext appContext = AppContext.getInstance();
         appContext.registerOnCloseHandler(this);
-        fileLogger = appContext.getFileLogger();
         generalSettings = SettingsManager.load();
 
         DownloadService downloadService = DownloadServiceProvider
-            .getDefaultDownloadServiceWithResourceLogger(appContext, this::appendLog);
+            .getDefaultDownloadService(appContext);
 
-        batchProcessor = new BatchProcessor(this::appendToUiLogBuffer, this::logErrToFileAndSout, downloadService);
+        batchProcessor = new BatchProcessor(downloadService, this::logResMessageToUi);
+
         batchProcessor.injectUpdateButtonAction((state) -> {
             if (Platform.isFxApplicationThread()) processingState.set(state);
             else Platform.runLater(() -> processingState.set(state));
@@ -135,7 +137,7 @@ public class BatchController implements OnCloseHandler {
             uiLoggerThreadStarted = false;
         }
         if (batchProcessor.getProcessingState() == BatchProcessingState.PROCESSING
-            || batchProcessor.getProcessingState() == BatchProcessingState.IN_GRACEFUL_SHUTDOWN){
+            || batchProcessor.getProcessingState() == BatchProcessingState.IN_GRACEFUL_SHUTDOWN) {
             batchProcessor.forceShutdown();
         }
     }
@@ -206,7 +208,7 @@ public class BatchController implements OnCloseHandler {
         List<String> initialUrlsList = InputUtils.toUrlList(initialInput);
         int duplicatesCount = InputUtils.getDetectedDuplicatesCount(initialUrlsList);
         boolean removeDuplicates = false;
-        if (duplicatesCount > 0) removeDuplicates = BatchAlerts
+        if (duplicatesCount > 0) removeDuplicates = Dialogs
             .getRemoveDuplicatesAlertDecision(duplicatesCount, initialUrlsList.size());
 
         return removeDuplicates
@@ -242,20 +244,32 @@ public class BatchController implements OnCloseHandler {
         return videoQualitySet;
     }
 
-    private StorageOptions getStorageOptions(Set<DownloadOption> downloadOptions) {
+    private GroupingMode getGroupingMode() {
         GroupingMode groupingMode;
         if (noGroupingRadio.isSelected()) groupingMode = GroupingMode.NO_GROUPING;
         else if (groupByContentRadio.isSelected()) groupingMode = GroupingMode.GROUP_BY_CONTENT;
         else if (groupByFormatRadio.isSelected()) groupingMode = GroupingMode.GROUP_BY_FORMAT;
         else groupingMode = GroupingMode.GROUP_BY_CONTENT;
+        return groupingMode;
+    }
 
-        boolean withMetadata = fileWithMetadataRadio.isSelected();
-        return StorageOptions.withConflictsTest(
-            withMetadata,
-            groupingMode,
-            addDateCheckbox.isSelected(),
-            downloadOptions
-        );
+    private AdditionalFiles getAdditionalFiles() {
+        AdditionalFiles additionalFiles;
+        if (fileOnlyRadio.isSelected()) additionalFiles = AdditionalFiles.MEDIA_ONLY;
+        else if (fileWithDescRadio.isSelected()) additionalFiles = AdditionalFiles.MEDIA_WITH_DESCRIPTION;
+        else if (fileWithMetadataRadio.isSelected()) additionalFiles = AdditionalFiles.MEDIA_WITH_METADATA;
+        else additionalFiles = AdditionalFiles.MEDIA_ONLY;
+        return additionalFiles;
+    }
+
+    private StorageOptions getStorageOptions(Set<DownloadOption> downloadOptions) {
+        return StorageOptions
+            .withConflictsTest(
+                getAdditionalFiles(),
+                getGroupingMode(),
+                addDateCheckbox.isSelected(),
+                downloadOptions
+            );
     }
 
     private MultithreadingMode getMultithreadingMode() {
@@ -314,21 +328,16 @@ public class BatchController implements OnCloseHandler {
 
     // --- Log methods ---
 
-    private void appendLog(String key, Object... params) {
+    private void logResMessageToUi(String key, Object... params) {
         String pattern = resources.getString(key);
         String formatted = MessageFormat.format(pattern, params);
-        appendToUiLogBuffer(formatted);
+        logStringToUi(formatted);
     }
 
-    private void appendToUiLogBuffer(String message) {
+    private void logStringToUi(String message) {
         synchronized (logBuffer) {
             logBuffer.append(message).append("\n");
         }
-    }
-
-    private void logErrToFileAndSout(String message) {
-        fileLogger.appendSingleLine(message);
-        System.err.println(message);
     }
 
     // --- Text fields helper methods ---
@@ -336,7 +345,7 @@ public class BatchController implements OnCloseHandler {
     private Optional<String> getBasePathWithEmptyCheck() {
         String path = pathField.getText().trim();
         if (path.isEmpty()) {
-            appendToUiLogBuffer("⚠ No download path selected!");
+            logStringToUi("⚠ No download path selected!");
             return Optional.empty();
         }
         return Optional.of(path);
@@ -345,7 +354,7 @@ public class BatchController implements OnCloseHandler {
     private Optional<String> getUrlInputWithEmptyCheck() {
         String inputString = urlInput.getText().trim();
         if (inputString.isEmpty()) {
-            appendToUiLogBuffer("⚠ You must paste some input!");
+            logStringToUi("⚠ You must paste some input!");
             return Optional.empty();
         }
         return Optional.of(inputString);

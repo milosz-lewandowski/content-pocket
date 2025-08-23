@@ -23,6 +23,18 @@ import java.util.*;
 
 public class LaundryApplication extends Application {
 
+    private final static String CURRENT_TEMPS_AND_TECH_DEBTS = """
+        Technical debts, temporary solutions and todos' list :
+        - Issue: Overwhelmed FileLogger used as a complete process consumer, but returning process output.
+        - Reason: No need for process pipeline watchdogs and real-time analysis in nearest release.
+            atm logs aggregation is quite nice and efficient with single scheduled to file flusher.
+        - Todo: Extract process consumption from logger but remain periodical writing in logger responsibility.
+            introduce process pipeline class with possibility to inject watchdogs and output analyzers.
+        - Features:
+            1. timeout watchdog detecting remote source disconnection on low stability connections,
+            2. properly implement detecting full fetch (instead of current analysis of logs returned by logger
+        """;
+
     @Override
     public void start(Stage stage) {
         try {
@@ -45,19 +57,17 @@ public class LaundryApplication extends Application {
 
             // --- set resources  ---
             Locale.setDefault(Locale.US);
-            ResourceBundle commonResources = ResourceBundle
-                .getBundle("pl.mewash.common.i18n.messages", Locale.getDefault());
+            ResourceBundle appBundle = ResourceBundle
+                .getBundle("i18n.messages", Locale.getDefault());
             FXMLLoader fxmlLoader = new FXMLLoader(LaundryApplication.class
-                .getResource("/pl/mewash/contentlaundry/main-view.fxml"), commonResources);
+                .getResource("/pl/mewash/contentlaundry/main-view.fxml"), appBundle);
 
-            // --- load controller ---
-            fxmlLoader.setControllerFactory(type -> new MainController(tabPlugins));
+            // --- load main controller with tabs ---
+            fxmlLoader.setControllerFactory(type -> new MainController(tabPlugins, appBundle));
             stage.setOnCloseRequest(event -> AppContext.getInstance().executeOnCloseHandlers());
             Parent root = fxmlLoader.load();
 
             // --- setup app window ---
-            ResourceBundle appBundle = ResourceBundle
-                .getBundle("i18n.messages", Locale.getDefault());
             stage.setTitle(appBundle.getString("app.name") + " - " + appBundle.getString("app.slogan"));
             Scene scene = new Scene(root, 1280, 800);
             stage.setScene(scene);
@@ -81,6 +91,7 @@ public class LaundryApplication extends Application {
 
     public static void main(String[] args) {
         System.out.println("Starting Laundry Application");
+        System.out.println(CURRENT_TEMPS_AND_TECH_DEBTS);
         launch();
     }
 

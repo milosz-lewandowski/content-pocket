@@ -25,11 +25,6 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-//application {
-//    mainModule.set("pl.mewash.subscriptions")
-//    mainClass.set("pl.mewash.subscriptions.HelloApplication")
-//}
-
 javafx {
     version = "21"
     modules = listOf("javafx.controls", "javafx.fxml")

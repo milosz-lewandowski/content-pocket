@@ -2,6 +2,8 @@ package pl.mewash.batch.api;
 
 import pl.mewash.common.spi.tabs.TabPlugin;
 
+import java.util.Optional;
+
 public final class BatchTabPlugin implements TabPlugin {
 
     @Override
@@ -22,5 +24,10 @@ public final class BatchTabPlugin implements TabPlugin {
     @Override
     public String fxmlPath() {
         return "/pl/mewash/batch/ui/batch-view.fxml";
+    }
+
+    @Override
+    public Optional<String> resBndlLocation() {
+        return Optional.of( "pl.mewash.batch.i18n.messages");
     }
 }

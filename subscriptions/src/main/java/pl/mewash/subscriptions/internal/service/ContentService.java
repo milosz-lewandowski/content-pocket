@@ -2,6 +2,7 @@ package pl.mewash.subscriptions.internal.service;
 
 import javafx.scene.control.Alert;
 import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.storage.AdditionalFiles;
 import pl.mewash.commands.settings.storage.GroupingMode;
 import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
@@ -33,7 +34,9 @@ public class ContentService {
         ChannelSettings channelSettings = repository.getChannel(content.getChannelUrl()).getChannelSettings();
 
         StorageOptions storage = new StorageOptions(
-            channelSettings.isAddContentDescriptionFiles(),
+            channelSettings.isAddContentDescriptionFiles()
+                ? AdditionalFiles.MEDIA_WITH_DESCRIPTION
+                : AdditionalFiles.MEDIA_ONLY,
             channelSettings.isSeparateDirPerFormat() ? GroupingMode.GROUP_BY_FORMAT : GroupingMode.NO_GROUPING,
             channelSettings.isAddDownloadDateDir(),
             false, false
@@ -43,10 +46,10 @@ public class ContentService {
             Path channelBasePath = Paths.get(subsBasePath + File.separator + content.getChannelName());
             if (!Files.exists(channelBasePath)) Files.createDirectories(channelBasePath);
 
-            Path savedPath = downloadService
+            var results = downloadService
                     .downloadWithSettings(content.getUrl(), downloadOption, channelBasePath.toString(), storage);
 
-            content.addAndSetDownloaded(downloadOption, savedPath);
+            content.addAndSetDownloaded(downloadOption, results.downloadedPath());
             repository.updateContent(content);
 
         } catch (Exception e) {

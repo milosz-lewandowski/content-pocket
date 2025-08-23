@@ -4,6 +4,7 @@ import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.response.ResponseProperties;
+import pl.mewash.commands.settings.storage.AdditionalFiles;
 import pl.mewash.commands.settings.storage.StorageOptions;
 
 
@@ -152,14 +153,21 @@ public class CommandBuilder {
 
     private static List<String> resolveStorageOutputPatterns(StorageOptions storageOptions, DownloadOption downloadOption) {
         String mediaTemplate = buildStoragePathPattern(storageOptions, downloadOption, false);
-        if (storageOptions.withMetadataFiles()) {
-            String metadataTemplate = buildStoragePathPattern(storageOptions, downloadOption, true);
-            return List.of(
+        String metadataTemplate = buildStoragePathPattern(storageOptions, downloadOption, true);
+        return switch (storageOptions.additionalFiles()){
+            case MEDIA_ONLY -> List.of(
+                "--output", mediaTemplate
+            );
+            case MEDIA_WITH_DESCRIPTION -> List.of(
+                "--output", mediaTemplate,
+                "--output", "description:" + metadataTemplate
+            );
+            case MEDIA_WITH_METADATA -> List.of(
                 "--output", mediaTemplate,
                 "--output", "description:" + metadataTemplate,
                 "--output", "infojson:" + metadataTemplate
             );
-        } else return List.of("--output", mediaTemplate);
+        };
     }
 
     private static String buildStoragePathPattern(StorageOptions storageOptions, DownloadOption downloadOption,
@@ -175,9 +183,9 @@ public class CommandBuilder {
         String dateDir = storageOptions.withDownloadedDateDir() ? LocalDate.now() + "/" : "";
 
         String titleDir = "%(title)s" + "/";
-        String metadataDir = storageOptions.withMetadataFiles()
-            ? titleDir
-            : "";
+        String metadataDir = storageOptions.additionalFiles() == AdditionalFiles.MEDIA_ONLY
+            ? ""
+            : titleDir;
 
         String pureTitle = "%(title)s.%(ext)s";
         String diffedTitle = metadataFilePattern

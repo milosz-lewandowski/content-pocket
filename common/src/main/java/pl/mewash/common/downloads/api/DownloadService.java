@@ -8,6 +8,8 @@ import java.nio.file.Path;
 
 public interface DownloadService {
 
-    Path downloadWithSettings(String contentUrl, DownloadOption downloadSettings, String baseDirPath,
-                              StorageOptions storageOptions) throws IOException, InterruptedException;
+    DownloadResults downloadWithSettings(String contentUrl, DownloadOption downloadSettings, String baseDirPath,
+                                                                StorageOptions storageOptions) throws IOException, InterruptedException;
+
+    record DownloadResults(String title, Path downloadedPath){}
 }

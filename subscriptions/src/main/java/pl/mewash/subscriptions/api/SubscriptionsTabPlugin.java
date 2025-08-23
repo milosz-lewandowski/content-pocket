@@ -2,6 +2,8 @@ package pl.mewash.subscriptions.api;
 
 import pl.mewash.common.spi.tabs.TabPlugin;
 
+import java.util.Optional;
+
 public final class SubscriptionsTabPlugin implements TabPlugin {
     @Override
     public int positionOrder() {
@@ -21,5 +23,10 @@ public final class SubscriptionsTabPlugin implements TabPlugin {
     @Override
     public String fxmlPath() {
         return "/pl/mewash/subscriptions/ui/subscriptions-view.fxml";
+    }
+
+    @Override
+    public Optional<String> resBndlLocation() {
+        return Optional.empty();
     }
 }

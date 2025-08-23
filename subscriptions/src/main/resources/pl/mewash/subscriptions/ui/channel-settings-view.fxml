@@ -33,7 +33,7 @@
 
             <TitledPane text="Downloads Storage Settings" expanded="true">
                 <VBox spacing="5" alignment="TOP_LEFT" style="-fx-padding: 10;">
-                    <CheckBox fx:id="addContentDescriptionFiles" text="Add files with content description."/>
+                    <CheckBox fx:id="addContentDescriptionFiles" text="Add file with content description."/>
                     <CheckBox fx:id="addDownloadDateDir" text="Add directory with date of download"/>
                     <CheckBox fx:id="separateDirPerFormat" text="Keep audio and video in separate directories"/>
                 </VBox>

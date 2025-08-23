@@ -6,27 +6,17 @@ import pl.mewash.commands.settings.formats.VideoQuality;
 
 import java.util.Set;
 
-public record StorageOptions(boolean withMetadataFiles,
+public record StorageOptions(AdditionalFiles additionalFiles,
                              GroupingMode groupingMode,
                              boolean withDownloadedDateDir,
                              boolean multipleVidResolutions,
                              boolean audioNamesConflict) {
 
-    public static StorageOptions withConflictsTest(boolean withMetadata, GroupingMode groupingMode, boolean withDownloadedDateDir,
+    public static StorageOptions withConflictsTest(AdditionalFiles additionalFiles,
+                                                   GroupingMode groupingMode,
+                                                   boolean withDownloadedDateDir,
                                                    Set<DownloadOption> selectedOptions){
-        return new StorageOptions(withMetadata, groupingMode, withDownloadedDateDir,
-            testMultipleVidResolutions(selectedOptions),
-            testAudioConflict(selectedOptions));
-    }
-
-    public static StorageOptions getDefaultNoGrouping(Set<DownloadOption> selectedOptions) {
-        return new StorageOptions(false, GroupingMode.NO_GROUPING, false,
-            testMultipleVidResolutions(selectedOptions),
-            testAudioConflict(selectedOptions));
-    }
-
-    public static StorageOptions getDefaultWithGrouping(GroupingMode groupingMode, Set<DownloadOption> selectedOptions) {
-        return new StorageOptions(false, groupingMode, false,
+        return new StorageOptions(additionalFiles, groupingMode, withDownloadedDateDir,
             testMultipleVidResolutions(selectedOptions),
             testAudioConflict(selectedOptions));
     }

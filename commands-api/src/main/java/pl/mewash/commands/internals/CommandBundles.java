@@ -17,6 +17,9 @@ public enum CommandBundles {
             "--embed-thumbnail",
             "--add-metadata"
     )),
+    ADD_CONTENT_DESCRIPTION_FILES(false, List.of(
+        "--write-description"
+    )),
     ADD_CONTENT_METADATA_FILES(false, List.of(
             "--write-description",
             "--write-info-json"

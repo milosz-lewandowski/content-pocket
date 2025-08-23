@@ -16,9 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -27,33 +26,26 @@ public class DefaultDownloadService implements DownloadService {
     private final ProcessFactory processFactory;
     private final FileLogger fileLogger;
 
-    private BiConsumer<String, Object[]> logConsumer;
-
     public DefaultDownloadService(AppContext appContext) {
         fileLogger = appContext.getFileLogger();
-        Consumer<String> commandLogger = fileLogger::appendSingleLine;
         processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), commandLogger, false);
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, false);
     }
 
-    public void injectLogger(BiConsumer<String, Object[]> consumer) {
-        this.logConsumer = consumer;
-    }
 
-    public Path downloadWithSettings(String url, DownloadOption downloadSettings, String baseDirString,
-                                     StorageOptions storageOptions) throws IOException, InterruptedException {
-        appendLog("log.washing_and_drying", url, downloadSettings.getOptionName());
+    public DownloadResults downloadWithSettings(String url, DownloadOption downloadOpt, String baseDirString,
+                                                StorageOptions storageOpt) throws IOException, InterruptedException {
 
-        // building paths
+        // Building paths
         Path baseDirPath = Paths.get(baseDirString).toAbsolutePath();
         long threadId = Thread.currentThread().threadId();
-        Path tempDirPath = Files.createTempDirectory(baseDirPath, "__laundry-temp-multi-thread-" + threadId).toAbsolutePath();
-        Path tempTitleFile = Files.createTempFile(tempDirPath, "temp_title", ".txt").toAbsolutePath();
+        Path tempDirPath = Files.createTempDirectory(baseDirPath, "__temp_laundry_" + threadId).toAbsolutePath();
+        Path tempTitleFile = Files.createTempFile(tempDirPath, "__temp_laundry", ".txt").toAbsolutePath();
 
         // Detect download type and get process
-        ProcessBuilder processBuilder = switch (downloadSettings) {
-            case VideoQuality vq -> processFactory.downloadVideoWithAudioStream(url, vq, storageOptions, tempTitleFile);
-            case AudioOnlyQuality aq -> processFactory.downloadAudioStream(url, aq, storageOptions, tempTitleFile);
+        ProcessBuilder processBuilder = switch (downloadOpt) {
+            case VideoQuality vq -> processFactory.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
+            case AudioOnlyQuality aq -> processFactory.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
         };
 
         // Run process
@@ -70,38 +62,21 @@ public class DefaultDownloadService implements DownloadService {
         String title = Files.readString(tempTitleFile, StandardCharsets.UTF_8).trim();
         Files.deleteIfExists(tempTitleFile);
 
-        // if process failed
-        String fileExtension = downloadSettings.getOptionName();
-        if (exitCode != 0) {
-            System.err.println("Error downloading: " + url + " with title: " + title + " as " + fileExtension);
-            appendLog("log.failed_to_process", url + " with title: " + title, fileExtension);
-        }
+
+        if (exitCode != 0) fileLogger.appendSingleLine(String
+            .format("[ERR] Exit code: %d of %s downloaded as %s", exitCode, url, downloadOpt.getOptionName()));
 
         Path downloadedPath = moveTempContent(tempDirPath, baseDirPath);
-
-        if (title.isEmpty()) {
-            System.out.println("No download title: " + title + " " + fileExtension + " -> file probably already downloaded");
-            appendLog("log.already_saved", title, fileExtension);
-        } else {
-            System.out.println("Downloaded: " + title + " as " + fileExtension);
-            appendLog("log.laundry_ready", title, fileExtension);
-        }
-
         cleanupTempDir(tempDirPath);
-        return downloadedPath;
-    }
 
-    private void appendLog(String key, Object... params) {
-        if (logConsumer != null) {
-            logConsumer.accept(key, params);
-        }
+        return new DownloadResults(title, downloadedPath);
     }
 
     private Path moveTempContent(Path tempDir, Path basePath) throws IOException {
-        Predicate<Path> isMetadataFile = (path) -> path
+        Predicate<Path> metadataFileCheck = (path) -> path
             .getFileName().toString().endsWith(".description") || path.getFileName().toString().endsWith(".info.json");
 
-        AtomicReference<Path> firstMovedFile = new AtomicReference<>();
+        AtomicReference<Path> firstNonMetadataFile = new AtomicReference<>();
 
         try (Stream<Path> paths = Files.walk(tempDir)) {
             paths.filter(path -> !path.equals(tempDir))
@@ -114,33 +89,36 @@ public class DefaultDownloadService implements DownloadService {
                             Files.createDirectories(target);
                         } else {
                             Files.createDirectories(target.getParent());
-                            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                            boolean isMetadataFile = metadataFileCheck.test(source);
 
-                            if (isMetadataFile.test(source) && Files.exists(target))
+                            if (isMetadataFile && Files.exists(target))
                                 return; // skip if metadata file exists
 
-                            firstMovedFile.compareAndSet(null, target);
+                            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+                            if (!isMetadataFile)
+                                firstNonMetadataFile.compareAndSet(null, target);
                         }
                     } catch (IOException ioe) {
-                        fileLogger.appendSingleLine(ioe.getMessage());
+                        fileLogger.logErrWithMessage("Error while moving files from temp dir", ioe, true);
                     }
                 });
-            return firstMovedFile.get();
+            return firstNonMetadataFile.get();
         }
     }
 
     private void cleanupTempDir(Path tempDir) {
         try (Stream<Path> paths = Files.walk(tempDir)) {
-            paths.sorted((a, b) -> b.compareTo(a))  // delete children first
+            paths.sorted(Comparator.reverseOrder())
                 .forEach(path -> {
                     try {
                         Files.deleteIfExists(path);
                     } catch (IOException e) {
-                        fileLogger.appendSingleLine(e.getMessage());
+                        fileLogger.logErrWithMessage("Cleanup error while deleting temp file", e, true);
                     }
                 });
         } catch (IOException e) {
-            fileLogger.appendSingleLine(e.getMessage());
+            fileLogger.logErrWithMessage("Cleanup error while traversing temp paths", e, true);
         }
     }
 }
