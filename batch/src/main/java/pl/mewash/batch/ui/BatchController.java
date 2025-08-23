@@ -7,7 +7,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
-import pl.mewash.batch.internals.BatchProcessor;
+import pl.mewash.batch.internals.service.BatchProcessor;
 import pl.mewash.batch.internals.models.BatchJobParams;
 import pl.mewash.batch.internals.models.BatchProcessingState;
 import pl.mewash.batch.internals.models.MultithreadingMode;

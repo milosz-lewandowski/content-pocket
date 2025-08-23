@@ -26,7 +26,7 @@ public final class SubscriptionsTabPlugin implements TabPlugin {
     }
 
     @Override
-    public Optional<String> resBndlLocation() {
+    public Optional<String> resBundleLocation() {
         return Optional.empty();
     }
 }

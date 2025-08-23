@@ -26,8 +26,12 @@ public final class BatchTabPlugin implements TabPlugin {
         return "/pl/mewash/batch/ui/batch-view.fxml";
     }
 
+    /**
+     * Batch Tab uses its own messages.properties file
+     * @return location of tab resource file
+     */
     @Override
-    public Optional<String> resBndlLocation() {
+    public Optional<String> resBundleLocation() {
         return Optional.of( "pl.mewash.batch.i18n.messages");
     }
 }

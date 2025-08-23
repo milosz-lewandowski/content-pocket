@@ -1,11 +1,11 @@
 package pl.mewash.batch.internals.models;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.function.IntUnaryOperator;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum MultithreadingMode {
     SINGLE((availableThreads) -> 1),
     LOW((availableThreads) -> Math.max(2, availableThreads / 4)),
@@ -18,12 +18,10 @@ public enum MultithreadingMode {
     public int calculateThreads(){
         int totalPlatformThreads = Runtime.getRuntime().availableProcessors();
         int availableThreads = totalPlatformThreads - reservedThreads;
-        int calculatedThreads = threadsOperator.applyAsInt(availableThreads);
-        System.out.println("calculated threads: " + calculatedThreads);
-        return calculatedThreads;
+        return threadsOperator.applyAsInt(availableThreads);
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     private enum ReservedThreads {
         MainUiThread(true),                 // required - for smooth ui experience
         ScheduledUiLoggerThread(false),     // not required - rare write intervals

@@ -47,8 +47,8 @@ public class MainController {
             tabPlugins.forEach(tabProvider -> {
                 try {
                     URL url = tabProvider.getClass().getResource(tabProvider.fxmlPath());
-                    ResourceBundle resultBundle = tabProvider.resBndlLocation().isPresent()
-                        ? ResourceBundle.getBundle(tabProvider.resBndlLocation().get(), Locale.getDefault())
+                    ResourceBundle resultBundle = tabProvider.resBundleLocation().isPresent()
+                        ? ResourceBundle.getBundle(tabProvider.resBundleLocation().get(), Locale.getDefault())
                         : defaultAppBundle;
                     FXMLLoader fxmlLoader = new FXMLLoader(url, resultBundle);
                     Node content = fxmlLoader.load();
