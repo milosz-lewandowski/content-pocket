@@ -42,7 +42,6 @@ public class SubscribedChannel {
             ? initialUrl
             : null;
 
-        System.out.println("maping response to channel " + uniqueUrl);
         return SubscribedChannel.builder()
             .channelName(channelName)
             .uniqueUrl(uniqueUrl)

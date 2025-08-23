@@ -37,18 +37,18 @@ public final class FetchedContent {
     @Builder.Default private Set<DownloadOption> downloadedAs = new HashSet<>();
     private LocalDateTime lastUpdated;
 
-    public static FetchedContent fromContentPropertiesResponse(String propertiesResponse, String channelUrl) {
-        ContentProperties contentProperties = ContentProperties.CONTENT_PROPERTIES;
-        var contentResponseDto = contentProperties.parseResponseToDto(propertiesResponse);
+    public static FetchedContent fromContentPropertiesResponse(ContentProperties.ContentResponseDto contentDto,
+                                                               String channelUrl, String channelName) {
 
         return FetchedContent.builder()
-            .title(contentResponseDto.getTitle())
-            .url(contentResponseDto.getUrl())
+            .title(contentDto.getTitle())
+            .url(contentDto.getUrl())
             .audioStage(ContentDownloadStage.GET)
             .videoStage(ContentDownloadStage.GET)
-            .published(LocalDateTime.of(contentResponseDto.getPublishedDate(), LocalTime.MIN))
+            .published(LocalDateTime.of(contentDto.getPublishedDate(), LocalTime.MIN))
             .lastUpdated(LocalDateTime.now())
-            .id(contentResponseDto.getId())
+            .id(contentDto.getId())
+            .channelName(channelName)
             .channelUrl(channelUrl)
             .build();
     }

@@ -97,7 +97,9 @@ public class FetchService {
 
             List<String> lines = Files.readAllLines(tempFile, StandardCharsets.UTF_8);
             List<FetchedContent> fetchedContents = lines.stream()
-                .map(line -> FetchedContent.fromContentPropertiesResponse(line, channel.getUniqueUrl()))
+                .map(ContentProperties.CONTENT_PROPERTIES::parseResponseToDto)
+                .map(contentDto -> FetchedContent
+                    .fromContentPropertiesResponse(contentDto, channel.getUniqueUrl(), channel.getChannelName()))
                 .toList();
 
             Files.deleteIfExists(tempFile);
