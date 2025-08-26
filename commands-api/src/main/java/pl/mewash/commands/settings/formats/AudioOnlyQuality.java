@@ -68,6 +68,9 @@ public enum AudioOnlyQuality implements DownloadOption {
             false, false, "Original source codec (no lossy conversion)",
             List.of(
                     "-f", """
+                    bestaudio[abr>192][acodec^=m4a]/\
+                    bestaudio[abr>=160][acodec^=opus]\
+                    bestaudio[abr>=128][acodec^=m4a]\
                     bestaudio[abr>=96][acodec^=opus]/\
                     bestaudio[abr>=96][acodec^=m4a]/\
                     bestaudio""",
