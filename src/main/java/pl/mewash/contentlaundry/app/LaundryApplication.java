@@ -157,7 +157,7 @@ public class LaundryApplication extends Application {
                 return null;
             }
         } else {
-            System.out.println("User chose to close the app.");
+            System.out.println("Binaries not found and new path not specified - exiting application.");
             return null;
         }
     }
