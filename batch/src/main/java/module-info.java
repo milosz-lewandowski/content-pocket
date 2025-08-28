@@ -1,7 +1,7 @@
 import pl.mewash.common.spi.tabs.TabPlugin;
 
 module pl.mewash.batch {
-    requires static lombok;
+    requires static lombok; // consider removal in future
     requires javafx.controls;
     requires javafx.fxml;
 

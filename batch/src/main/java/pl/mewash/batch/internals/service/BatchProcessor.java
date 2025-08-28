@@ -18,28 +18,24 @@ import java.util.function.Predicate;
 
 /**
  * Executes and manages state of complete batch download job.
- * <p>
- *  Complete set of parameters is passed via {@link BatchJobParams} class.
- * </p>
- * <h3>Internal classes:</h3>
- * <ul>
- *      <li>{@link BatchProcessor.DownloadJob} class implements runnable for given content url
- *          with specific {@link DownloadOption} which determines target codec and quality.</li>
- *      <li>{@link BatchProcessor.JobDispatcher} is queued runnable holder with loop based
- *          lazy tasks submitter with sleep intervals dependent on workers availability.</li>
- * </ul>
- * <h3>State and execution:</h3>
- * <ul>
- *      <li>Jobs are executed via {@link ThreadPoolExecutor} set up via
- *      {@link #setupAndGetNoQueuedExecutor(BatchJobParams)} with number of threads calculated by
- *          selected {@link MultithreadingMode} and number of logical threads available on current machine.</li>
- *      <li>State of batch processing is hold in Processor class, but injection of updateLaundryButtonAction
- *          enables updating UI laundry button state on {@link BatchProcessingState} change</li>
- *      <li>Processing can be stopped in graceful mode via {@link #gracefulShutdownAsync()} which rejects
- *          all queued tasks but completes all 'in progress' tasks ensuring cleanup of all temporary files</li>
- *      <li>Processing can be stopped forcibly via {@link #forceShutdown()} which immediately shutdowns workers
- *          pool and rejects queue. Forced shutdown may leave temporary and partial files in the file system!</li>
- * </ul>
+ * Complete set of parameters is passed via {@link BatchJobParams} class.
+ *
+ * Internal classes:
+ *  {@link BatchProcessor.DownloadJob} class implements runnable for given content url
+ * with specific {@link DownloadOption} which determines target codec and quality.
+ *  {@link BatchProcessor.JobDispatcher} is queued runnable holder with loop based
+ * lazy tasks submitter with sleep intervals dependent on workers availability.
+ *
+ * State and execution:
+ *  Jobs are executed via {@link ThreadPoolExecutor} set up via
+ * {@link #setupAndGetNoQueuedExecutor(BatchJobParams)} with number of threads calculated by
+ * selected {@link MultithreadingMode} and number of logical threads available on current machine.
+ *  State of batch processing is hold in Processor class, but injection of updateLaundryButtonAction
+ * enables updating UI laundry button state on {@link BatchProcessingState} change
+ *  Processing can be stopped in graceful mode via {@link #gracefulShutdownAsync()} which rejects
+ * all queued tasks but completes all 'in progress' tasks ensuring cleanup of all temporary files
+ *  Processing can be stopped forcibly via {@link #forceShutdown()} which immediately shutdowns workers
+ * pool and rejects queue. Forced shutdown may leave temporary and partial files in the file system!
  */
 public class BatchProcessor {
 
