@@ -1,11 +1,11 @@
 package pl.mewash.subscriptions.internal.domain.state;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum ProgressiveFetchStage {
     FIRST_FETCH("Fetch", false),
     FETCH_LATEST("Fetch Latest", false),

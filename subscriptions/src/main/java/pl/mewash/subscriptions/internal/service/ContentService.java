@@ -55,6 +55,8 @@ public class ContentService {
         } catch (Exception e) {
             AppContext.getInstance().getFileLogger()
                     .logErrWithMessage("Downloading error of: " + content.getTitle(), e, true);
+            AppContext.getInstance().getFileLogger()
+                    .logErrStackTrace(e, true);
             content.setDownloadingErrorState(downloadOption);
             repository.updateContent(content);
             Dialogs.showAlertAndAwait("Download error", e.getMessage(), Alert.AlertType.ERROR);

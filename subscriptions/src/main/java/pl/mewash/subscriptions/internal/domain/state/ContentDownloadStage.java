@@ -1,10 +1,10 @@
 package pl.mewash.subscriptions.internal.domain.state;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum ContentDownloadStage {
     GET(false, "Get Audio", "Get Video"),
     SAVING(true, "Saving Audio", "Saving Video"),

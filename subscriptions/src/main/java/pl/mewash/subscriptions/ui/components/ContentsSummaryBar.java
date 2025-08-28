@@ -5,8 +5,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -130,7 +130,7 @@ public class ContentsSummaryBar {
     }
 
     @Builder
-    @AllArgsConstructor
+    @RequiredArgsConstructor // fixme: required here?
     public static final class Params {
         private final String channelName;
         private final int contentsCount;

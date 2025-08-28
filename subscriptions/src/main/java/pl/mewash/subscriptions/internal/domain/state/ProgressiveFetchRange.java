@@ -1,14 +1,14 @@
 package pl.mewash.subscriptions.internal.domain.state;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Arrays;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum ProgressiveFetchRange {
     LAST_1_MONTH(Period.ofMonths(1), "Fetch 1 Month", Period.ofDays(0), Period.ofDays(21)),
     LAST_3_MONTHS(Period.ofMonths(3), "Fetch 3 Months", Period.ofDays(20), Period.ofMonths(2)),
