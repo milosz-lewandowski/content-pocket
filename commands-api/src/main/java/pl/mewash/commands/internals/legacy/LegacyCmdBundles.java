@@ -1,13 +1,13 @@
-package pl.mewash.commands.internals;
+package pl.mewash.commands.internals.legacy;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @Getter
-@AllArgsConstructor
-public enum CommandBundles {
+@RequiredArgsConstructor
+public enum LegacyCmdBundles {
     EXTRACT_BEST_AUDIO(false, List.of(
         "--merge-output-format", "mp4",
         "--audio-format", "aac",

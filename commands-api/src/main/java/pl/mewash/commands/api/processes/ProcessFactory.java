@@ -1,4 +1,4 @@
-package pl.mewash.commands.api;
+package pl.mewash.commands.api.processes;
 
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.storage.StorageOptions;

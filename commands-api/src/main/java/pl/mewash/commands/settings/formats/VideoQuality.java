@@ -1,15 +1,18 @@
 package pl.mewash.commands.settings.formats;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import pl.mewash.commands.settings.cmd.DownloadCmd;
+import pl.mewash.commands.api.entries.CmdEntry;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum VideoQuality implements DownloadOption {
     MAXIMUM("2160", "MP4 up to 4K", "mp4", "(as 4K)"),
     HIGH("1440", "MP4 up to 1440p", "mp4", "(as 1440p)"),
@@ -29,15 +32,25 @@ public enum VideoQuality implements DownloadOption {
         .count() > 1;
 
     public List<String> getDownloadCommand() {
-        String parameter = switch (this) {
-            case MAXIMUM, HIGH, STANDARD, COMPACT -> getForceH264Fallbacks();
-        };
-        return List.of("-f", parameter);
+        return List.of("-f", getCommandResolvedResolution(true));
     }
 
-    private String getForceH264Fallbacks() {
-        return VideoAndAudioStreamFallbacks
-            .getEnforceH264Fallbacks().stream()
+    public List<CmdEntry> getCmdEntries() {
+        return new LinkedList<>(List.of(
+            CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, getCommandResolvedResolution(true))));
+    }
+
+    private String getCommandResolvedResolution(boolean forceH264) {
+        return switch (this) {
+            case MAXIMUM, HIGH, STANDARD, COMPACT -> getFallbacksChain(forceH264);
+        };
+    }
+
+    private String getFallbacksChain(boolean forceH264) {
+        Set<VideoAndAudioStreamFallbacks> fallbacks = forceH264
+            ? VideoAndAudioStreamFallbacks.getEnforceH264Fallbacks()
+            : VideoAndAudioStreamFallbacks.getAnyBvFallbacks();
+        return fallbacks.stream()
             .map(fallback -> fallback.withResolution(this.resolution))
             .collect(Collectors.joining("/"));
     }
@@ -52,7 +65,7 @@ public enum VideoQuality implements DownloadOption {
         return this.buttonTitle;
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     enum VideoAndAudioStreamFallbacks {
         FORCE_H264_VID_AAC_AUDIO(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
         FORCE_H264_VID_ANY_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
@@ -60,8 +73,7 @@ public enum VideoQuality implements DownloadOption {
         ANY_BV_FORCE_AAC_AUDIO(false, "bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
         ANY_BV_ANY_BA(false, "bestvideo[height<=%s]+bestaudio"),
         FORCE_MERGED_MP4(false, "best[height<=%s][ext=mp4]"),
-        ANY_BEST(false, "best[height<=%s]")
-        ;
+        ANY_BEST(false, "best[height<=%s]");
 
         private final boolean enforcesH264;
         private final String template;
@@ -72,8 +84,14 @@ public enum VideoQuality implements DownloadOption {
 
         static Set<VideoAndAudioStreamFallbacks> getEnforceH264Fallbacks() {
             return Arrays.stream(values())
-                    .filter(fallback -> fallback.enforcesH264)
-                    .collect(Collectors.toSet());
+                .filter(fallback -> fallback.enforcesH264)
+                .collect(Collectors.toSet());
+        }
+
+        static Set<VideoAndAudioStreamFallbacks> getAnyBvFallbacks() {
+            return Arrays.stream(values())
+                .filter(fallback -> !fallback.enforcesH264)
+                .collect(Collectors.toSet());
         }
     }
 }

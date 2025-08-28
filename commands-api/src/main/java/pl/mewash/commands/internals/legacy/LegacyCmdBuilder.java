@@ -1,5 +1,6 @@
-package pl.mewash.commands.internals;
+package pl.mewash.commands.internals.legacy;
 
+import pl.mewash.commands.api.entries.OutputPatternResolver;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
@@ -9,14 +10,13 @@ import pl.mewash.commands.settings.storage.StorageOptions;
 
 
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class CommandBuilder {
+public class LegacyCmdBuilder {
 
     private final List<String> commandList;
     private List<String> outputCommand;
@@ -27,61 +27,61 @@ public class CommandBuilder {
     private boolean logWithLogger = false;
     private Consumer<String> commandLogger;
 
-    private CommandBuilder() {
+    private LegacyCmdBuilder() {
         this.commandList = new ArrayList<>();
     }
 
-    public static CommandBuilder newYtDlpCommand(String ytDlpCommandPath) {
-        return new CommandBuilder().addSingleCommand(ytDlpCommandPath);
+    public static LegacyCmdBuilder newYtDlpCommand(String ytDlpCommandPath) {
+        return new LegacyCmdBuilder().addSingleCommand(ytDlpCommandPath);
     }
 
-    public CommandBuilder addSingleCommand(String command) {
+    public LegacyCmdBuilder addSingleCommand(String command) {
         this.commandList.add(command);
         return this;
     }
 
-    public CommandBuilder printCommandToConsole(boolean printToConsole) {
+    public LegacyCmdBuilder printCommandToConsole(boolean printToConsole) {
         this.printToConsole = printToConsole;
         return this;
     }
 
-    public CommandBuilder logCommandWithLogger(Consumer<String> logger) {
+    public LegacyCmdBuilder logCommandWithLogger(Consumer<String> logger) {
         this.commandLogger = logger;
         this.logWithLogger = true;
         return this;
     }
 
-    public CommandBuilder addParametrizedCommand(String command, String parameter) {
+    public LegacyCmdBuilder addParametrizedCommand(String command, String parameter) {
         this.commandList.add(command);
         this.commandList.add(parameter);
         return this;
     }
 
-    public CommandBuilder addCommandBundle(CommandBundles bundle) {
+    public LegacyCmdBuilder addCommandBundle(LegacyCmdBundles bundle) {
         bundle.appendAtEndOf(this.commandList);
         return this;
     }
 
-    public CommandBuilder addOptionalCommandBundle(CommandBundles bundle, boolean isSelected) {
+    public LegacyCmdBuilder addOptionalCommandBundle(LegacyCmdBundles bundle, boolean isSelected) {
         if (isSelected) bundle.appendAtEndOf(this.commandList);
         return this;
     }
 
-    public CommandBuilder addCommandList(List<String> listOfCommands) {
+    public LegacyCmdBuilder addCommandList(List<String> listOfCommands) {
         this.commandList.addAll(listOfCommands);
         return this;
     }
 
-    public CommandBuilder setVideoQuality(VideoQuality videoQuality) {
+    public LegacyCmdBuilder setVideoQuality(VideoQuality videoQuality) {
         this.addCommandList(videoQuality.getDownloadCommand());
         return this;
     }
 
-    public CommandBuilder setAudioOnlySettings(AudioOnlyQuality audioQuality) {
+    public LegacyCmdBuilder setAudioOnlySettings(AudioOnlyQuality audioQuality) {
         return this.addCommandList(audioQuality.getDownloadConversionCommands());
     }
 
-    public CommandBuilder setPrintToFile(ResponseProperties printProperties, Path filePath) {
+    public LegacyCmdBuilder setPrintToFile(ResponseProperties printProperties, Path filePath) {
         if (this.printCommand != null) {
             throw new IllegalStateException("you specify only one print command");
         } else {
@@ -92,7 +92,7 @@ public class CommandBuilder {
         }
     }
 
-    public CommandBuilder setOutputCommand(StorageOptions storageOptions, DownloadOption downloadOption) {
+    public LegacyCmdBuilder setOutputCommand(StorageOptions storageOptions, DownloadOption downloadOption) {
         if (this.outputCommand != null) {
             throw new IllegalStateException("you specify only one output path");
         } else {
@@ -101,23 +101,23 @@ public class CommandBuilder {
         }
     }
 
-    public CommandBuilder setFFMpegPath(String ffmpegCommandPath) {
+    public LegacyCmdBuilder setFFMpegPath(String ffmpegCommandPath) {
         return this.addParametrizedCommand("--ffmpeg-location", ffmpegCommandPath);
     }
 
-    public CommandBuilder setOptionalFFMpegPath(String ffmpegCommandPath, boolean needsFFmpeg) {
+    public LegacyCmdBuilder setOptionalFFMpegPath(String ffmpegCommandPath, boolean needsFFmpeg) {
         if (needsFFmpeg) return this.setFFMpegPath(ffmpegCommandPath);
         else return this;
     }
 
 
-    public CommandBuilder setDateAfter(LocalDateTime afterDate) {
+    public LegacyCmdBuilder setDateAfter(LocalDateTime afterDate) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String date = afterDate.format(formatter);
         return this.addParametrizedCommand("--dateafter", date);
     }
 
-    public CommandBuilder setUrl(String url) {
+    public LegacyCmdBuilder setUrl(String url) {
         this.url = url;
         return this;
     }
@@ -152,63 +152,22 @@ public class CommandBuilder {
     }
 
     private static List<String> resolveStorageOutputPatterns(StorageOptions storageOptions, DownloadOption downloadOption) {
-        String mediaTemplate = buildStoragePathPattern(storageOptions, downloadOption, false);
-        String metadataTemplate = buildStoragePathPattern(storageOptions, downloadOption, true);
+        String mediaTemplate = OutputPatternResolver.buildMedia(storageOptions, downloadOption);
+        String metadataTemplate = OutputPatternResolver.buildMetadata(storageOptions, downloadOption);
+
         return switch (storageOptions.additionalFiles()){
             case MEDIA_ONLY -> List.of(
                 "--output", mediaTemplate
             );
             case MEDIA_WITH_DESCRIPTION -> List.of(
                 "--output", mediaTemplate,
-                "--output", "description:" + metadataTemplate
+                "--output", AdditionalFiles.FileType.DESCRIPTION.getOutputTag() + metadataTemplate
             );
             case MEDIA_WITH_METADATA -> List.of(
                 "--output", mediaTemplate,
-                "--output", "description:" + metadataTemplate,
-                "--output", "infojson:" + metadataTemplate
+                "--output", AdditionalFiles.FileType.DESCRIPTION.getOutputTag() + metadataTemplate,
+                "--output", AdditionalFiles.FileType.INFO_JSON.getOutputTag() + metadataTemplate
             );
-        };
-    }
-
-    private static String buildStoragePathPattern(StorageOptions storageOptions, DownloadOption downloadOption,
-                                                  boolean metadataFilePattern) {
-
-        String diffedFormatDir = switch (downloadOption) {
-            case VideoQuality vq -> storageOptions.multipleVidResolutions()
-                ? vq.getDirName() + "/" + vq.getResolution() + "p" + "/"
-                : vq.getDirName() + "/";
-            case AudioOnlyQuality aq -> aq.getDirName() + "/";
-        };
-
-        String dateDir = storageOptions.withDownloadedDateDir() ? LocalDate.now() + "/" : "";
-
-        String titleDir = "%(title)s" + "/";
-        String metadataDir = storageOptions.additionalFiles() == AdditionalFiles.MEDIA_ONLY
-            ? ""
-            : titleDir;
-
-        String pureTitle = "%(title)s.%(ext)s";
-        String diffedTitle = metadataFilePattern
-            ? pureTitle
-            : switch (downloadOption) {
-            case VideoQuality vq -> storageOptions.multipleVidResolutions()
-                ? "%(title)s" + vq.getTitleDiff() + ".%(ext)s"
-                : pureTitle;
-            case AudioOnlyQuality aq -> storageOptions.audioNamesConflict()
-                ? "%(title)s" + aq.getTitleDiff() + ".%(ext)s"
-                : pureTitle;
-        };
-
-        return switch (storageOptions.groupingMode()) {
-
-            // distinct at format dir level
-            case GROUP_BY_FORMAT -> diffedFormatDir + dateDir + metadataDir + pureTitle;
-
-            // distinct at title level
-            case GROUP_BY_CONTENT -> dateDir + titleDir + diffedTitle;
-
-            // distinct at metadata dir or title level
-            case NO_GROUPING -> dateDir + metadataDir + diffedTitle;
         };
     }
 }

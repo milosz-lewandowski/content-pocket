@@ -1,7 +1,7 @@
 package pl.mewash.common.app.binaries;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
@@ -152,7 +152,7 @@ public class BinariesManager {
         String compilePath();
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     public enum WindowsLocations implements ToolPathSupplier{
         APP_DIR_TOOLS("user.dir", "tools") // default for bundled zip
         ;
@@ -167,7 +167,7 @@ public class BinariesManager {
         }
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     public enum MacosLocations implements ToolPathSupplier {
         USER_HOME_BIN("user.home", "bin"), // default for separate 'by user' installation
         ;
@@ -182,7 +182,7 @@ public class BinariesManager {
         }
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     public enum BinariesNames {
         YT_DLP("yt-dlp_macos", "yt-dlp.exe", "--version", true),
         FFMPEG("ffmpeg", "ffmpeg.exe", "-version", true),

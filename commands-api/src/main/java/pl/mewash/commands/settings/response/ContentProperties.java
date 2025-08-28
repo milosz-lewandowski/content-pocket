@@ -1,13 +1,13 @@
 package pl.mewash.commands.settings.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum ContentProperties implements ResponseProperties {
 
     CONTENT_TITLE("%(title)s") {
