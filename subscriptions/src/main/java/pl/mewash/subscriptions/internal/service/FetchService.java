@@ -1,11 +1,12 @@
 package pl.mewash.subscriptions.internal.service;
 
 import javafx.scene.control.Alert;
-import pl.mewash.commands.api.ProcessFactory;
-import pl.mewash.commands.api.ProcessFactoryProvider;
+import pl.mewash.commands.api.processes.ProcessFactory;
+import pl.mewash.commands.api.processes.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
+import pl.mewash.common.temporary.CommandsDiffDetector;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
@@ -32,7 +33,7 @@ public class FetchService {
     public FetchService(AppContext appContext) {
         fileLogger = appContext.getFileLogger();
         repository = SubscriptionsJsonRepo.getInstance();
-        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
+        processFactory = ProcessFactoryProvider.createDefaultFactoryWithLogger(
             appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, true
         );
     }
@@ -83,6 +84,13 @@ public class FetchService {
             ContentProperties responseProperties = ContentProperties.CONTENT_PROPERTIES;
 
             Path tempFile = Files.createTempFile("fetch_uploads_temp", ".txt");
+
+
+            // FIXME: TEMPORARY CHECKER
+            CommandsDiffDetector commandsDiffDetector = new CommandsDiffDetector();
+            commandsDiffDetector
+                .fetchContentsPublishedAfter(channel.getUniqueUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
+
 
             ProcessBuilder builder = processFactory.fetchContentsPublishedAfter(
                 channel.getUniqueUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());

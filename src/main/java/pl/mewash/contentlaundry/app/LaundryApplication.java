@@ -25,14 +25,24 @@ public class LaundryApplication extends Application {
 
     private final static String CURRENT_TEMPS_AND_TECH_DEBTS = """
         Technical debts, temporary solutions and todos' list :
-        - Issue: Overwhelmed FileLogger used as a complete process consumer, but returning process output.
+        1. Issue: Overwhelmed FileLogger used as a complete process consumer, but returning process output.
         - Reason: No need for process pipeline watchdogs and real-time analysis in nearest release.
             atm logs aggregation is quite nice and efficient with single scheduled to file flusher.
         - Todo: Extract process consumption from logger but remain periodical writing in logger responsibility.
             introduce process pipeline class with possibility to inject watchdogs and output analyzers.
         - Features:
-            1. timeout watchdog detecting remote source disconnection on low stability connections,
-            2. properly implement detecting full fetch (instead of current analysis of logs returned by logger
+            a. timeout watchdog detecting remote source disconnection on low stability connections,
+            b. properly implement detecting full fetch (instead of current analysis of logs returned by logger
+        
+        2. Issue: Temporary command comparator - causes a little overhead with creation of additional 2 factories
+            instances per command creation
+        - Reason: after introducing new Process factory there is a need to test each request to detect any unexpected
+            differences in commands parameters
+        
+        3. In near future i would like to drop lombok entirely (in case of possible supply-chain-attacks after in case
+            of possible long term pause in application maintaining and development
+        - Reason: Until reaching more stable version of this app i am staying with lombok as it makes access management
+            way faster and more explicit at first glance.
         """;
 
     @Override

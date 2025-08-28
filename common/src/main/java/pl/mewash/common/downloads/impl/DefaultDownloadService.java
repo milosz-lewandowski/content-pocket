@@ -1,7 +1,7 @@
 package pl.mewash.common.downloads.impl;
 
-import pl.mewash.commands.api.ProcessFactory;
-import pl.mewash.commands.api.ProcessFactoryProvider;
+import pl.mewash.commands.api.processes.ProcessFactory;
+import pl.mewash.commands.api.processes.ProcessFactoryProvider;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
 import pl.mewash.commands.settings.formats.DownloadOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
@@ -9,6 +9,7 @@ import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.downloads.api.DownloadService;
 import pl.mewash.common.logging.api.FileLogger;
+import pl.mewash.common.temporary.CommandsDiffDetector;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +29,9 @@ public class DefaultDownloadService implements DownloadService {
 
     public DefaultDownloadService(AppContext appContext) {
         fileLogger = appContext.getFileLogger();
-        processFactory = ProcessFactoryProvider.createDefaultWithConsolePrintAndLogger(
-            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, false);
+        processFactory = ProcessFactoryProvider.createDefaultFactoryWithLogger(
+            appContext.getYtDlpCommand(), appContext.getFfMpegCommand(), fileLogger::appendSingleLine, true);
     }
-
 
     public DownloadResults downloadWithSettings(String url, DownloadOption downloadOpt, String baseDirString,
                                                 StorageOptions storageOpt) throws IOException, InterruptedException {
@@ -41,6 +41,13 @@ public class DefaultDownloadService implements DownloadService {
         long threadId = Thread.currentThread().threadId();
         Path tempDirPath = Files.createTempDirectory(baseDirPath, "__temp_laundry_" + threadId).toAbsolutePath();
         Path tempTitleFile = Files.createTempFile(tempDirPath, "__temp_laundry", ".txt").toAbsolutePath();
+
+        // FIXME: TEMPORARY CHECKER
+        CommandsDiffDetector commandsDiffDetector = new CommandsDiffDetector();
+        switch (downloadOpt) {
+            case VideoQuality vq -> commandsDiffDetector.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
+            case AudioOnlyQuality aq -> commandsDiffDetector.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
+        };
 
         // Detect download type and get process
         ProcessBuilder processBuilder = switch (downloadOpt) {
