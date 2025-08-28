@@ -40,7 +40,6 @@ public final class FetchedContent {
 
     public static FetchedContent fromContentPropertiesResponse(ContentProperties.ContentResponseDto contentDto,
                                                                String channelUrl, String channelName) {
-
         return FetchedContent.builder()
             .title(contentDto.getTitle())
             .url(contentDto.getUrl())

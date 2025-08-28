@@ -3,6 +3,7 @@ package pl.mewash.subscriptions.ui.dialogs;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
+import pl.mewash.common.app.context.AppContext;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
 import pl.mewash.subscriptions.ui.ChannelSettingsController;
 
@@ -77,7 +78,7 @@ public class Dialogs {
             return dialog.showAndWait();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            AppContext.getInstance().getFileLogger().logErrStackTrace(e, true);
             return Optional.empty();
         }
     }

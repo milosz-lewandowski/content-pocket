@@ -20,9 +20,7 @@ public class ChannelUiState {
     private final ObjectProperty<ProgressiveFetchStage>
         fetchingStage = new SimpleObjectProperty<>(ProgressiveFetchStage.FETCH_LATEST);
 
-
     public static ChannelUiState fromChannelInit(SubscribedChannel channel) {
-
         ChannelUiState channelUiState = ChannelUiState.builder()
             .channelName(channel.getChannelName())
             .url(channel.getUniqueUrl())
