@@ -12,7 +12,7 @@ import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
 import pl.mewash.subscriptions.internal.domain.state.ProgressiveFetchRange;
 import pl.mewash.subscriptions.internal.domain.state.ProgressiveFetchStage;
-import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
+import pl.mewash.subscriptions.internal.persistence.storage.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
 import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 

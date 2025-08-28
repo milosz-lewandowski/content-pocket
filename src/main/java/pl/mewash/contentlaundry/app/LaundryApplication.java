@@ -23,8 +23,8 @@ import java.util.*;
 
 public class LaundryApplication extends Application {
 
-    private final static String CURRENT_TEMPS_AND_TECH_DEBTS = """
-        Technical debts, temporary solutions and todos' list :
+    private final static String CURRENT_ISSUES_TEMPS_TODOS = """
+        List of Issues - todos, temporary solutions and technical debts:
         1. Issue: Overwhelmed FileLogger used as a complete process consumer, but returning process output.
         - Reason: No need for process pipeline watchdogs and real-time analysis in nearest release.
             atm logs aggregation is quite nice and efficient with single scheduled to file flusher.
@@ -43,6 +43,14 @@ public class LaundryApplication extends Application {
             of possible long term pause in application maintaining and development
         - Reason: Until reaching more stable version of this app i am staying with lombok as it makes access management
             way faster and more explicit at first glance.
+        
+        4. Issue: should introduce ffprobe
+        - Reason: at this moment selection of source streams is just some fallbacks heuristic based on target
+            codec/format requirements. While this is good enough for everyday watching in subscriptions tab,
+            in my opinion is not enough for real archiving use cases.
+        - Todo: store information about each content all possible codecs, introduce algorithm selecting best codecs for
+            target format, ffprobe partial downloads to select optimal conversion parameters (avoid reconversion on
+            no real quality gain)
         """;
 
     @Override
@@ -101,7 +109,7 @@ public class LaundryApplication extends Application {
 
     public static void main(String[] args) {
         System.out.println("Starting Laundry Application");
-        System.out.println(CURRENT_TEMPS_AND_TECH_DEBTS);
+        System.out.println(CURRENT_ISSUES_TEMPS_TODOS);
         launch();
     }
 

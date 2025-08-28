@@ -3,8 +3,8 @@ package pl.mewash.common.temporary;
 import lombok.Getter;
 import pl.mewash.commands.api.processes.ProcessFactory;
 import pl.mewash.commands.api.processes.ProcessFactoryProvider;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.response.ChannelProperties;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.commands.settings.storage.StorageOptions;
@@ -18,9 +18,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+/**
+ * Temporary solution to battle test new process factory implementation in run
+ */
 public class CommandsDiffDetector implements ProcessFactory {
-
-
 
     @Override
     public ProcessBuilder fetchChannelBasicData(String channelUrl, ChannelProperties channelProperties, Path tempFile) {
@@ -43,7 +44,7 @@ public class CommandsDiffDetector implements ProcessFactory {
     }
 
     @Override
-    public ProcessBuilder downloadAudioStream(String url, AudioOnlyQuality audioQuality, StorageOptions storageOptions, Path tempFile) {
+    public ProcessBuilder downloadAudioStream(String url, AudioOption audioQuality, StorageOptions storageOptions, Path tempFile) {
         FactoryComparator factoryComparator = new FactoryComparator();
         factoryComparator.getLocalDefault().downloadAudioStream(url, audioQuality, storageOptions, tempFile);
         factoryComparator.getLocalLegacy().downloadAudioStream(url, audioQuality, storageOptions, tempFile);
@@ -53,7 +54,7 @@ public class CommandsDiffDetector implements ProcessFactory {
     }
 
     @Override
-    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoQuality videoQuality, StorageOptions storageOptions, Path tempFile) {
+    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoOption videoQuality, StorageOptions storageOptions, Path tempFile) {
         FactoryComparator factoryComparator = new FactoryComparator();
         factoryComparator.getLocalDefault().downloadVideoWithAudioStream(url, videoQuality, storageOptions, tempFile);
         factoryComparator.getLocalLegacy().downloadVideoWithAudioStream(url, videoQuality, storageOptions, tempFile);
@@ -62,8 +63,7 @@ public class CommandsDiffDetector implements ProcessFactory {
         return null;
     }
 
-
-    class FactoryComparator {
+    private class FactoryComparator {
         AtomicReference<String> defaultCmd = new AtomicReference<>();
         AtomicReference<String> legacyCmd = new AtomicReference<>();
         Consumer<String> defaultConsumer = defaultCmd::set;
@@ -80,10 +80,7 @@ public class CommandsDiffDetector implements ProcessFactory {
             legacyConsumer, false);
     }
 
-
-
-    void compareCommands(String legacyCmd, String defaultCmd) {
-
+    private void compareCommands(String legacyCmd, String defaultCmd) {
         Set<String> defaultArgs = tokenizeCommand(defaultCmd);
         Set<String> legacyArgs = tokenizeCommand(legacyCmd);
 

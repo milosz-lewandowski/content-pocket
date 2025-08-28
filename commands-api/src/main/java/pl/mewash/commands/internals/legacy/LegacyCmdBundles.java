@@ -27,15 +27,15 @@ public enum LegacyCmdBundles {
     CHECK_CHANNEL_NAME(false, List.of(
         "--skip-download",
         "--playlist-end", "1",
-        "--quiet" // FIXME: check why disabling quiet causes print to ui
+        "--quiet"
     )),
     FETCH_CHANNEL_CONTENT(false, List.of(
         "--skip-download",
         "--match-filter", "!is_live",
-        "--playlist-end", "7000", // Safety for infinite dangling process
+        "--playlist-end", "7000", // safety for infinite dangling process
         "--break-on-reject"
     )),
-    ONLY_AUDIO_BEST_QUALITY(false, List.of( // TODO: make parametrized
+    ONLY_AUDIO_BEST_QUALITY(false, List.of(
         "--extract-audio",
         "--audio-quality", "0"
     )),

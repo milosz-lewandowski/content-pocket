@@ -1,4 +1,4 @@
-package pl.mewash.subscriptions.internal.persistence.impl;
+package pl.mewash.subscriptions.internal.persistence.storage;
 
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;

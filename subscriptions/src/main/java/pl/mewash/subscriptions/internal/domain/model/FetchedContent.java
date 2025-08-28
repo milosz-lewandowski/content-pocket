@@ -1,11 +1,12 @@
 package pl.mewash.subscriptions.internal.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
 import pl.mewash.commands.settings.formats.DownloadOption;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.subscriptions.internal.domain.state.ContentDownloadStage;
 
@@ -58,11 +59,11 @@ public final class FetchedContent {
         downloadedAs.add(downloadOption);
         lastUpdated = LocalDateTime.now();
         switch (downloadOption) {
-            case VideoQuality vq -> {
+            case VideoOption vo -> {
                 videoStage = ContentDownloadStage.SAVED;
                 videoPath = downloadedPath.toAbsolutePath().toString();
             }
-            case AudioOnlyQuality va-> {
+            case AudioOption ao -> {
                 audioStage = ContentDownloadStage.SAVED;
                 audioPath = downloadedPath.toAbsolutePath().toString();
             }
@@ -72,24 +73,24 @@ public final class FetchedContent {
     @JsonIgnore
     public boolean isDownloaded(DownloadOption downloadOption) {
         return switch (downloadOption) {
-            case VideoQuality vq -> videoStage == ContentDownloadStage.SAVED;
-            case AudioOnlyQuality va-> audioStage == ContentDownloadStage.SAVED;
+            case VideoOption vo -> videoStage == ContentDownloadStage.SAVED;
+            case AudioOption ao -> audioStage == ContentDownloadStage.SAVED;
         };
     }
 
     @JsonIgnore
     public void setDownloadingStage(DownloadOption downloadOption) {
         switch (downloadOption) {
-            case VideoQuality vq -> videoStage = ContentDownloadStage.SAVING;
-            case AudioOnlyQuality va-> audioStage = ContentDownloadStage.SAVING;
+            case VideoOption vo -> videoStage = ContentDownloadStage.SAVING;
+            case AudioOption ao -> audioStage = ContentDownloadStage.SAVING;
         }
     }
 
     @JsonIgnore
     public void setDownloadingErrorState(DownloadOption downloadOption) {
         switch (downloadOption) {
-            case VideoQuality vq -> videoStage = ContentDownloadStage.ERROR;
-            case AudioOnlyQuality va-> audioStage = ContentDownloadStage.ERROR;
+            case VideoOption vo -> videoStage = ContentDownloadStage.ERROR;
+            case AudioOption ao -> audioStage = ContentDownloadStage.ERROR;
         }
     }
 

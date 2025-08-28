@@ -8,7 +8,7 @@ import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.downloads.api.DownloadService;
 import pl.mewash.common.downloads.api.DownloadServiceProvider;
-import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
+import pl.mewash.subscriptions.internal.persistence.storage.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;

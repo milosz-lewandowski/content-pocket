@@ -58,12 +58,12 @@ public class CmdBuilder {
     }
 
     public CmdBuilder addOptional(LinkedList<CmdEntry> entriesList, boolean isSelected) {
-        if (isSelected )cmdEntries.addAll(entriesList);
+        if (isSelected) cmdEntries.addAll(entriesList);
         return this;
     }
 
     public CmdBuilder addOptional(DlpCmd.CmdBundle bundle, boolean isSelected) {
-        if (isSelected)cmdEntries.addAll(bundle.getEntries());
+        if (isSelected) cmdEntries.addAll(bundle.getEntries());
         return this;
     }
 

@@ -1,28 +1,27 @@
 package pl.mewash.commands.api.entries;
 
 import pl.mewash.commands.settings.cmd.DownloadCmd;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
 import pl.mewash.commands.settings.formats.DownloadOption;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.storage.AdditionalFiles;
 import pl.mewash.commands.settings.storage.StorageOptions;
 
 import java.time.LocalDate;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class OutputPatternResolver {
 
     public static List<CmdEntry> buildCmdEntries(StorageOptions storageOptions, DownloadOption downloadOption) {
-        EnumSet<AdditionalFiles.FileType> selectedFiles = storageOptions.additionalFiles().getFiles();
-        return selectedFiles.stream()
+        return storageOptions.additionalFiles().getFileTypes()
+            .stream()
             .flatMap(fileType -> {
                 String outputPattern = buildStoragePathPattern(storageOptions, downloadOption, fileType.isMetadata());
                 Stream<CmdEntry> patternEntry = Stream.of(CmdEntry
                     .withParam(DownloadCmd.OUTPUT_TEMPLATE, fileType.getOutputTag() + outputPattern));
-
-                Stream<CmdEntry> downloadEntry = fileType.getDownloadCmd().stream().map(CmdEntry::of);
+                Stream<CmdEntry> downloadEntry = fileType.getDownloadCmd().stream()
+                    .map(CmdEntry::of);
                 return Stream.concat(patternEntry, downloadEntry);
             })
             .toList();
@@ -40,10 +39,10 @@ public class OutputPatternResolver {
                                                   boolean isMetadataFilePattern) {
 
         String diffedFormatDir = switch (downloadOption) {
-            case VideoQuality vq -> storageOptions.multipleVidResolutions()
+            case VideoOption vq -> storageOptions.multipleVidResolutions()
                 ? vq.getDirName() + "/" + vq.getResolution() + "p" + "/"
                 : vq.getDirName() + "/";
-            case AudioOnlyQuality aq -> aq.getDirName() + "/";
+            case AudioOption aq -> aq.getDirName() + "/";
         };
 
         String dateDir = storageOptions.withDownloadedDateDir() ? LocalDate.now() + "/" : "";
@@ -57,10 +56,10 @@ public class OutputPatternResolver {
         String diffedTitle = isMetadataFilePattern
             ? pureTitle
             : switch (downloadOption) {
-            case VideoQuality vq -> storageOptions.multipleVidResolutions()
+            case VideoOption vq -> storageOptions.multipleVidResolutions()
                 ? "%(title)s" + vq.getTitleDiff() + ".%(ext)s"
                 : pureTitle;
-            case AudioOnlyQuality aq -> storageOptions.audioNamesConflict()
+            case AudioOption aq -> storageOptions.audioNamesConflict()
                 ? "%(title)s" + aq.getTitleDiff() + ".%(ext)s"
                 : pureTitle;
         };

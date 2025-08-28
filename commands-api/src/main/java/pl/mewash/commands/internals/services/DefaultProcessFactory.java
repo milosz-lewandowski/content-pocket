@@ -6,8 +6,8 @@ import pl.mewash.commands.settings.cmd.DownloadCmd;
 import pl.mewash.commands.settings.cmd.FetchCmd;
 import pl.mewash.commands.api.entries.CmdEntry;
 import pl.mewash.commands.api.entries.CmdPrintEntry;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.response.ChannelProperties;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.commands.settings.storage.StorageOptions;
@@ -43,23 +43,23 @@ public class DefaultProcessFactory implements ProcessFactory {
     public ProcessBuilder fetchContentsPublishedAfter(String channelUrl, LocalDateTime afterDate,
                                                       ContentProperties contentProperties, Path tempFile) {
         return CmdBuilder.newYtDlpCommand(ytDlpCommandPath, printToConsole, commandLogger)
-            .add(FetchCmd.Bundle.fetchContentsDateAfter(afterDate))
+            .add(FetchCmd.Bundle.getFetchContentsDateAfterEntries(afterDate))
             .setFilePrint(CmdPrintEntry.withResponsePropsAndFile(contentProperties, tempFile))
             .buildFetch(channelUrl);
     }
 
     @Override
-    public ProcessBuilder downloadAudioStream(String url, AudioOnlyQuality audioQuality,
+    public ProcessBuilder downloadAudioStream(String url, AudioOption audioQuality,
                                               StorageOptions storageOptions, Path tempFile) {
         return CmdBuilder.newYtDlpCommand(ytDlpCommandPath, printToConsole, commandLogger)
             .setFilePrint(CmdPrintEntry.withResponsePropsAndFile(ContentProperties.CONTENT_TITLE, tempFile))
-            .addOptional(CmdEntry.withParam(DownloadCmd.FFMPEG_LOCATION, ffmpegCommandPath), audioQuality.needsFFmpeg())
+            .addOptional(CmdEntry.withParam(DownloadCmd.FFMPEG_LOCATION, ffmpegCommandPath), audioQuality.getNeedsFFmpeg())
             .addOptional(DownloadCmd.Bundle.EMBED_PICTURE_AND_METADATA, audioQuality.getCanEmbedMetadata())
             .buildDownload(url, audioQuality, storageOptions);
     }
 
     @Override
-    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoQuality videoQuality,
+    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoOption videoQuality,
                                                        StorageOptions storageOptions, Path tempFile) {
         return CmdBuilder.newYtDlpCommand(ytDlpCommandPath, printToConsole, commandLogger)
             .setFilePrint(CmdPrintEntry.withResponsePropsAndFile(ContentProperties.CONTENT_TITLE, tempFile))

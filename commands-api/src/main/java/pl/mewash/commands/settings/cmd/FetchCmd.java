@@ -14,11 +14,11 @@ public enum FetchCmd implements DlpCmd {
     PRINT_TO_FILE("--print-to-file", true),
 
     SKIP_DOWNLOAD("--skip-download", false),
-    PLAYLIST_END("--playlist-end", true), // =1; =7000
+    PLAYLIST_END("--playlist-end", true),
     QUIET_PROCESS_OUTPUT("--quiet", false),
 
     DATE_AFTER_FILTER("--dateafter", true),
-    MATCH_FILTER("--match-filter", true), // =!is_live
+    MATCH_FILTER("--match-filter", true),
     BREAK_ON_REJECT("--break-on-reject", false),
 
     ;
@@ -45,7 +45,7 @@ public enum FetchCmd implements DlpCmd {
             return new LinkedList<>(cmdEntries);
         }
 
-        public static List<CmdEntry> fetchContentsDateAfter(LocalDateTime dateAfter) {
+        public static List<CmdEntry> getFetchContentsDateAfterEntries(LocalDateTime dateAfter) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
             String date = dateAfter.format(formatter);
             LinkedList<CmdEntry> entries = FETCH_CONTENTS_SKIP_LIVES.getEntries();

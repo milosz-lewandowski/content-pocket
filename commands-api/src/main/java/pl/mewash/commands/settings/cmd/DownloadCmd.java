@@ -13,9 +13,9 @@ public enum DownloadCmd implements DlpCmd {
     FFMPEG_LOCATION("--ffmpeg-location", true),
 
     FALLBACKS_CHAIN("-f", true),
-    MERGE_OUTPUT("--merge-output-format", true), // =mp4
-    AUDIO_FORMAT("--audio-format", true), // =aac
-    AUDIO_QUALITY("--audio-quality", true), // =0; =7
+    MERGE_OUTPUT("--merge-output-format", true),
+    AUDIO_FORMAT("--audio-format", true),
+    AUDIO_QUALITY("--audio-quality", true),
 
     EXTRACT_AUDIO("--extract-audio", false),
     NO_PARTIAL_FILES("--no-part", false),

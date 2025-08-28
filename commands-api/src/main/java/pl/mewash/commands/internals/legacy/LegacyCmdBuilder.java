@@ -8,7 +8,6 @@ import pl.mewash.commands.settings.response.ResponseProperties;
 import pl.mewash.commands.settings.storage.AdditionalFiles;
 import pl.mewash.commands.settings.storage.StorageOptions;
 
-
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

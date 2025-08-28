@@ -2,9 +2,7 @@ package pl.mewash.common.downloads.impl;
 
 import pl.mewash.commands.api.processes.ProcessFactory;
 import pl.mewash.commands.api.processes.ProcessFactoryProvider;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
-import pl.mewash.commands.settings.formats.DownloadOption;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.*;
 import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.downloads.api.DownloadService;
@@ -45,14 +43,14 @@ public class DefaultDownloadService implements DownloadService {
         // FIXME: TEMPORARY CHECKER
         CommandsDiffDetector commandsDiffDetector = new CommandsDiffDetector();
         switch (downloadOpt) {
-            case VideoQuality vq -> commandsDiffDetector.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
-            case AudioOnlyQuality aq -> commandsDiffDetector.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
+            case VideoOption vq -> commandsDiffDetector.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
+            case AudioOption aq -> commandsDiffDetector.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
         };
 
         // Detect download type and get process
         ProcessBuilder processBuilder = switch (downloadOpt) {
-            case VideoQuality vq -> processFactory.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
-            case AudioOnlyQuality aq -> processFactory.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
+            case VideoOption vq -> processFactory.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
+            case AudioOption aq -> processFactory.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
         };
 
         // Run process

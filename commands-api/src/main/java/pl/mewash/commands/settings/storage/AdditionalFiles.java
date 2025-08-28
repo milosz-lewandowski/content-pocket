@@ -23,7 +23,7 @@ public enum AdditionalFiles {
 
     @Getter private final String buttonTitle;
     @Getter private final String tooltip;
-    @Getter private final EnumSet<FileType> files;
+    @Getter private final EnumSet<FileType> fileTypes;
 
     @RequiredArgsConstructor
     public enum FileType {

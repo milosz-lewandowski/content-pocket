@@ -5,7 +5,6 @@ import pl.mewash.commands.settings.response.ResponseProperties;
 
 import java.nio.file.Path;
 import java.util.LinkedList;
-import java.util.function.BiPredicate;
 
 public class CmdPrintEntry extends CmdEntry {
     private final Path filePath;
@@ -16,7 +15,7 @@ public class CmdPrintEntry extends CmdEntry {
     }
 
     public static CmdPrintEntry withResponsePropsAndFile(ResponseProperties responseProperties, Path filePath) {
-        paramChecker.test(responseProperties, filePath);
+        validateOrThrow(responseProperties, filePath);
         return new CmdPrintEntry(responseProperties, filePath);
     }
 
@@ -27,11 +26,10 @@ public class CmdPrintEntry extends CmdEntry {
         return list;
     }
 
-    private static final BiPredicate<ResponseProperties, Path> paramChecker = (respProps, path) -> {
+    private static void validateOrThrow(ResponseProperties respProps, Path path) {
         if (respProps == null || respProps.getPattern() == null)
             throw new IllegalArgumentException("File print Response Pattern cannot be null");
         if (path == null)
             throw new IllegalArgumentException("Path to file print output cannot be null");
-        return true;
-    };
+    }
 }

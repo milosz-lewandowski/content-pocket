@@ -18,9 +18,9 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.util.Duration;
-import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
 import pl.mewash.commands.settings.formats.DownloadOption;
-import pl.mewash.commands.settings.formats.VideoQuality;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
@@ -29,8 +29,8 @@ import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.*;
-import pl.mewash.subscriptions.internal.persistence.impl.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
+import pl.mewash.subscriptions.internal.persistence.storage.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.service.ChannelService;
 import pl.mewash.subscriptions.internal.service.ContentService;
 import pl.mewash.subscriptions.internal.service.FetchService;
@@ -151,8 +151,8 @@ public class SubscriptionsController {
 
                     Optional<SubscribedChannel> newChannel = channelService.verifyAndGetChannel(channelUrl);
 
-                    newChannel.ifPresent(channel -> {
-                        Platform.runLater(() -> {
+                    newChannel.ifPresent(channel -> Platform
+                        .runLater(() -> {
                             ChannelSettings channelSettings = Dialogs
                                 .showNewChannelSettingsDialogAndWait(channel.getChannelName())
                                 .orElse(ChannelSettings.defaultSettings());
@@ -177,8 +177,8 @@ public class SubscriptionsController {
 
                             channelUrlInput.clear();
                             updateAddChannelButtonState(ChannelValidationStage.ADD_NEW);
-                        });
-                    });
+                        })
+                    );
                 });
             }
         });
@@ -326,23 +326,23 @@ public class SubscriptionsController {
     }
 
     private void submitDownloadTask(FetchedContent content, DownloadOption downloadOption) {
-        getSubsBasePathWithAlert().ifPresent(subsBasePath -> {
+        getSubsBasePathWithAlert()
+            .ifPresent(subsBasePath -> virtualTasksExecutor
+                .submit(() -> {
+                    content.setDownloadingStage(downloadOption);
+                    Platform.runLater(fetchedContentsListView::refresh);
 
-            virtualTasksExecutor.submit(() -> {
-                content.setDownloadingStage(downloadOption);
-                Platform.runLater(fetchedContentsListView::refresh);
-
-                contentService.downloadFetched(content, downloadOption, subsBasePath);
-                Platform.runLater(fetchedContentsListView::refresh);
-            });
-        });
+                    contentService.downloadFetched(content, downloadOption, subsBasePath);
+                    Platform.runLater(fetchedContentsListView::refresh);
+                })
+            );
     }
 
     private void openInExplorer(FetchedContent content, DownloadOption downloadOption) {
         try {
             Path path = switch (downloadOption) {
-                case VideoQuality vq -> Path.of(content.getVideoPath());
-                case AudioOnlyQuality aq -> Path.of(content.getAudioPath());
+                case VideoOption vo -> Path.of(content.getVideoPath());
+                case AudioOption ao -> Path.of(content.getAudioPath());
             };
 
             if (Files.exists(path)) {

@@ -2,6 +2,8 @@ package pl.mewash.commands.internals.legacy;
 
 import pl.mewash.commands.api.processes.ProcessFactory;
 import pl.mewash.commands.settings.formats.AudioOnlyQuality;
+import pl.mewash.commands.settings.formats.AudioOption;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.formats.VideoQuality;
 import pl.mewash.commands.settings.response.ChannelProperties;
 import pl.mewash.commands.settings.response.ContentProperties;
@@ -49,11 +51,14 @@ public class LegacyProcessFactory implements ProcessFactory {
             .buildReadOnlyProcess();
     }
 
-    public ProcessBuilder downloadAudioStream(String url, AudioOnlyQuality audioQuality,
+    public ProcessBuilder downloadAudioStream(String url, AudioOption audioOption,
                                               StorageOptions storageOptions, Path tempFile) {
+        if (!(audioOption instanceof AudioOnlyQuality audioQuality))
+            throw new IllegalArgumentException("Legacy Factory supports Only AudioOnlyQuality impl of AudioOption");
+
         return LegacyCmdBuilder.newYtDlpCommand(ytDlpCommandPath)
             .setAudioOnlySettings(audioQuality)
-            .setOptionalFFMpegPath(ffmpegCommandPath, audioQuality.needsFFmpeg())
+            .setOptionalFFMpegPath(ffmpegCommandPath, audioQuality.getNeedsFFmpeg())
             .addOptionalCommandBundle(LegacyCmdBundles.EMBED_FILE_METADATA, audioQuality.getCanEmbedMetadata())
             .addOptionalCommandBundle(LegacyCmdBundles.ADD_CONTENT_DESCRIPTION_FILES,
                 storageOptions.additionalFiles() == AdditionalFiles.MEDIA_WITH_DESCRIPTION)
@@ -67,8 +72,11 @@ public class LegacyProcessFactory implements ProcessFactory {
             .buildDownloadProcess();
     }
 
-    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoQuality videoQuality,
+    public ProcessBuilder downloadVideoWithAudioStream(String url, VideoOption videoOption,
                                                        StorageOptions storageOptions, Path tempFile) {
+        if (!(videoOption instanceof VideoQuality videoQuality))
+            throw new IllegalArgumentException("Legacy Factory supports Only VideoQuality impl of VideoOption");
+
         return LegacyCmdBuilder.newYtDlpCommand(ytDlpCommandPath)
             .setVideoQuality(videoQuality)
             .addCommandBundle(LegacyCmdBundles.EXTRACT_BEST_AUDIO)

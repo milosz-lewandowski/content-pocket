@@ -12,12 +12,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 @RequiredArgsConstructor
-public enum AudioOnlyQuality implements DownloadOption {
-
-    // TODO: prepare more specific download fallbacks and conversion rules based on ffprobe metrics
+public enum AudioOnlyQuality implements AudioOption {
 
     MP3("mp3", "MP3 (Good Quality)",
-        "", "mp3",
         true, true,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
@@ -27,9 +24,9 @@ public enum AudioOnlyQuality implements DownloadOption {
             CmdEntry.of(DownloadCmd.EXTRACT_AUDIO),
             CmdEntry.withParam(DownloadCmd.AUDIO_FORMAT, "mp3"),
             CmdEntry.withParam(DownloadCmd.AUDIO_QUALITY, "0")
-        )),
+        ), "", "mp3"),
+
     M4A("m4a high quality", "M4A (High Quality)",
-        "(HQ)", "m4a_hq",
         true, true,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
@@ -40,9 +37,9 @@ public enum AudioOnlyQuality implements DownloadOption {
             CmdEntry.of(DownloadCmd.EXTRACT_AUDIO),
             CmdEntry.withParam(DownloadCmd.AUDIO_FORMAT, "m4a"),
             CmdEntry.withParam(DownloadCmd.AUDIO_QUALITY, "0")
-        )),
+        ), "(HQ)", "m4a_hq"),
+
     M4A_SMALL_SIZE("m4a small size", "M4A (Small Size)",
-        "(SmSize)", "m4a_sm_size",
         true, true,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
@@ -54,9 +51,9 @@ public enum AudioOnlyQuality implements DownloadOption {
             CmdEntry.of(DownloadCmd.EXTRACT_AUDIO),
             CmdEntry.withParam(DownloadCmd.AUDIO_FORMAT, "m4a"),
             CmdEntry.withParam(DownloadCmd.AUDIO_QUALITY, "7")
-        )),
+        ), "(SmSize)", "m4a_sm_size"),
+
     WAV("wav", "WAV (Converted from lossy)",
-        "", "wav",
         true, false,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
@@ -67,9 +64,9 @@ public enum AudioOnlyQuality implements DownloadOption {
                 bestaudio"""),
             CmdEntry.of(DownloadCmd.EXTRACT_AUDIO),
             CmdEntry.withParam(DownloadCmd.AUDIO_FORMAT, "m4a")
-        )),
+        ), "", "wav"),
+
     ORIGINAL_SOURCE("original source codec", "Original codec (No lossy conversion)",
-        "(as original)", "original",
         false, false,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
@@ -81,23 +78,23 @@ public enum AudioOnlyQuality implements DownloadOption {
                 bestaudio"""),
             CmdEntry.of(DownloadCmd.NO_PARTIAL_FILES),
             CmdEntry.of(DownloadCmd.NO_POST_OVERWRITES)
-        ));
+        ), "(as original)", "original")
+    ;
 
     @Getter private final String optionName;
     @Getter private final String buttonTitle;
 
-    @Getter private final String dirName;
-    @Getter private final String titleDiff;
-
-    private final boolean useFFmpeg;
+    private final boolean needsFFmpeg;
     private final boolean canEmbedMetadata;
 
     private final List<CmdEntry> conversionCommands;
 
+    @Getter private final String dirName;
+    @Getter private final String titleDiff;
+
     @Getter final static Predicate<Set<DownloadOption>> conflictsPredicate = (options) -> options
         .contains(AudioOnlyQuality.M4A) && options
         .contains(AudioOnlyQuality.M4A_SMALL_SIZE);
-
 
     public List<CmdEntry> getCmdEntries() {
         return new LinkedList<>(this.conversionCommands);
@@ -109,8 +106,8 @@ public enum AudioOnlyQuality implements DownloadOption {
             .toList());
     }
 
-    public boolean needsFFmpeg() {
-        return this.useFFmpeg;
+    public boolean getNeedsFFmpeg() {
+        return this.needsFFmpeg;
     }
 
     public boolean getCanEmbedMetadata() {

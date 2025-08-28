@@ -13,7 +13,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
-public enum VideoQuality implements DownloadOption {
+public enum VideoQuality implements VideoOption {
     MAXIMUM("2160", "MP4 up to 4K", "mp4", "(as 4K)"),
     HIGH("1440", "MP4 up to 1440p", "mp4", "(as 1440p)"),
     STANDARD("1080", "MP4 up to 1080p", "mp4", "(as 1080p)"),
@@ -47,9 +47,9 @@ public enum VideoQuality implements DownloadOption {
     }
 
     private String getFallbacksChain(boolean forceH264) {
-        Set<VideoAndAudioStreamFallbacks> fallbacks = forceH264
-            ? VideoAndAudioStreamFallbacks.getEnforceH264Fallbacks()
-            : VideoAndAudioStreamFallbacks.getAnyBvFallbacks();
+        Set<StreamFallbacks> fallbacks = forceH264
+            ? StreamFallbacks.getEnforceH264Fallbacks()
+            : StreamFallbacks.getAnyBvFallbacks();
         return fallbacks.stream()
             .map(fallback -> fallback.withResolution(this.resolution))
             .collect(Collectors.joining("/"));
@@ -66,7 +66,7 @@ public enum VideoQuality implements DownloadOption {
     }
 
     @RequiredArgsConstructor
-    enum VideoAndAudioStreamFallbacks {
+    public enum StreamFallbacks {
         FORCE_H264_VID_AAC_AUDIO(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
         FORCE_H264_VID_ANY_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
 
@@ -82,13 +82,13 @@ public enum VideoQuality implements DownloadOption {
             return String.format(template, resolution);
         }
 
-        static Set<VideoAndAudioStreamFallbacks> getEnforceH264Fallbacks() {
+        public static Set<StreamFallbacks> getEnforceH264Fallbacks() {
             return Arrays.stream(values())
                 .filter(fallback -> fallback.enforcesH264)
                 .collect(Collectors.toSet());
         }
 
-        static Set<VideoAndAudioStreamFallbacks> getAnyBvFallbacks() {
+        public static Set<StreamFallbacks> getAnyBvFallbacks() {
             return Arrays.stream(values())
                 .filter(fallback -> !fallback.enforcesH264)
                 .collect(Collectors.toSet());
