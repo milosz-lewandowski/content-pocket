@@ -15,5 +15,6 @@ module pl.mewash.common {
     exports pl.mewash.common.downloads.api;
     exports pl.mewash.common.logging.api;
     exports pl.mewash.common.spi.tabs;
-    exports pl.mewash.common.temporary;
+
+    exports pl.mewash.common.temporary; // For removal after some time if no problems appear
 }

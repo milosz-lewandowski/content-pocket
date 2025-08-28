@@ -31,7 +31,7 @@ public class BinariesManager {
 
     public String resolveToolsAtDefaultLocations(){
         GeneralSettings generalSettings = SettingsManager.load();
-        String directoryPath = null;
+        String directoryPath;
 
         // if binaries confirmed
         if (generalSettings.isBinariesDirConfirmed()) {
@@ -45,17 +45,19 @@ public class BinariesManager {
             case WINDOWS -> findValidToolLocation(WindowsLocations.values());
         };
 
-        if (directoryPath != null) {
+        if (directoryPath != null)
             return saveValidToolsLocation(directoryPath);
-        }
+
         return null;
     }
 
     public String resolveToolsAtGivenLocation(String toolsLocation){
         boolean confirmedNew = verifyBinariesInDir(toolsLocation);
-        if (confirmedNew) {
+        if (confirmedNew)
             return saveValidToolsLocation(toolsLocation);
-        } else throw new RuntimeException("Tools verification failed on given location: " + toolsLocation);
+        else fileLogger
+            .appendSingleLine("Tools verification failed on given location: " + toolsLocation);
+        return null;
     }
 
     private String saveValidToolsLocation(String location){
@@ -115,7 +117,8 @@ public class BinariesManager {
 
     private String getVersionResponse(BinariesNames binary, Path binaryPath) {
         StringBuilder versionMessageBuilder = new StringBuilder();
-        if (binary == BinariesNames.YT_DLP) System.out.println("check of yt-dlp version: ");
+        if (binary == BinariesNames.YT_DLP)
+            System.out.println("check of yt-dlp version: ");
         try {
             String toolPathCommand = binaryPath.toAbsolutePath().toString();
             ProcessBuilder builder = new ProcessBuilder(toolPathCommand, binary.versionCommand);

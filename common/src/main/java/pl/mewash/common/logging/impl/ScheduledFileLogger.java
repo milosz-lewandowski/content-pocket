@@ -186,7 +186,7 @@ public class ScheduledFileLogger implements FileLogger {
     }
 
     private static boolean isYtDlpProgressMessageLine(String line) {
-        // yt-dlp / ffmpeg progress lines usually include '% of'  or 'frame=' info
+        // yt-dlp / ffmpeg progress lines include '% of'  or 'frame=' info
         return line.contains("% of") || line.matches(".*\\d+\\.\\d+%.*") || line.contains("frame=");
     }
 

@@ -1,6 +1,8 @@
 package pl.mewash.common.app.context;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import pl.mewash.common.app.binaries.BinariesManager;
 import pl.mewash.common.app.lifecycle.OnCloseHandler;
 import pl.mewash.common.logging.api.FileLogger;
@@ -13,38 +15,33 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 
 @Getter
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AppContext {
+    // singleton
     private static final AppContext INSTANCE = new AppContext();
     private boolean initialized = false;
+    public static AppContext getInstance() {
+        return INSTANCE;
+    }
 
+    // fields
     private String confirmedToolsDir;
     private BinariesManager.SupportedPlatforms detectedPlatform;
     private String YtDlpCommand;
     private String FfMpegCommand;
     private FileLogger fileLogger;
-
     private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
 
-    private AppContext() {}
-
-    public static AppContext getInstance() {
-        return INSTANCE;
-    }
-
     public void init(BinariesManager.SupportedPlatforms platform, String toolsDir) {
-        if (initialized) {
+        if (initialized)
             throw new IllegalStateException("AppContext already initialized.");
-        }
         this.detectedPlatform = platform;
         this.confirmedToolsDir = toolsDir;
-
         this.YtDlpCommand = BinariesManager.BinariesNames.
                 YT_DLP.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
         this.FfMpegCommand = BinariesManager.BinariesNames.
                 FFMPEG.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
-
         fileLogger = LoggersProvider.getFileLogger();
-
         this.initialized = true;
     }
 
