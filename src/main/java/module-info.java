@@ -7,6 +7,10 @@ module pl.mewash.contentlaundry {
 
     requires pl.mewash.common;
 
+    // tabs dependencies are needed only for building modular zip with jlink
+    requires pl.mewash.batch;
+    requires pl.mewash.subscriptions;
+
     uses TabPlugin;
 
     opens pl.mewash.contentlaundry.app to javafx.graphics;

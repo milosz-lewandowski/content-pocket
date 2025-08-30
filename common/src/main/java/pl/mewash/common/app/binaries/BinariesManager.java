@@ -117,8 +117,11 @@ public class BinariesManager {
 
     private String getVersionResponse(BinariesNames binary, Path binaryPath) {
         StringBuilder versionMessageBuilder = new StringBuilder();
-        if (binary == BinariesNames.YT_DLP)
+        if (binary == BinariesNames.YT_DLP){
             System.out.println("check of yt-dlp version: ");
+            fileLogger.appendSingleLine("check of yt-dlp version:");
+        }
+
         try {
             String toolPathCommand = binaryPath.toAbsolutePath().toString();
             ProcessBuilder builder = new ProcessBuilder(toolPathCommand, binary.versionCommand);

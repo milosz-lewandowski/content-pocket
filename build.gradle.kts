@@ -8,14 +8,14 @@ plugins {
     id("org.beryx.jlink") version "2.25.0"
 }
 
-group = "pl.me-wash"
-version = "1.0-SNAPSHOT"
+allprojects {
+    group = providers.gradleProperty("group").get()
+    version = providers.gradleProperty("appVersion").get()
 
-repositories {
-    mavenCentral()
+    repositories {
+        mavenCentral()
+    }
 }
-
-val junitVersion = "5.10.2"
 
 java {
     toolchain {
@@ -23,48 +23,29 @@ java {
     }
 }
 
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-application {
-    mainModule.set("pl.mewash.contentlaundry")
-    mainClass.set("pl.mewash.contentlaundry.LaundryApplication")
-    applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
-}
-
 javafx {
     version = "21"
     modules = listOf("javafx.controls", "javafx.fxml")
 }
 
+application {
+    mainModule.set("pl.mewash.contentlaundry")
+    mainClass.set("pl.mewash.contentlaundry.app.LaundryApplication")
+    applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
+}
+
 dependencies {
     implementation(project(":commands-api"))
     implementation(project(":common"))
+
     implementation(project(":subscriptions"))
     implementation(project(":batch"))
-
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
-    implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.19.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
-
-    implementation("org.projectlombok:lombok:1.18.38")
-    annotationProcessor("org.projectlombok:lombok:1.18.38")
-
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
 }
 
 jlink {
     options.set(
         listOf(
             "--strip-debug",
-            "--compress", "2",
             "--no-header-files",
             "--no-man-pages"
         )
@@ -76,11 +57,11 @@ jlink {
 
     jpackage {
         imageName = "ContentLaundry"
-        installerType = "app-image" // Creates a folder, not an installer
+        installerType = "app-image"
         skipInstaller = true
-        appVersion = "1.0.0"
-        // icon = "icon.ico" // Add this later if needed
-        // resourceDir = file("src/main/resources") // Optional
+        appVersion = providers
+            .gradleProperty("appVersion").get()
+        resourceDir = file("src/main/resources")
     }
 }
 
@@ -98,14 +79,16 @@ tasks.named<JPackageImageTask>("jpackageImage") {
 tasks.register<Zip>("zipPortableApp") {
     dependsOn("jpackageImage")
 
-    group = "distribution"
-    description = "Zips the jpackage portable app for sharing"
+    val archiveName = "ContentLaundry-" + providers
+        .gradleProperty("appVersion")
+        .get() + "-portable.zip"
 
-    archiveFileName.set("ContentLaundry-portable.zip")
+    group = "distribution"
+    description = "Content Laundry executable archive"
+
+    archiveFileName.set(archiveName)
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
     from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
-
-    // Optional: remove absolute folder prefix inside zip
-    into("ContentLaundry")
+//    into("ContentLaundry") // disabled to avoid nested app dir
 }
