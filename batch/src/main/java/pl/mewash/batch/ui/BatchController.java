@@ -345,7 +345,7 @@ public class BatchController implements OnCloseHandler {
     private Optional<String> getBasePathWithEmptyCheck() {
         String path = pathField.getText().trim();
         if (path.isEmpty()) {
-            logStringToUi("⚠ No download path selected!");
+            Dialogs.showNoDownloadPathAlert();
             return Optional.empty();
         }
         return Optional.of(path);
@@ -354,7 +354,7 @@ public class BatchController implements OnCloseHandler {
     private Optional<String> getUrlInputWithEmptyCheck() {
         String inputString = urlInput.getText().trim();
         if (inputString.isEmpty()) {
-            logStringToUi("⚠ You must paste some input!");
+            Dialogs.showNoInputAlert();
             return Optional.empty();
         }
         return Optional.of(inputString);

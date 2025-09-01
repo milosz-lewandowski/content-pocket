@@ -25,8 +25,8 @@ public class ContentsSummaryBar {
     private final Label lastFetchDate = new Label("-");
     private final Label fetchedSinceDate = new Label("-");
 
-    private final Label areLatestFetched = new Label("✅");
-    private final Label isFetchedOldest = new Label("❌");
+    private final Label areLatestFetched = new Label("✔");
+    private final Label isFetchedOldest = new Label("✘");
 
     private final Label savedAudios = new Label("0");
     private final Label savedVideos = new Label("0");
@@ -104,10 +104,10 @@ public class ContentsSummaryBar {
         totalContents.setText(String.valueOf(params.contentsCount));
 
         lastFetchDate.setText(formatLastFetchDateMessage(params.lastFetchDate));
-        areLatestFetched.setText(params.fetchedLatest ? "✅" : "❌");
+        areLatestFetched.setText(params.fetchedLatest ? "✔" : "✘");
 
         fetchedSinceDate.setText(params.fetchedSince.format(DATE_FORMAT));
-        isFetchedOldest.setText(params.fetchedOldest ? "✅" : "❌");
+        isFetchedOldest.setText(params.fetchedOldest ? "✔" : "✘");
 
         savedAudios.setText(String.valueOf(params.savedAudios));
         savedVideos.setText(String.valueOf(params.savedVideos));

@@ -93,7 +93,7 @@ public class LaundryApplication extends Application {
             stage.show();
 
         } catch (Exception e) {
-            System.err.println("❌ App startup failed: " + e.getMessage());
+            System.err.println("✘ App startup failed: " + e.getMessage());
 
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));

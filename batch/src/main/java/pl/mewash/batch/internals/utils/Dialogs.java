@@ -1,10 +1,23 @@
 package pl.mewash.batch.internals.utils;
 
+import javafx.application.Platform;
 import javafx.scene.control.*;
 
 import java.util.Optional;
 
 public class Dialogs {
+
+    public static void showNoInputAlert() {
+        showAlertAndAwait(Alert.AlertType.WARNING,
+            "⚠ No input pasted!",
+            "You must paste some urls to start laundry.");
+    }
+
+    public static void showNoDownloadPathAlert() {
+        showAlertAndAwait(Alert.AlertType.WARNING,
+            "⚠ No download path selected!",
+            "You must specify 'Save to' directory.");
+    }
 
     public static boolean getRemoveDuplicatesAlertDecision(int duplicatesCount, int allUrlsCount) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -26,5 +39,15 @@ public class Dialogs {
 
         Optional<ButtonType> result = alert.showAndWait();
         return result.orElse(removeButton) == removeButton;
+    }
+
+    private static void showAlertAndAwait(Alert.AlertType alertType, String title, String content) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(alertType);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(content);
+            alert.showAndWait();
+        });
     }
 }
