@@ -6,11 +6,10 @@ import pl.mewash.commands.api.processes.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ChannelProperties;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
-import pl.mewash.common.temporary.CommandsDiffDetector;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
-import pl.mewash.subscriptions.internal.persistence.storage.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.internal.persistence.repo.SubscriptionsRepository;
+import pl.mewash.subscriptions.internal.persistence.storage.SubscriptionsJsonRepo;
 import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.io.IOException;
@@ -55,15 +54,6 @@ public class ChannelService {
             Path tempFile = Files.createTempFile("yt_channel", ".txt");
 
             ChannelProperties responseProperties = ChannelProperties.CHANNEL_NAME_LATEST_CONTENT;
-
-
-
-            // FIXME: TEMPORARY CHECKER
-            CommandsDiffDetector commandsDiffDetector = new CommandsDiffDetector();
-            commandsDiffDetector
-                .fetchChannelBasicData(inputChannelUrl, responseProperties, tempFile);
-
-
 
             ProcessBuilder checkChannelProcess = processFactory
                 .fetchChannelBasicData(inputChannelUrl, responseProperties, tempFile);

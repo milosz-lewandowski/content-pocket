@@ -2,12 +2,13 @@ package pl.mewash.common.downloads.impl;
 
 import pl.mewash.commands.api.processes.ProcessFactory;
 import pl.mewash.commands.api.processes.ProcessFactoryProvider;
-import pl.mewash.commands.settings.formats.*;
+import pl.mewash.commands.settings.formats.AudioOption;
+import pl.mewash.commands.settings.formats.DownloadOption;
+import pl.mewash.commands.settings.formats.VideoOption;
 import pl.mewash.commands.settings.storage.StorageOptions;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.downloads.api.DownloadService;
 import pl.mewash.common.logging.api.FileLogger;
-import pl.mewash.common.temporary.CommandsDiffDetector;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,13 +40,6 @@ public class DefaultDownloadService implements DownloadService {
         long threadId = Thread.currentThread().threadId();
         Path tempDirPath = Files.createTempDirectory(baseDirPath, "__temp_laundry_" + threadId).toAbsolutePath();
         Path tempTitleFile = Files.createTempFile(tempDirPath, "__temp_laundry", ".txt").toAbsolutePath();
-
-        // FIXME: TEMPORARY CHECKER
-        CommandsDiffDetector commandsDiffDetector = new CommandsDiffDetector();
-        switch (downloadOpt) {
-            case VideoOption vq -> commandsDiffDetector.downloadVideoWithAudioStream(url, vq, storageOpt, tempTitleFile);
-            case AudioOption aq -> commandsDiffDetector.downloadAudioStream(url, aq, storageOpt, tempTitleFile);
-        };
 
         // Detect download type and get process
         ProcessBuilder processBuilder = switch (downloadOpt) {
