@@ -192,7 +192,7 @@ public class BinariesManager {
     public enum BinariesNames {
         YT_DLP("yt-dlp_macos", "yt-dlp.exe", "--version", true),
         FFMPEG("ffmpeg", "ffmpeg.exe", "-version", true),
-        FFPROBE("ffprobe", "ffprobe.exe", "-version", false),
+        FFPROBE("ffprobe", "ffprobe.exe", "-version", true),
         ;
 
         private final String macosName;
