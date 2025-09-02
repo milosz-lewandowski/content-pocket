@@ -1,224 +1,234 @@
 package pl.mewash.common.app.binaries;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.app.settings.GeneralSettings;
 import pl.mewash.common.app.settings.SettingsManager;
 import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.common.logging.api.LoggersProvider;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class BinariesManager {
 
     private final FileLogger fileLogger = LoggersProvider.getFileLogger();
+    private SupportedPlatforms detectedPlatform;
 
-    public SupportedPlatforms getPlatform() {
+    // --- check for binaries in system path and default directories  ---
+
+    public Optional<BinariesInstallation> verifyBinariesDefaultInstallation() {
+        GeneralSettings generalSettings = SettingsManager.load();
+
+        BinariesInstallation savedInstallation = generalSettings.getBinariesInstallation();
+        if (savedInstallation != null && savedInstallation.isConfirmed())
+            return Optional.of(savedInstallation);
+
+        Optional<BinariesInstallation> systemPathInstallation = verifySystemPath();
+        if (systemPathInstallation.isPresent()) {
+            persistInstallationWithMessage(systemPathInstallation.get());
+            return systemPathInstallation;
+        }
+
+        Optional<BinariesInstallation> defaultDirInstallation = verifyDefaultDirs();
+        if (defaultDirInstallation.isPresent()) {
+            persistInstallationWithMessage(defaultDirInstallation.get());
+            return defaultDirInstallation;
+        }
+
+        return Optional.empty();
+    }
+
+    // --- check for binaries in directory specified by user ---
+
+    public Optional<BinariesInstallation> verifyBinariesAtUsersLocation(String usersLocation) {
+        Optional<BinariesInstallation> installation = verifyInstallInDir(usersLocation);
+        if (installation.isPresent()) {
+            persistInstallationWithMessage(installation.get());
+            return installation;
+        } else {
+            fileLogger.appendSingleLine("Tools verification failed on given location: " + usersLocation);
+            return Optional.empty();
+        }
+    }
+
+    // --- verify system path ---
+
+    private Optional<BinariesInstallation> verifySystemPath() {
+        fileLogger.appendSingleLine("Checking for binaries installation in SYSTEM PATH");
+
+        Map<BinariesNames, Optional<String>> versionResponses = BinariesNames
+            .getObligatorySet().stream()
+            .map(binary -> Map.entry(binary, getSysPathVersionResponse(binary)))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        boolean anyBinaryResponseFound = versionResponses.entrySet().stream()
+            .anyMatch(entry -> entry.getValue().isPresent());
+
+        if (!anyBinaryResponseFound) return Optional.empty();
+
+        boolean sysPathInstallationResult = validateVersionsResultsWithResponse(versionResponses);
+
+        return sysPathInstallationResult
+            ? Optional.of(BinariesInstallation.confirmInSysPath(getPlatform()))
+            : Optional.empty();
+    }
+
+    private Optional<String> getSysPathVersionResponse(BinariesNames binary) {
+        String sysPathCommand = binary.getBinaryName(getPlatform());
+        Optional<String> versionResponse = Optional.empty();
+
+        try {
+            versionResponse = runVersionCheckProcess(binary, sysPathCommand);
+
+        } catch (IOException notFoundEx) {
+            fileLogger.appendSingleLine(String
+                .format("Binary: %s not found on system path", binary.getBinaryName(getPlatform())));
+
+        } catch (Exception e) {
+            fileLogger.logErrWithMessage("Unexpected error on binary check in system path: ", e, true);
+            fileLogger.logErrStackTrace(e, true);
+        }
+        return versionResponse;
+    }
+
+    // --- verify directories ---
+
+    private Optional<BinariesInstallation> verifyDefaultDirs() {
+        return getPlatform().getDefaultToolPaths().stream()
+            .map(SupportedPlatforms.DefaultToolPath::compilePath)
+            .map(this::verifyInstallInDir)
+            .flatMap(Optional::stream)
+            .findFirst();
+    }
+
+    private Optional<BinariesInstallation> verifyInstallInDir(String location) {
+        fileLogger.appendSingleLine("Verifying binaries at location: " + location);
+
+        int obligatoryCount = BinariesNames.getObligatoryCount();
+        Map<BinariesNames, Path> existingPaths = getExistingBinariesPaths(location);
+
+        if (existingPaths.size() < obligatoryCount) {
+            if (existingPaths.isEmpty()) fileLogger
+                .appendSingleLine("No binaries found at above location");
+            if (!existingPaths.isEmpty()) fileLogger
+                .appendSingleLine("MISSING BINARIES! Found only " + existingPaths.size());
+            return Optional.empty();
+        }
+
+        Map<BinariesNames, Optional<String>> dirCheckResponses = getDirPathVersionResponses(existingPaths);
+        boolean versionCheckResult = validateVersionsResultsWithResponse(dirCheckResponses);
+
+        return versionCheckResult
+            ? Optional.of(BinariesInstallation.confirmInDirectory(getPlatform(), location))
+            : Optional.empty();
+    }
+
+    private Map<BinariesNames, Path> getExistingBinariesPaths(String location) {
+        return BinariesNames.getObligatorySet().stream()
+            .map(requiredBinary -> Map
+                .entry(requiredBinary, requiredBinary.resolveExecutablePath(location, getPlatform())))
+            .filter(entry -> Files.exists(entry.getValue()))
+            .collect(Collectors
+                .toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Map<BinariesNames, Optional<String>> getDirPathVersionResponses(Map<BinariesNames, Path> existingPaths) {
+        return existingPaths.entrySet().stream()
+            .map(entry -> Map
+                .entry(entry.getKey(), getDirPathVersionResponse(entry.getKey(), entry.getValue())))
+            .collect(Collectors
+                .toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Optional<String> getDirPathVersionResponse(BinariesNames binary, Path binaryPath) {
+        String dirPathCommand = binaryPath.toAbsolutePath().toString();
+        Optional<String> versionResponse = Optional.empty();
+
+        try {
+            versionResponse = runVersionCheckProcess(binary, dirPathCommand);
+
+        } catch (Exception e) {
+            fileLogger.logErrWithMessage("Error of version check: " + dirPathCommand, e, true);
+            fileLogger.logErrStackTrace(e, true);
+        }
+        return versionResponse;
+    }
+
+    // --- verify versions ---
+
+    private boolean validateVersionsResultsWithResponse(Map<BinariesNames, Optional<String>> versionCheckResponses) {
+        versionCheckResponses.entrySet().stream()
+            .filter(entry -> entry.getValue().isPresent())
+            .forEach(entry -> fileLogger
+                .appendMultiLineStringList(List.of(
+                    String.format("Binary: %s version check: ", entry.getKey().getBinaryName(getPlatform())),
+                    entry.getValue().get())));
+
+        Set<BinariesNames> notResponsiveBinaries = versionCheckResponses.entrySet().stream()
+            .filter(entry -> entry.getValue().isEmpty())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+
+        if (!notResponsiveBinaries.isEmpty()) {
+            fileLogger.appendSingleLine("Some of found binaries did not return version info!");
+            notResponsiveBinaries.forEach(binary -> fileLogger
+                .appendSingleLine("Please verify version and installation of: " + binary.getBinaryName(getPlatform())));
+            return false;
+        }
+        return true;
+    }
+
+    private Optional<String> runVersionCheckProcess(BinariesNames binary, String binCommand)
+                                                                            throws IOException, InterruptedException {
+        StringBuilder responseBuilder = new StringBuilder();
+
+        ProcessBuilder builder = new ProcessBuilder(binCommand, binary.getVersionCommand());
+        builder.redirectErrorStream(true);
+        Process process = builder.start();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            responseBuilder.append("\n").append(line);
+        }
+        process.waitFor();
+
+        return responseBuilder.isEmpty()
+            ? Optional.empty()
+            : Optional.of(responseBuilder.toString());
+    }
+
+    // --- common methods ---
+
+    private SupportedPlatforms getPlatform() {
+        if (detectedPlatform != null) return detectedPlatform;
+
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("mac")) return SupportedPlatforms.MACOS;
-        else if (os.contains("win")) return SupportedPlatforms.WINDOWS;
+        if (os.contains("mac")) detectedPlatform = SupportedPlatforms.MACOS;
+        else if (os.contains("win")) detectedPlatform = SupportedPlatforms.WINDOWS;
+
+        if (detectedPlatform != null) return detectedPlatform;
         else throw new UnsupportedOperationException("Unsupported OS: " + os);
     }
 
-    public String resolveToolsAtDefaultLocations(){
-        GeneralSettings generalSettings = SettingsManager.load();
-        String directoryPath;
-
-        // if binaries confirmed
-        if (generalSettings.isBinariesDirConfirmed()) {
-            directoryPath = generalSettings.getBinariesDirPath();
-            return directoryPath;
-        }
-
-        // if not confirmed - check default locations
-        directoryPath = switch (getPlatform()) {
-            case MACOS -> findValidToolLocation(MacosLocations.values());
-            case WINDOWS -> findValidToolLocation(WindowsLocations.values());
-        };
-
-        if (directoryPath != null)
-            return saveValidToolsLocation(directoryPath);
-
-        return null;
-    }
-
-    public String resolveToolsAtGivenLocation(String toolsLocation){
-        boolean confirmedNew = verifyBinariesInDir(toolsLocation);
-        if (confirmedNew)
-            return saveValidToolsLocation(toolsLocation);
-        else fileLogger
-            .appendSingleLine("Tools verification failed on given location: " + toolsLocation);
-        return null;
-    }
-
-    private String saveValidToolsLocation(String location){
-        GeneralSettings generalSettings = SettingsManager.load();
-
-        assert location != null;
-
-        Path path = Paths.get(location);
-        Path absolutePath = path.toAbsolutePath();
-        location = absolutePath.toString();
-
-        fileLogger.appendSingleLine("Binaries found at: " + location);
-        System.out.println("Binaries found at: " + location);
-        generalSettings.setBinariesDirConfirmed(true);
-        generalSettings.setBinariesDirPath(location);
-        SettingsManager.saveSettings(generalSettings);
-        return location;
-    }
-
-    private <T extends Enum<T> & ToolPathSupplier> String findValidToolLocation(T[] locations) {
-        return Arrays.stream(locations)
-                .map(ToolPathSupplier::compilePath)
-                .filter(this::verifyBinariesInDir)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private boolean verifyBinariesInDir(String location) {
-        List<String> logs = new ArrayList<>();
-        logs.add("checking location: " + location);
-
-        SupportedPlatforms platform = getPlatform();
-        Map<BinariesNames, Path> existingPaths = BinariesNames.getObligatorySet().stream()
-                .map(requiredBinary -> Map.entry(requiredBinary, requiredBinary.getPathByLocation(location, platform)))
-                .filter(entry -> Files.exists(entry.getValue())) // is it correct check?
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        int obligatoryCount = BinariesNames.getObligatoryCount();
-        if (existingPaths.size() < obligatoryCount) {
-            if (existingPaths.isEmpty()) logs.add("no binaries found at above location");
-            if (!existingPaths.isEmpty())
-                logs.add("MISSING BINARIES! Found only " + existingPaths.size());
-            fileLogger.appendMultiLineStringList(logs);
-            return false;
-        }
-
-        Set<String> versionMessages = existingPaths.entrySet().stream()
-                .map(entry -> getVersionResponse(entry.getKey(), entry.getValue()))
-                .peek(message -> logs.add("version check result: " + message))
-                .collect(Collectors.toSet());
-
-        boolean result = versionMessages.size() >= obligatoryCount;
-        if (!result) logs.add("Not all binaries returned version info!");
-        fileLogger.appendMultiLineStringList(logs);
-        return result;
-    }
-
-    private String getVersionResponse(BinariesNames binary, Path binaryPath) {
-        StringBuilder versionMessageBuilder = new StringBuilder();
-        if (binary == BinariesNames.YT_DLP){
-            System.out.println("check of yt-dlp version: ");
-            fileLogger.appendSingleLine("check of yt-dlp version:");
-        }
-
+    private void persistInstallationWithMessage(BinariesInstallation installation) {
+        fileLogger.appendSingleLine(installation.getInstallationMessage());
         try {
-            String toolPathCommand = binaryPath.toAbsolutePath().toString();
-            ProcessBuilder builder = new ProcessBuilder(toolPathCommand, binary.versionCommand);
-            builder.redirectErrorStream(true);
-            Process process = builder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                versionMessageBuilder.append("\n").append(line);
-                System.out.println(line);
-            }
-            process.waitFor();
+            SettingsManager.saveBinariesInstallation(installation);
         } catch (Exception e) {
-            System.err.println("error while checking: " + binaryPath.toAbsolutePath());
-            System.err.println(e.getMessage());
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            AppContext.getInstance().getFileLogger()
-                .appendSingleLine(sw.toString());
-        }
-
-        return versionMessageBuilder.isEmpty()
-                ? null
-                : versionMessageBuilder.toString();
-    }
-
-    public enum SupportedPlatforms {
-        WINDOWS,
-        MACOS;
-    }
-
-    sealed interface ToolPathSupplier permits WindowsLocations, MacosLocations {
-        String compilePath();
-    }
-
-    @RequiredArgsConstructor
-    public enum WindowsLocations implements ToolPathSupplier{
-        APP_DIR_TOOLS("user.dir", "tools") // default for bundled zip
-        ;
-
-        final String property;
-        final String nextDir;
-
-        public String compilePath() {
-            String property = this.property;
-            String nextDir = this.nextDir;
-            return Paths.get(System.getProperty(property), nextDir).toString();
-        }
-    }
-
-    @RequiredArgsConstructor
-    public enum MacosLocations implements ToolPathSupplier {
-        USER_HOME_BIN("user.home", "bin"), // default for separate 'by user' installation
-        ;
-
-        final String property;
-        final String nextDir;
-
-        public String compilePath() {
-            String property = this.property;
-            String nextDir = this.nextDir;
-            return Paths.get(System.getProperty(property), nextDir).toString();
-        }
-    }
-
-    @RequiredArgsConstructor
-    public enum BinariesNames {
-        YT_DLP("yt-dlp_macos", "yt-dlp.exe", "--version", true),
-        FFMPEG("ffmpeg", "ffmpeg.exe", "-version", true),
-        FFPROBE("ffprobe", "ffprobe.exe", "-version", true),
-        ;
-
-        private final String macosName;
-        private final String windowsName;
-        private final String versionCommand;
-        private final boolean isObligatory;
-
-        @Getter private final static int obligatoryCount = (int) Arrays.stream(values())
-            .filter(bn -> bn.isObligatory)
-            .count();
-
-        public static Set<BinariesNames> getObligatorySet() {
-            return Arrays.stream(values())
-                .filter(bn -> bn.isObligatory)
-                .collect(Collectors.toSet());
-        }
-
-        public String getPlatformBinaryName(SupportedPlatforms platform) {
-            return switch (platform) {
-                case MACOS -> this.macosName;
-                case WINDOWS -> this.windowsName;
-            };
-        }
-
-        public Path getPathByLocation(String location, SupportedPlatforms platform) {
-            return Paths.get(location, this.getPlatformBinaryName(platform));
+            String persistFailed = """
+                --- Failed to save confirmed binaries installation configuration! ---
+                --- Verify if application has write privileges! ---
+                Error message and stack trace:""";
+            fileLogger.logErrWithMessage(persistFailed, e, true);
+            fileLogger.logErrStackTrace(e, true);
         }
     }
 }

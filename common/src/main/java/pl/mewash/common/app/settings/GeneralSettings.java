@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pl.mewash.common.app.binaries.BinariesInstallation;
 
 @Getter
 @Setter
@@ -11,8 +12,7 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeneralSettings {
 
-    private boolean binariesDirConfirmed;        // if valid binaries detected
-    private String binariesDirPath;              // saves path to directory with detected tools binaries
+    private BinariesInstallation binariesInstallation;
 
     private String batchLastSelectedPath;
     private String subsLastSelectedPath;

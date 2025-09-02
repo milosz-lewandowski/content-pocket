@@ -15,5 +15,5 @@ module pl.mewash.batch {
 
     // opens needed for resources loading on plugged tab controller creation
     opens pl.mewash.batch.ui;
-    opens pl.mewash.batch.i18n;
+    opens pl.mewash.batch.i18n; // <-- causes warning, but is required for resource packaging by jlink
 }

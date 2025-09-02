@@ -10,6 +10,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import pl.mewash.common.app.binaries.BinariesInstallation;
 import pl.mewash.common.app.binaries.BinariesManager;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.LoggersProvider;
@@ -34,23 +35,20 @@ public class LaundryApplication extends Application {
             a. timeout watchdog detecting remote source disconnection on low stability connections,
             b. properly implement detecting full fetch (instead of current analysis of logs returned by logger
         
-        2. Issue: Temporary command comparator - causes a little overhead with creation of additional 2 factories
-            instances per command creation
-        - Reason: after introducing new Process factory there is a need to test each request to detect any unexpected
-            differences in commands parameters
-        
-        3. In near future i would like to drop lombok entirely (in case of possible supply-chain-attacks after in case
-            of possible long term pause in application maintaining and development
+        2. Issue: In near future i would like to drop lombok entirely (in case of possible supply-chain-attacks after
+            in case of possible long term pause in application maintaining and development
         - Reason: Until reaching more stable version of this app i am staying with lombok as it makes access management
             way faster and more explicit at first glance.
         
-        4. Issue: should introduce ffprobe
+        3. Issue: should introduce ffprobe
         - Reason: at this moment selection of source streams is just some fallbacks heuristic based on target
             codec/format requirements. While this is good enough for everyday watching in subscriptions tab,
             in my opinion is not enough for real archiving use cases.
         - Todo: store information about each content all possible codecs, introduce algorithm selecting best codecs for
             target format, ffprobe partial downloads to select optimal conversion parameters (avoid reconversion on
             no real quality gain)
+        
+        4. Issue: Introduce per binary installation setup, to enable having one on system path, other on in directory
         """;
 
     @Override
@@ -117,18 +115,20 @@ public class LaundryApplication extends Application {
         AppContext appContext = AppContext.getInstance();
         BinariesManager binariesManager = new BinariesManager();
 
-        BinariesManager.SupportedPlatforms platform = binariesManager.getPlatform();
-        String confirmedBinariesLocation;
+        Optional<BinariesInstallation> confirmedInstallation = binariesManager
+            .verifyBinariesDefaultInstallation();
 
-        confirmedBinariesLocation = binariesManager.resolveToolsAtDefaultLocations();
-        if (confirmedBinariesLocation == null) {
+        if (confirmedInstallation.isEmpty()) {
             String givenLocation = showBinariesNotFoundAlert(stage);
-            confirmedBinariesLocation = binariesManager.resolveToolsAtGivenLocation(givenLocation);
+            confirmedInstallation = binariesManager
+                .verifyBinariesAtUsersLocation(givenLocation);
         }
-        if (confirmedBinariesLocation != null) {
-            appContext.init(platform, confirmedBinariesLocation);
+
+        if (confirmedInstallation.isPresent()) {
+            appContext.init(confirmedInstallation.get());
             return true;
-        } else return false;
+        }
+        return false;
     }
 
     private static String showBinariesNotFoundAlert(Stage stage) {

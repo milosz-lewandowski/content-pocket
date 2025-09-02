@@ -72,7 +72,6 @@ tasks.named<JPackageImageTask>("jpackageImage") {
             from("tools")
             into(targetTools)
         }
-        println("✅ Copied tools to: $targetTools")
     }
 }
 

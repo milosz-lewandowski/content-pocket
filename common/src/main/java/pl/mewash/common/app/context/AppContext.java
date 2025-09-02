@@ -3,7 +3,9 @@ package pl.mewash.common.app.context;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import pl.mewash.common.app.binaries.BinariesManager;
+import pl.mewash.common.app.binaries.BinariesInstallation;
+import pl.mewash.common.app.binaries.BinariesNames;
+import pl.mewash.common.app.binaries.SupportedPlatforms;
 import pl.mewash.common.app.lifecycle.OnCloseHandler;
 import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.common.logging.api.LoggersProvider;
@@ -25,23 +27,19 @@ public class AppContext {
     }
 
     // fields
-    private String confirmedToolsDir;
-    private BinariesManager.SupportedPlatforms detectedPlatform;
+    private SupportedPlatforms detectedPlatform;
     private String YtDlpCommand;
     private String FfMpegCommand;
     private FileLogger fileLogger;
     private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
 
-    public void init(BinariesManager.SupportedPlatforms platform, String toolsDir) {
-        if (initialized)
-            throw new IllegalStateException("AppContext already initialized.");
-        this.detectedPlatform = platform;
-        this.confirmedToolsDir = toolsDir;
-        this.YtDlpCommand = BinariesManager.BinariesNames.
-                YT_DLP.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
-        this.FfMpegCommand = BinariesManager.BinariesNames.
-                FFMPEG.getPathByLocation(toolsDir, platform).toAbsolutePath().toString();
-        fileLogger = LoggersProvider.getFileLogger();
+    public void init(BinariesInstallation binariesInstallation) {
+        if (initialized) throw new IllegalStateException("AppContext already initialized.");
+
+        this.detectedPlatform = binariesInstallation.getPlatform();
+        this.YtDlpCommand = binariesInstallation.getBinaryCommand(BinariesNames.YT_DLP);
+        this.FfMpegCommand = binariesInstallation.getBinaryCommand(BinariesNames.FFMPEG);
+        this.fileLogger = LoggersProvider.getFileLogger();
         this.initialized = true;
     }
 

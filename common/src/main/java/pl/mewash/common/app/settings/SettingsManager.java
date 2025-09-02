@@ -1,6 +1,7 @@
 package pl.mewash.common.app.settings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import pl.mewash.common.app.binaries.BinariesInstallation;
 import pl.mewash.common.app.config.ConfigPaths;
 import pl.mewash.common.app.config.JsonMapperConfig;
 import pl.mewash.common.logging.api.FileLogger;
@@ -33,5 +34,14 @@ public class SettingsManager {
         } catch (IOException e) {
             fileLogger.logErrWithMessage("Failed to save settings: ", e, true);
         }
+    }
+
+    public static void saveBinariesInstallation(BinariesInstallation binariesInstallation) throws IOException {
+        GeneralSettings generalSettings = load();
+        generalSettings.setBinariesInstallation(binariesInstallation);
+
+        ConfigPaths.ensureConfigDirExists();
+        mapper.writerWithDefaultPrettyPrinter()
+            .writeValue(ConfigPaths.SETTINGS_FILE.toFile(), generalSettings);
     }
 }
