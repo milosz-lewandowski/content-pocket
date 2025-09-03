@@ -42,6 +42,14 @@ dependencies {
     implementation(project(":batch"))
 }
 
+// --- enable build with or without tools bundled (default = true) ---
+val isBundleWithTools: Boolean = providers
+    .gradleProperty("isBundleWithTools")
+    .map { it.toBoolean() }
+    .orElse(true)
+    .get()
+
+// --- introducing conditional build to avoid keeping two branches with same codebase differed only by build files ---
 val isWindows = System.getProperty("os.name").lowercase().contains("win")
 val isMac = System.getProperty("os.name").lowercase().contains("mac")
 
@@ -63,12 +71,14 @@ jlink {
         appVersion = providers
             .gradleProperty("appVersion").get()
 
+        // --- windows setup ---
         if (isWindows) {
             installerType = "app-image"
             skipInstaller = true
             resourceDir = file("src/main/resources")
         }
 
+        // --- macos setup ---
         if (isMac) {
             installerType = "dmg"
             skipInstaller = false
@@ -76,7 +86,8 @@ jlink {
     }
 }
 
-if (isWindows) {
+// --- bundle tools execs into zip ---
+if (isWindows && isBundleWithTools) {
     tasks.named<JPackageImageTask>("jpackageImage") {
         doLast {
             val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
@@ -84,9 +95,13 @@ if (isWindows) {
                 from("tools")
                 into(targetTools)
             }
+            println("✔ Bundled tools into ZIP distribution")
         }
     }
+}
 
+// --- build ZIP distro if compiled on windows ---
+if (isWindows) {
     tasks.register<Zip>("zipPortableApp") {
         dependsOn("jpackageImage")
 
@@ -101,5 +116,14 @@ if (isWindows) {
         destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
         from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
+    }
+}
+
+// --- just prints current version to add it to .dmg name in workflow build ---
+if (isMac) {
+    tasks.register("printVersion") {
+        doLast {
+            println(providers.gradleProperty("appVersion").get())
+        }
     }
 }

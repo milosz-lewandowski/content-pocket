@@ -3,8 +3,7 @@ name: Build macOS .dmg
 on:
   push:
     branches:
-#      - build-macOS
-      - main-winOS
+      - main
   workflow_dispatch:
 
 jobs:
@@ -21,17 +20,17 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: 🧼 Set gradlew executable privileges
+      - name: 🔖 Set gradlew executable privileges
         run: chmod +x gradlew
+
+      - name: 🔖 Get app version from Gradle
+        run: echo "APP_VERSION=$(./gradlew -q printVersion)" >> $GITHUB_ENV
 
       - name: ⚙️ Build app
         run: ./gradlew jpackage
 
-#      - name: ⚙️ Build macOS .dmg with Gradle
-#        run: ./gradlew jpackage
-
       - name: 📦 Upload .dmg artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ContentLaundry-1.2.14
+          name: ContentLaundry-${{ env.APP_VERSION }}
           path: build/jpackage/*.dmg
