@@ -33,5 +33,5 @@ jobs:
       - name: 📦 Upload .dmg artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ContentLaundry-1.2.11
+          name: ContentLaundry-1.2.14
           path: build/jpackage/*.dmg
