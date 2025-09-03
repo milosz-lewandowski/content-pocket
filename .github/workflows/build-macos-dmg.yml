@@ -25,7 +25,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: ⚙️ Build app
-        run: ./gradlew -b build-macos.gradle.kts jpackage
+        run: ./gradlew jpackage
 
 #      - name: ⚙️ Build macOS .dmg with Gradle
 #        run: ./gradlew jpackage

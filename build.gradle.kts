@@ -42,6 +42,9 @@ dependencies {
     implementation(project(":batch"))
 }
 
+val isWindows = System.getProperty("os.name").lowercase().contains("win")
+val isMac = System.getProperty("os.name").lowercase().contains("mac")
+
 jlink {
     options.set(
         listOf(
@@ -57,37 +60,46 @@ jlink {
 
     jpackage {
         imageName = "ContentLaundry"
-        installerType = "app-image"
-        skipInstaller = true
         appVersion = providers
             .gradleProperty("appVersion").get()
-        resourceDir = file("src/main/resources")
-    }
-}
 
-tasks.named<JPackageImageTask>("jpackageImage") {
-    doLast {
-        val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
-        copy {
-            from("tools")
-            into(targetTools)
+        if (isWindows) {
+            installerType = "app-image"
+            skipInstaller = true
+            resourceDir = file("src/main/resources")
+        }
+
+        if (isMac) {
+            installerType = "dmg"
+            skipInstaller = false
         }
     }
 }
 
-tasks.register<Zip>("zipPortableApp") {
-    dependsOn("jpackageImage")
+if (isWindows) {
+    tasks.named<JPackageImageTask>("jpackageImage") {
+        doLast {
+            val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
+            copy {
+                from("tools")
+                into(targetTools)
+            }
+        }
+    }
 
-    val archiveName = "ContentLaundry-" + providers
-        .gradleProperty("appVersion")
-        .get() + "-portable.zip"
+    tasks.register<Zip>("zipPortableApp") {
+        dependsOn("jpackageImage")
 
-    group = "distribution"
-    description = "Content Laundry executable archive"
+        val archiveName = "ContentLaundry-" +
+                providers.gradleProperty("appVersion").get() +
+                "-portable.zip"
 
-    archiveFileName.set(archiveName)
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+        group = "distribution"
+        description = "Content Laundry executable archive"
 
-    from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
-//    into("ContentLaundry") // disabled to avoid nested app dir
+        archiveFileName.set(archiveName)
+        destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+        from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
+    }
 }
