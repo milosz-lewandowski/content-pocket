@@ -82,8 +82,8 @@ public class BatchController implements OnCloseHandler {
     @FXML private Label progressLabel;
     @FXML private TextArea outputLog;
 
-    // Laundry button and state handling
-    @FXML private Button laundryButton;
+    // Batch button and state handling
+    @FXML private Button batchButton;
     private final ObjectProperty<BatchProcessingState>
         processingState = new SimpleObjectProperty<>(BatchProcessingState.NOT_RUNNING);
 
@@ -115,9 +115,9 @@ public class BatchController implements OnCloseHandler {
             else Platform.runLater(() -> processingState.set(state));
         });
 
-        laundryButton.textProperty().bind(Bindings
+        batchButton.textProperty().bind(Bindings
             .createStringBinding(() -> processingState.get().getButtonTitle(), processingState));
-        laundryButton.disableProperty().bind(Bindings
+        batchButton.disableProperty().bind(Bindings
             .createBooleanBinding(() -> processingState.get().isButtonDisabled(), processingState));
 
         fileOnlyRadio.setSelected(true);
@@ -143,9 +143,9 @@ public class BatchController implements OnCloseHandler {
     }
 
     @FXML
-    protected void handleLaundryButtonActions() {
+    protected void handleBatchButtonActions() {
         switch (batchProcessor.getProcessingState()) {
-            case NOT_RUNNING -> startLaundry();
+            case NOT_RUNNING -> startBatchProcessing();
             case PROCESSING -> batchProcessor.gracefulShutdownAsync();
             case IN_GRACEFUL_SHUTDOWN -> batchProcessor.forceShutdown();
             case IN_FORCED_SHUTDOWN -> throw new IllegalStateException("Button should be not clickable while forcing");
@@ -173,7 +173,7 @@ public class BatchController implements OnCloseHandler {
     }
 
     @FXML
-    protected void startLaundry() {
+    protected void startBatchProcessing() {
         Optional<String> basePath = getBasePathWithEmptyCheck();
         if (basePath.isEmpty()) return;
 
@@ -198,7 +198,7 @@ public class BatchController implements OnCloseHandler {
             int totalDownloads = jobParams.calculateTotalDownloads();
             setupAndGetUiLoggerExecutor(jobParams.getCompletedCount(), jobParams.getFailedCount(), totalDownloads);
 
-            batchProcessor.processBatchLaundry(jobParams);
+            batchProcessor.processBatch(jobParams);
         });
     }
 

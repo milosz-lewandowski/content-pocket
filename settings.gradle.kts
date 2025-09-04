@@ -1,7 +1,7 @@
-rootProject.name = "content-laundry"
+rootProject.name = "content-pocket"
 
 include(":commands-api")
-include(":content-laundry")
+include(":content-pocket")
 include(":subscriptions")
 include(":batch")
 include(":common")

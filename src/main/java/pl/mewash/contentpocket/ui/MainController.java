@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry.ui;
+package pl.mewash.contentpocket.ui;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

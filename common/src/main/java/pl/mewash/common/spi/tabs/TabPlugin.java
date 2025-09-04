@@ -3,7 +3,7 @@ package pl.mewash.common.spi.tabs;
 import java.util.Optional;
 
 /**
- * Defines contract and  properties required for discovery and loading view as plugin tab by ContentLaundryApp
+ * Defines contract and  properties required for discovery and loading view as plugin tab by ContentPocketApp
  * via {@link java.util.ServiceLoader}
  */
 public interface TabPlugin {

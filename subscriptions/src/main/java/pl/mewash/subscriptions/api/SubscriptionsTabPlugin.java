@@ -17,7 +17,7 @@ public final class SubscriptionsTabPlugin implements TabPlugin {
 
     @Override
     public String title() {
-        return "Subscribed laundry";
+        return "Subscriptions pocket";
     }
 
     @Override

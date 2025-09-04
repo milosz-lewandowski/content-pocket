@@ -29,8 +29,8 @@ javafx {
 }
 
 application {
-    mainModule.set("pl.mewash.contentlaundry")
-    mainClass.set("pl.mewash.contentlaundry.app.LaundryApplication")
+    mainModule.set("pl.mewash.contentpocket")
+    mainClass.set("pl.mewash.contentpocket.app.ContentPocketApplication")
     applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
 }
 
@@ -63,11 +63,11 @@ jlink {
     )
 
     launcher {
-        name = "ContentLaundry"
+        name = "ContentPocket"
     }
 
     jpackage {
-        imageName = "ContentLaundry"
+        imageName = "ContentPocket"
         appVersion = providers
             .gradleProperty("appVersion").get()
 
@@ -90,7 +90,7 @@ jlink {
 if (isWindows && isBundleWithTools) {
     tasks.named<JPackageImageTask>("jpackageImage") {
         doLast {
-            val targetTools = layout.buildDirectory.dir("jpackage/ContentLaundry/tools").get().asFile
+            val targetTools = layout.buildDirectory.dir("jpackage/ContentPocket/tools").get().asFile
             copy {
                 from("tools")
                 into(targetTools)
@@ -105,17 +105,17 @@ if (isWindows) {
     tasks.register<Zip>("zipPortableApp") {
         dependsOn("jpackageImage")
 
-        val archiveName = "ContentLaundry-" +
+        val archiveName = "ContentPocket-" +
                 providers.gradleProperty("appVersion").get() +
                 "-portable.zip"
 
         group = "distribution"
-        description = "Content Laundry executable archive"
+        description = "Content Pocket executable archive"
 
         archiveFileName.set(archiveName)
         destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-        from(layout.buildDirectory.dir("jpackage/ContentLaundry"))
+        from(layout.buildDirectory.dir("jpackage/ContentPocket"))
     }
 }
 

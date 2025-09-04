@@ -1,4 +1,4 @@
-package pl.mewash.contentlaundry.app;
+package pl.mewash.contentpocket.app;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -15,14 +15,14 @@ import pl.mewash.common.app.binaries.BinariesManager;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.LoggersProvider;
 import pl.mewash.common.spi.tabs.TabPlugin;
-import pl.mewash.contentlaundry.ui.MainController;
+import pl.mewash.contentpocket.ui.MainController;
 
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
 
-public class LaundryApplication extends Application {
+public class ContentPocketApplication extends Application {
 
     private final static String CURRENT_ISSUES_TEMPS_TODOS = """
         List of Issues - todos, temporary solutions and technical debts:
@@ -75,8 +75,8 @@ public class LaundryApplication extends Application {
             Locale.setDefault(Locale.US);
             ResourceBundle appBundle = ResourceBundle
                 .getBundle("i18n.messages", Locale.getDefault());
-            FXMLLoader fxmlLoader = new FXMLLoader(LaundryApplication.class
-                .getResource("/pl/mewash/contentlaundry/main-view.fxml"), appBundle);
+            FXMLLoader fxmlLoader = new FXMLLoader(ContentPocketApplication.class
+                .getResource("/pl/mewash/contentpocket/main-view.fxml"), appBundle);
 
             // --- load main controller with tabs ---
             fxmlLoader.setControllerFactory(type -> new MainController(tabPlugins, appBundle));
@@ -106,7 +106,7 @@ public class LaundryApplication extends Application {
     }
 
     public static void main(String[] args) {
-        System.out.println("Starting Laundry Application");
+        System.out.println("Starting Content Pocket Application");
         System.out.println(CURRENT_ISSUES_TEMPS_TODOS);
         launch();
     }

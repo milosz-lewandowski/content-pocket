@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ConfigPaths {
-    public static final Path BASE_DIR = Paths.get("", "LaundryAppFiles").toAbsolutePath();
+    public static final Path BASE_DIR = Paths.get("", "PocketAppFiles").toAbsolutePath();
     public static final Path LOGS_DIR = BASE_DIR.resolve("logs");
     public static final Path CONFIG_DIR = BASE_DIR.resolve("config");
 

@@ -30,8 +30,8 @@ import java.util.function.Predicate;
  *  Jobs are executed via {@link ThreadPoolExecutor} set up via
  * {@link #setupAndGetNoQueuedExecutor(BatchJobParams)} with number of threads calculated by
  * selected {@link MultithreadingMode} and number of logical threads available on current machine.
- *  State of batch processing is hold in Processor class, but injection of updateLaundryButtonAction
- * enables updating UI laundry button state on {@link BatchProcessingState} change
+ *  State of batch processing is hold in Processor class, but injection of updateBatchButtonAction
+ * enables updating UI batch button state on {@link BatchProcessingState} change
  *  Processing can be stopped in graceful mode via {@link #gracefulShutdownAsync()} which rejects
  * all queued tasks but completes all 'in progress' tasks ensuring cleanup of all temporary files
  *  Processing can be stopped forcibly via {@link #forceShutdown()} which immediately shutdowns workers
@@ -43,7 +43,7 @@ public class BatchProcessor {
     private final BiConsumer<String, Object[]> uiResLogger;
     private final FileLogger fileLogger;
 
-    private volatile Consumer<BatchProcessingState> updateLaundryButtonAction;
+    private volatile Consumer<BatchProcessingState> updateBatchButtonAction;
     private final AtomicReference<BatchProcessingState> 
         processingState = new AtomicReference<>(BatchProcessingState.NOT_RUNNING);
 
@@ -59,12 +59,12 @@ public class BatchProcessor {
 
     private void updateProcessingState(BatchProcessingState state) {
         processingState.set(state);
-        updateLaundryButtonAction.accept(state);
+        updateBatchButtonAction.accept(state);
     }
 
     public void injectUpdateButtonAction(Consumer<BatchProcessingState> updateButtonEvent) {
         assert updateButtonEvent != null;
-        this.updateLaundryButtonAction = updateButtonEvent;
+        this.updateBatchButtonAction = updateButtonEvent;
     }
 
     public BatchProcessingState getProcessingState() {
@@ -122,7 +122,7 @@ public class BatchProcessor {
         logResourceToUi("log.processor.shutdown.force.warning");
     }
 
-    public void processBatchLaundry(BatchJobParams jobParams) {
+    public void processBatch(BatchJobParams jobParams) {
         updateProcessingState(BatchProcessingState.PROCESSING);
 
         currentJobParams = jobParams;

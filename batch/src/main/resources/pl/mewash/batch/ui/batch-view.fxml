@@ -176,10 +176,10 @@
             </VBox>
         </TitledPane>
 
-        <Button fx:id="laundryButton" text="%button.start_laundry"
-                onAction="#handleLaundryButtonActions">
+        <Button fx:id="batchButton" text="%button.start_batch"
+                onAction="#handleBatchButtonActions">
             <tooltip>
-                <Tooltip text="%tooltip.start_laundry"/>
+                <Tooltip text="%tooltip.start_batch"/>
             </tooltip>
         </Button>
 

@@ -18,7 +18,7 @@ public final class BatchTabPlugin implements TabPlugin {
 
     @Override
     public String title() {
-        return "Batch laundry";
+        return "Batch pocket";
     }
 
     @Override

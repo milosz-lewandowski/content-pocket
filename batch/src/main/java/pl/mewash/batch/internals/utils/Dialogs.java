@@ -10,7 +10,7 @@ public class Dialogs {
     public static void showNoInputAlert() {
         showAlertAndAwait(Alert.AlertType.WARNING,
             "⚠ No input pasted!",
-            "You must paste some urls to start laundry.");
+            "You must paste some urls to start batch processing.");
     }
 
     public static void showNoDownloadPathAlert() {

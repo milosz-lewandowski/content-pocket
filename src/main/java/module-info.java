@@ -1,6 +1,6 @@
 import pl.mewash.common.spi.tabs.TabPlugin;
 
-module pl.mewash.contentlaundry {
+module pl.mewash.contentpocket {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.desktop;
@@ -13,6 +13,6 @@ module pl.mewash.contentlaundry {
 
     uses TabPlugin;
 
-    opens pl.mewash.contentlaundry.app to javafx.graphics;
-    opens pl.mewash.contentlaundry.ui to javafx.fxml;
+    opens pl.mewash.contentpocket.app to javafx.graphics;
+    opens pl.mewash.contentpocket.ui to javafx.fxml;
 }
