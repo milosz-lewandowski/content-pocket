@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PocketApp: run -cp with Tab modules added " type="Application" factoryName="Application">
+    <envs>
+      <env name="--add-modules" value="pl.mewash.batch,pl.mewash.subscriptions " />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="pl.mewash.contentpocket.app.ContentPocketApplication" />
+    <module name="content-pocket.main" />
+    <option name="PROGRAM_PARAMETERS" value="--add-modules=pl.mewash.batch,pl.mewash.subscriptions" />
+    <option name="VM_PARAMETERS" value="--module-path C:\SDKs\JavaFX\javafx-sdk-21.0.7\lib --add-modules javafx.controls,javafx.fxml -Dfile.encoding=UTF-8" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="pl.mewash.contentlaundry.models.channel.enums.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
