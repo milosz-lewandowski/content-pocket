@@ -1,0 +1,8 @@
+macOS release is a .dmg application image.
+this application works on the top of ffmpeg, ffprobe and yt-dlp, however these binaries are not bundled inside dmg image.
+This application after startup will search for binaries presence under:
+ - under default location (~/bin/'here') with execute privileges (recommended)
+ - if are added to system $path variable
+ - if not found app will ask user to specify path to directory with these binaries. (not recommended because of macOS
+   restrictive access policy)
+

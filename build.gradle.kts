@@ -105,9 +105,16 @@ if (isWindows) {
     tasks.register<Zip>("zipPortableApp") {
         dependsOn("jpackageImage")
 
-        val archiveName = "ContentPocket-" +
-                providers.gradleProperty("appVersion").get() +
-                "-portable.zip"
+        val appVersion = providers.gradleProperty("appVersion").get()
+
+        val suffix = if (isBundleWithTools) {
+            providers.gradleProperty("bundleBuildSuffix").get()
+        } else {
+            providers.gradleProperty("nonBundleBuildSuffix").get()
+        }
+
+        val archiveName = "ContentPocket-$appVersion-$suffix.zip"
+
 
         group = "distribution"
         description = "Content Pocket executable archive"
