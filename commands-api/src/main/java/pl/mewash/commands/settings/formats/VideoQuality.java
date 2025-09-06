@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 public enum VideoQuality implements VideoOption {
     MAXIMUM("2160", "MP4 up to 4K", "mp4", "(as 4K)"),
     HIGH("1440", "MP4 up to 1440p", "mp4", "(as 1440p)"),
-    STANDARD("1080", "MP4 up to 1080p", "mp4", "(as 1080p)"),
-    COMPACT("720", "MP4 up to 720p", "mp4", "(as 720p)"),
+    STANDARD("1080", "MP4 (H.264) up to 1080p", "mp4", "(as 1080p)"),
+    COMPACT("720", "MP4 (H.264) up to 720p", "mp4", "(as 720p)"),
     ;
 
     @Getter private final String resolution;
@@ -32,22 +32,23 @@ public enum VideoQuality implements VideoOption {
         .count() > 1;
 
     public List<String> getDownloadCommand() {
-        return List.of("-f", getCommandResolvedResolution(true));
+        return List.of("-f", getCommandResolvedResolution());
     }
 
     public List<CmdEntry> getCmdEntries() {
         return new LinkedList<>(List.of(
-            CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, getCommandResolvedResolution(true))));
+            CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, getCommandResolvedResolution())));
     }
 
-    private String getCommandResolvedResolution(boolean forceH264) {
+    private String getCommandResolvedResolution() {
         return switch (this) {
-            case MAXIMUM, HIGH, STANDARD, COMPACT -> getFallbacksChain(forceH264);
+            case STANDARD, COMPACT -> getFallbacksChain(true);
+            case MAXIMUM, HIGH -> getFallbacksChain(false);
         };
     }
 
     private String getFallbacksChain(boolean forceH264) {
-        Set<StreamFallbacks> fallbacks = forceH264
+        List<StreamFallbacks> fallbacks = forceH264
             ? StreamFallbacks.getEnforceH264Fallbacks()
             : StreamFallbacks.getAnyBvFallbacks();
         return fallbacks.stream()
@@ -67,13 +68,19 @@ public enum VideoQuality implements VideoOption {
 
     @RequiredArgsConstructor
     public enum StreamFallbacks {
-        FORCE_H264_VID_AAC_AUDIO(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
-        FORCE_H264_VID_ANY_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
+        FORCE_H264_BV_AAC_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
+        FORCE_H264_BV_ANY_BA(true, "bestvideo[height<=%s][vcodec*=avc1]+bestaudio"),
+        FORCE_H264_ANY_RES_V_AAC_AUDIO(true, "bestvideo[vcodec*=avc1]+bestaudio[acodec^=mp4a]"),
+        FORCE_H264_ANY_RES_V_ANY_BA(true, "bestvideo[vcodec*=avc1]+bestaudio"),
 
-        ANY_BV_FORCE_AAC_AUDIO(false, "bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
+        MERGED_BV_AAC_BA(false, "bestvideo[height<=%s][ext=mp4]+bestaudio[acodec^=mp4a]"),
+        ANY_BV_AAC_BA(false, "bestvideo[height<=%s]+bestaudio[acodec^=mp4a]"),
         ANY_BV_ANY_BA(false, "bestvideo[height<=%s]+bestaudio"),
-        FORCE_MERGED_MP4(false, "best[height<=%s][ext=mp4]"),
-        ANY_BEST(false, "best[height<=%s]");
+        BEST_MERGED_MP4(false, "best[height<=%s][ext=mp4]"),
+        ANY_BEST_WITH_RES(false, "best[height<=%s]"),
+        ANY_RES_BV_AAC_BA(false, "bestvideo+bestaudio[acodec^=mp4a]"),
+        ANY_RES_ANY_BEST(false, "best");
+
 
         private final boolean enforcesH264;
         private final String template;
@@ -82,16 +89,16 @@ public enum VideoQuality implements VideoOption {
             return String.format(template, resolution);
         }
 
-        public static Set<StreamFallbacks> getEnforceH264Fallbacks() {
+        public static List<StreamFallbacks> getEnforceH264Fallbacks() {
             return Arrays.stream(values())
                 .filter(fallback -> fallback.enforcesH264)
-                .collect(Collectors.toSet());
+                .toList();
         }
 
-        public static Set<StreamFallbacks> getAnyBvFallbacks() {
+        public static List<StreamFallbacks> getAnyBvFallbacks() {
             return Arrays.stream(values())
                 .filter(fallback -> !fallback.enforcesH264)
-                .collect(Collectors.toSet());
+                .toList();
         }
     }
 }
