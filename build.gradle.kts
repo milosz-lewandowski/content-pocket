@@ -123,6 +123,11 @@ if (isWindows) {
         destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
         from(layout.buildDirectory.dir("jpackage/ContentPocket"))
+
+        // --- Copy README.md to zip ---
+        from(rootProject.file("README.md")) {
+            into(".")
+        }
     }
 }
 
