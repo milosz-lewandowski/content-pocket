@@ -148,7 +148,7 @@ public class BatchController implements OnCloseHandler {
             case NOT_RUNNING -> startBatchProcessing();
             case PROCESSING -> batchProcessor.gracefulShutdownAsync();
             case IN_GRACEFUL_SHUTDOWN -> batchProcessor.forceShutdown();
-            case IN_FORCED_SHUTDOWN -> throw new IllegalStateException("Button should be not clickable while forcing");
+            case IN_FORCED_SHUTDOWN -> throw new IllegalStateException("Button should be not clickable while forcing!");
         }
     }
 

@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 
 /**
  * Executes and manages state of complete batch download job.
+ *
  * Complete set of parameters is passed via {@link BatchJobParams} class.
  *
  * Internal classes:

@@ -10,13 +10,13 @@ public class Dialogs {
     public static void showNoInputAlert() {
         showAlertAndAwait(Alert.AlertType.WARNING,
             "⚠ No input pasted!",
-            "You must paste some urls to start batch processing.");
+            "You must paste some urls to start batch processing!");
     }
 
     public static void showNoDownloadPathAlert() {
         showAlertAndAwait(Alert.AlertType.WARNING,
             "⚠ No download path selected!",
-            "You must specify 'Save to' directory.");
+            "You must specify 'Save to' directory!");
     }
 
     public static boolean getRemoveDuplicatesAlertDecision(int duplicatesCount, int allUrlsCount) {

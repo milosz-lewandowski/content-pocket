@@ -22,13 +22,13 @@ public interface TabPlugin {
     String id();
 
     /**
-     * Title displayed as name of tab in UI tab pane
+     * Title displayed as name of tab in UI tab pane.
      * @return the tab title
      */
     String title();
 
     /**
-     * Classpath relative path to the main fxml view for given tab
+     * Classpath relative path to the main fxml view for given tab.
      * @return the String representing path to the fxml resource
      */
     String fxmlPath();

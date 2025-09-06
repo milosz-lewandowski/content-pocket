@@ -16,6 +16,7 @@
                 </tooltip>
             </Label>
         </HBox>
+
         <TextArea fx:id="urlInput" prefRowCount="14" wrapText="true">
             <tooltip>
                 <Tooltip text="%tooltip.paste_url"/>

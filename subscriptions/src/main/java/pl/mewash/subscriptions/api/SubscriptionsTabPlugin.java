@@ -5,6 +5,7 @@ import pl.mewash.common.spi.tabs.TabPlugin;
 import java.util.Optional;
 
 public final class SubscriptionsTabPlugin implements TabPlugin {
+
     @Override
     public int positionOrder() {
         return 1;
@@ -17,7 +18,7 @@ public final class SubscriptionsTabPlugin implements TabPlugin {
 
     @Override
     public String title() {
-        return "Subscriptions pocket";
+        return "Subscriptions Pocket";
     }
 
     @Override

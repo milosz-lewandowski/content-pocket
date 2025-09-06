@@ -38,7 +38,7 @@ public class MainController {
         setupCreditsPopup();
 
         if (tabPlugins.isEmpty()) {
-            Tab info = new Tab("No tabs detected");
+            Tab info = new Tab("No tabs detected!");
             info.setClosable(false);
             info.setContent(new Label("No tab plugins found. Check configuration or module path."));
             tabs.getTabs().add(info);

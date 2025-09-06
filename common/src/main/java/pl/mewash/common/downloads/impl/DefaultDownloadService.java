@@ -38,6 +38,7 @@ public class DefaultDownloadService implements DownloadService {
         // Building paths
         Path baseDirPath = Paths.get(baseDirString).toAbsolutePath();
         long threadId = Thread.currentThread().threadId();
+
         Path tempDirPath = Files.createTempDirectory(baseDirPath, "__temp_pocket_" + threadId).toAbsolutePath();
         Path tempTitleFile = Files.createTempFile(tempDirPath, "__temp_pocket", ".txt").toAbsolutePath();
 

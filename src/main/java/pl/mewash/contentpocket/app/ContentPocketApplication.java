@@ -40,7 +40,7 @@ public class ContentPocketApplication extends Application {
         - Reason: Until reaching more stable version of this app i am staying with lombok as it makes access management
             way faster and more explicit at first glance.
         
-        3. Issue: should introduce ffprobe
+        3. Issue: introduce ffprobe
         - Reason: at this moment selection of source streams is just some fallbacks heuristic based on target
             codec/format requirements. While this is good enough for everyday watching in subscriptions tab,
             in my opinion is not enough for real archiving use cases.
