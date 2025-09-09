@@ -1,13 +1,16 @@
-# ContentPocket
+# <img src="docs/icon/app-icon.png" alt="App Icon" width="36" align="left" /> ContentPocket 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 No clickbaits. No feeds. No shorts. No distractions.
 
-ContentPocket is a cross-platform Java desktop application designed for checking and watching latest chosen content in distraction-free mode.
+ContentPocket is a cross-platform Java desktop application designed for checking and watching latest content with chosen format in distraction-free mode.
 
-**Subscriptions tab:** Add your trusted channels or content providers, fetch titles progressively from latest and decide what to play or keep as audio, video, or both (with per-channel format and quality preferences).
+**Subscriptions tab:** Add your trusted channels or content providers, fetch titles progressively from latest and decide what to play as audio, video, or both (with per-channel format and quality preferences).
 
-**Batch tab:** Keep meaningful or your favourite content safe. Paste links, choose all formats you need, define output structure, and control your system load with adjustable multithreading.
+**Batch tab:** Reach your meaningful or favourite content in a format you need. Paste links, choose fitting formats, group them flexibly and control your system load with adjustable multithreading.
+
+This is a PET (Personal Educational/Training) project, created for learning and experimentation.
+It is not intended for commercial use or production deployment.
 
 ---
 
@@ -15,21 +18,22 @@ ContentPocket is a cross-platform Java desktop application designed for checking
 
 ### Subscriptions Tab
 - **Browse & Manage Filtered Content**  
-  Add channels, fetch latest, browse content, watch or keep videos or audio. Only sources you trust, no distractors.  
+  Add channels, fetch latest, browse content, play videos or audios. Only sources you trust, no distractors.  
   ![Subscriptions view with expanded Java channel](docs/screenshots/demo_subs_view_contents.png)
 
 - **Per-channel Settings**  
-  Configure default formats, auto-fetch on startup, and storage rules.  
+  Configure default formats, additional files, and auto-fetch latest on startup or progressively on demand.  
   ![New channel addition dialog](docs/screenshots/demo_subs_new_channel.png)
 
 ### Batch Tab
 - **Main view**  
-  Paste multiple video or audio links (e.g., from YouTube or SoundCloud), select preferred formats, and start batch downloads.  
+  Paste multiple video or audio links (works with multiple providers), select required formats, and reach what you need.  
   ![Batch tab with pasted URLs](docs/screenshots/demo_batch_main_view.png)
 
 - **Advanced options**  
-  Customize storage modes, grouping rules, and multithreading levels for efficient batch processing.  
+  Customize file modes, grouping rules, and multithreading levels for efficient stream handling.  
   ![Batch tab advanced settings](docs/screenshots/demo_batch_adv_settings.png)
+- 
 ---
 
 ## 📥 Installation
@@ -110,18 +114,18 @@ In the future it may be published as a standalone repository.
 
 - **Exports APIs**
     - `ProcessFactory` — abstraction for building ready-to-run processes:
-        - Download audio-only stream
-        - Download audio+video stream
+        - Reach audio-only stream
+        - Reach audio+video stream
         - Fetch channel data or content list with selected output params
     - `CmdBuilder` — abstraction for building structured multi-parameter commands, easy to extend for custom `ProcessFactory` implementations.
 
 - **Exports settings**
     - `DownloadOption`
-        - `AudioOption` → used in `ProcessFactory.downloadAudioStream()`
+        - `AudioOption` → used in `ProcessFactory.audioStream()`
             - Default impl: `AudioOnlyQuality` with MP3, high-bitrate M4A, low-size M4A, WAV (converted from lossy), and *source codec* (best available without lossy conversion).
-        - `VideoOption` → used in `ProcessFactory.downloadVideoWithAudioStream()`
+        - `VideoOption` → used in `ProcessFactory.videoWithAudioStream()`
             - Default impl: `VideoQuality` with 720p → 4K MP4 resolutions, H.264 + AAC enforced at 720p/1080p, flexible at higher resolutions with fallbacks.
-    - `StorageOptions` — defines grouping modes, content description, `info.json` inclusion, download date, etc.
+    - `StorageOptions` — defines grouping modes, content description, `info.json` inclusion, today's date, etc.
     - `DlpCmd` — interface with `FetchCmd` & `DownloadCmd` implementations, bundling useful yt-dlp command sets.
 
 - **ProcessFactory usage**
@@ -147,10 +151,10 @@ In the future it may be published as a standalone repository.
 
 **Functionality**
 - Paste hundreds of content URLs.
-- Download with selected options, save to chosen location.
+- Reach streams with selected options, and formats.
 - Grouping modes:
     - *By Content* → all formats of a content grouped together.
-    - *By Format* → archives separated by codec/format.
+    - *By Format* → all contents in given codec/format grouped together.
 - Adjustable multithreading level, backed by a platform thread pool.
 - Custom queue + dispatcher:
     - Graceful stop (finish current tasks, abort pending).
@@ -170,12 +174,12 @@ In the future it may be published as a standalone repository.
 - Fetch published contents progressively (from latest backwards).
 - Per-channel settings:
     - Auto-fetch latest on startup.
-    - Default audio/video download settings.
+    - Default audio/video format settings.
 - For each content:
-    - **Get Audio** / **Get Video** buttons → downloads with preconfigured settings.
-    - **Open** → opens already-downloaded file in explorer.
+    - **Get Audio** / **Get Video** buttons → reach with preconfigured settings.
+    - **Open** → opens ready stream in explorer.
 - Uses a **Virtual-Per-Task Executor**:
-    - Lightweight async fetches & downloads.
+    - Lightweight async fetches & stream handling.
     - Smooth UI responsiveness.
 
 ---
@@ -218,6 +222,9 @@ This project is licensed under the [MIT License](LICENSE).
 You are free to use, modify, and distribute this software.  
 If you do, please include the original copyright notice and mention me as the author.
 
+Please ensure your use of this software complies with the terms of service of the content platforms you interact with, as well as with applicable laws in your jurisdiction.
+The author does not take responsibility for how the software is used.
+
 ---
 
 ## 🔖 Third-party software
@@ -236,6 +243,7 @@ On macOS release, the user must install them manually (tested with versions: FFm
 ---
 
 ## 🔄 Contributing and Troubleshooting
+
 Feel free to open an issue if you spot a problem or have a suggestion for improvement.
 
 Before raising a pull request, please check if I am currently active/responsive on GitHub or LinkedIn.

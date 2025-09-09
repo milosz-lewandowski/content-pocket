@@ -75,6 +75,7 @@ jlink {
         if (isWindows) {
             installerType = "app-image"
             skipInstaller = true
+            icon = file("src/main/resources/icons/app-icon.ico").absolutePath
             resourceDir = file("src/main/resources")
         }
 
@@ -82,6 +83,8 @@ jlink {
         if (isMac) {
             installerType = "dmg"
             skipInstaller = false
+            icon = file("src/main/resources/icons/app-icon.icns").absolutePath
+            resourceDir = file("src/main/resources")
         }
     }
 }
