@@ -24,7 +24,7 @@ public class BinariesManager {
     // --- check for binaries in system path and default directories  ---
 
     public Optional<BinariesInstallation> verifyBinariesDefaultInstallation() {
-        GeneralSettings generalSettings = SettingsManager.load();
+        GeneralSettings generalSettings = SettingsManager.loadSettings();
 
         BinariesInstallation savedInstallation = generalSettings.getBinariesInstallation();
         if (savedInstallation != null && savedInstallation.isConfirmed())
@@ -210,12 +210,8 @@ public class BinariesManager {
     private SupportedPlatforms getPlatform() {
         if (detectedPlatform != null) return detectedPlatform;
 
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("mac")) detectedPlatform = SupportedPlatforms.MACOS;
-        else if (os.contains("win")) detectedPlatform = SupportedPlatforms.WINDOWS;
-
-        if (detectedPlatform != null) return detectedPlatform;
-        else throw new UnsupportedOperationException("Unsupported OS: " + os);
+        detectedPlatform = SupportedPlatforms.getCurrentPlatform();
+        return detectedPlatform;
     }
 
     private void persistInstallationWithMessage(BinariesInstallation installation) {

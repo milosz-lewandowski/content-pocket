@@ -103,7 +103,7 @@ public class BatchController implements OnCloseHandler {
 
         AppContext appContext = AppContext.getInstance();
         appContext.registerOnCloseHandler(this);
-        generalSettings = SettingsManager.load();
+        generalSettings = SettingsManager.loadSettings();
 
         DownloadService downloadService = DownloadServiceProvider
             .getDefaultDownloadService(appContext);

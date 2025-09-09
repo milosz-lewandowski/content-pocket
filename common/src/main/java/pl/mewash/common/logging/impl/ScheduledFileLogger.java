@@ -1,6 +1,6 @@
 package pl.mewash.common.logging.impl;
 
-import pl.mewash.common.app.config.ConfigPaths;
+import pl.mewash.common.app.config.LoggerFilesManager;
 import pl.mewash.common.logging.api.FileLogger;
 
 import java.io.*;
@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -151,9 +150,7 @@ public class ScheduledFileLogger implements FileLogger {
 
     private void flushLogsToFile() {
         try {
-            Path logDir = ConfigPaths.getLogsDir();
-            String date = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
-            Path logFile = logDir.resolve(date + ".log");
+            Path logFile = LoggerFilesManager.getResolvedLogFile();
 
             synchronized (logFileLock) {
                 try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8,

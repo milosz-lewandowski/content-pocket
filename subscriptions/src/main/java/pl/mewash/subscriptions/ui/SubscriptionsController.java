@@ -95,7 +95,7 @@ public class SubscriptionsController {
         channelService = new ChannelService(appContext);
         contentService = new ContentService(appContext);
 
-        generalSettings = SettingsManager.load();
+        generalSettings = SettingsManager.loadSettings();
         String lastSelectedPath = generalSettings.getSubsLastSelectedPath();
         if (Objects.nonNull(lastSelectedPath) && !lastSelectedPath.isBlank()) subsPathField
             .setText(lastSelectedPath);

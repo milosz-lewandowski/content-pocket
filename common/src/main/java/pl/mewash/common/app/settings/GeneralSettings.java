@@ -14,6 +14,9 @@ public class GeneralSettings {
 
     private BinariesInstallation binariesInstallation;
 
+    private String savedSubscriptionsFilePath;
+    private String savedLocalLogsDirPath;
+
     private String batchLastSelectedPath;
     private String subsLastSelectedPath;
 }

@@ -16,7 +16,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-@Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AppContext {
     // singleton
@@ -27,11 +26,11 @@ public class AppContext {
     }
 
     // fields
-    private SupportedPlatforms detectedPlatform;
-    private String YtDlpCommand;
-    private String FfMpegCommand;
-    private FileLogger fileLogger;
-    private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
+    @Getter private SupportedPlatforms detectedPlatform;
+    @Getter private String YtDlpCommand;
+    @Getter private String FfMpegCommand;
+    @Getter private FileLogger fileLogger;
+    @Getter private final List<OnCloseHandler> onCloseHandlers = new ArrayList<>();
 
     public void init(BinariesInstallation binariesInstallation) {
         if (initialized) throw new IllegalStateException("AppContext already initialized.");
