@@ -14,7 +14,7 @@ import java.util.function.Predicate;
 @RequiredArgsConstructor
 public enum AudioOnlyQuality implements AudioOption {
 
-    MP3("mp3", "MP3 (Good Quality)",
+    MP3("mp3", "MP3 (High Quality)",
         true, true,
         List.of(
             CmdEntry.withParam(DownloadCmd.FALLBACKS_CHAIN, """
