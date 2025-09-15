@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/batch/content-pocket.batch.main.iml" filepath="$PROJECT_DIR$/.idea/modules/batch/content-pocket.batch.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/batch/content-pocket.batch.test.iml" filepath="$PROJECT_DIR$/.idea/modules/batch/content-pocket.batch.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/commands-api/content-pocket.commands-api.main.iml" filepath="$PROJECT_DIR$/.idea/modules/commands-api/content-pocket.commands-api.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common/content-pocket.common.main.iml" filepath="$PROJECT_DIR$/.idea/modules/common/content-pocket.common.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.main.iml" filepath="$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.test.iml" filepath="$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/content-pocket.test.iml" filepath="$PROJECT_DIR$/.idea/modules/content-pocket.test.iml" />
+    </modules>
+  </component>
+</project>

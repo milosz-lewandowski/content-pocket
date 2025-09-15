@@ -42,14 +42,24 @@ dependencies {
     implementation(project(":batch"))
 }
 
-// --- enable build with or without tools bundled (default = true) ---
+// --- *** CONDITIONAL BUILD SETUP *** ---
+
+val winUpgradeUuid: String = "4b82923a-8c6d-4b85-8d33-3899f73b6585" // constant uuid
+
+// --- get tools bundling selection from properties ---
 val isBundleWithTools: Boolean = providers
     .gradleProperty("isBundleWithTools")
     .map { it.toBoolean() }
     .orElse(true)
     .get()
 
-// --- introducing conditional build to avoid keeping two branches with same codebase differed only by build files ---
+// --- get windows build type from properties
+val winInstallerType: String = providers
+    .gradleProperty("winInstallerType")
+    .orElse("zip")
+    .get()
+
+// --- detect current platform and target compilation ---
 val isWindows = System.getProperty("os.name").lowercase().contains("win")
 val isMac = System.getProperty("os.name").lowercase().contains("mac")
 
@@ -73,10 +83,26 @@ jlink {
 
         // --- windows setup ---
         if (isWindows) {
-            installerType = "app-image"
-            skipInstaller = true
+
             icon = file("src/main/resources/icons/app-icon.ico").absolutePath
             resourceDir = file("src/main/resources")
+
+            if (winInstallerType == "msi") {
+                installerType = "msi"
+                skipInstaller = false
+                installerOptions = listOf(
+                    "--win-per-user-install", // per user to avoid admin privileges request on 'unknown' installation
+                    "--win-shortcut",
+                    "--win-menu",
+                    "--win-menu-group", "ContentPocket",
+                    "--win-shortcut-prompt",
+                    "--win-upgrade-uuid", winUpgradeUuid
+                )
+
+            } else if (winInstallerType == "zip") {
+                installerType = "app-image"
+                skipInstaller = true
+            }
         }
 
         // --- macos setup ---
@@ -103,8 +129,8 @@ if (isWindows && isBundleWithTools) {
     }
 }
 
-// --- build ZIP distro if compiled on windows ---
-if (isWindows) {
+// --- build ZIP distro ---
+if (isWindows && winInstallerType == "zip") {
     tasks.register<Zip>("zipPortableApp") {
         dependsOn("jpackageImage")
 
@@ -134,7 +160,7 @@ if (isWindows) {
     }
 }
 
-// --- just prints current version to add it to .dmg name in workflow build ---
+// --- print current version to pass it for .dmg name in workflow build ---
 if (isMac) {
     tasks.register("printVersion") {
         doLast {

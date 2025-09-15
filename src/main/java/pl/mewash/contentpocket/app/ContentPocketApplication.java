@@ -187,6 +187,10 @@ public class ContentPocketApplication extends Application {
 
     private void updateSplash(String message) {
         Platform.runLater(() -> splashLabel.setText(message));
+//
+//        try {
+//            Thread.sleep(2000);
+//        } catch (InterruptedException ex) {throw new RuntimeException(ex);}
     }
 
     private boolean verifyBinariesAndInitContext(Stage stage) {

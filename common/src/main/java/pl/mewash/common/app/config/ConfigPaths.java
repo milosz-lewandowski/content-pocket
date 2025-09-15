@@ -12,7 +12,7 @@ public class ConfigPaths {
     private static final String MACOS_PROP_USER_HOME_PATTERN = "user.home";
     private static final String WIN_ENV_APPDATA_PATTERN = "APPDATA";
 
-    private static final String POCKET_FILES_DIR_NAME = "PocketAppFiles";
+    private static final String POCKET_FILES_DIR_NAME = "ContentPocketFiles";
     private static final String LOGS_DIR_NAME = "logs";
 
     private static final String SUBSCRIPTIONS_FILE_NAME = "subscriptions.json";
@@ -21,7 +21,7 @@ public class ConfigPaths {
     public static Path getSubscriptionsFilePath() throws IOException {
         SupportedPlatforms currentPlatform = SupportedPlatforms.getCurrentPlatform();
         return switch (currentPlatform) {
-            case WINDOWS -> getWinLocalAppPocketDir().resolve(SUBSCRIPTIONS_FILE_NAME);
+            case WINDOWS -> getWinAppDataPocketDir().resolve(SUBSCRIPTIONS_FILE_NAME);
             case MACOS -> getMacLibAppSupportPocketDir().resolve(SUBSCRIPTIONS_FILE_NAME);
         };
     }
@@ -37,13 +37,15 @@ public class ConfigPaths {
     public static Path getLogsDirPath() throws IOException {
         SupportedPlatforms currentPlatform = SupportedPlatforms.getCurrentPlatform();
         Path logsDir = switch (currentPlatform) {
-            case WINDOWS -> getWinLocalAppPocketDir().resolve(LOGS_DIR_NAME);
+            case WINDOWS -> getWinAppDataPocketDir().resolve(LOGS_DIR_NAME);
             case MACOS -> getMacLibAppSupportPocketDir().resolve(LOGS_DIR_NAME);
         };
         if (!Files.exists(logsDir)) Files.createDirectories(logsDir);
         return logsDir;
     }
 
+    // --- windows relative to app .exe extracted from ZIP directory
+    @Deprecated
     private static Path getWinLocalAppPocketDir() throws IOException {
         Path localPocketFilesDir = Paths
             .get("", POCKET_FILES_DIR_NAME)
@@ -53,6 +55,7 @@ public class ConfigPaths {
         return localPocketFilesDir;
     }
 
+    // --- windows AppData directory ---
     private static Path getWinAppDataPocketDir() throws IOException {
         String appDataEnv = System.getenv(WIN_ENV_APPDATA_PATTERN);
         if (appDataEnv == null) throw new IllegalStateException("'%APPDATA%' could not be resolved!");
@@ -67,6 +70,7 @@ public class ConfigPaths {
         return appDataPocketDir;
     }
 
+    // --- macos applications data directory ---
     private static Path getMacLibAppSupportPocketDir() throws IOException {
         String userHomeProperty = System.getProperty(MACOS_PROP_USER_HOME_PATTERN);
         if (userHomeProperty == null) throw new IllegalStateException("'user.home' could not be resolved!");

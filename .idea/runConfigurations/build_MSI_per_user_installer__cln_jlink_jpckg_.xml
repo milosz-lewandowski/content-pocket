@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="build ZIP distro [cln jlink jpckgImg zipPortApp]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="build MSI per-user installer [cln jlink jpckg]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="-PwinInstallerType=zip" />
+      <option name="scriptParameters" value="-PwinInstallerType=msi" />
       <option name="taskDescriptions">
         <list />
       </option>
@@ -12,8 +12,7 @@
         <list>
           <option value="clean" />
           <option value="jlink" />
-          <option value="jpackageImage" />
-          <option value="zipPortableApp" />
+          <option value="jpackage" />
         </list>
       </option>
       <option name="vmOptions" />
