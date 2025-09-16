@@ -17,23 +17,24 @@ It is not intended for commercial use or production deployment.
 ## 📸 UI preview (screenshots)
 
 ### Subscriptions Tab
-- **Browse & Manage Filtered Content**  
-  Add channels, fetch latest, browse content, play videos or audios. Only sources you trust, no distractors.  
-  ![Subscriptions view with expanded Java channel](docs/screenshots/demo_subs_view_contents.png)
 
-- **Per-channel Settings**  
+- **Add Channels with per-channel Settings**  
   Configure default formats, additional files, and auto-fetch latest on startup or progressively on demand.  
   ![New channel addition dialog](docs/screenshots/demo_subs_new_channel.png)
+
+- **Browse & Manage Filtered Content**  
+  Fetch latest, browse content, play videos or audios. Only sources you trust, no distractors.  
+  ![Subscriptions view with expanded Java channel](docs/screenshots/demo_subs_sample.png)
 
 ### Batch Tab
 - **Main view**  
   Paste multiple video or audio links (works with multiple providers), select required formats, and reach what you need.  
-  ![Batch tab with pasted URLs](docs/screenshots/demo_batch_main_view.png)
+  ![Batch tab with pasted URLs](docs/screenshots/demo_batch_sample.png)
 
 - **Advanced options**  
   Customize file modes, grouping rules, and multithreading levels for efficient stream handling.  
-  ![Batch tab advanced settings](docs/screenshots/demo_batch_adv_settings.png)
-- 
+  ![Batch tab advanced settings](docs/screenshots/demo_batch_adv_menu.png)
+
 ---
 
 ## 📥 Installation
