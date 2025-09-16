@@ -108,11 +108,13 @@ public class SubscriptionsController {
             .createBooleanBinding(() -> channelValidationStage.get().isButtonDisabled(), channelValidationStage));
 
         channelListView.setItems(channelsUiStates);
+        channelListView.setPlaceholder(new Label("Added Channels list will be shown here..."));
         channelsUiStates.addAll(repository.loadChannelsUiList());
         loadChannelsListOnUi();
 
-        loadFetchedUploadsListOnUi();
         fetchedContentsListView.setItems(currentFetchedContents);
+        fetchedContentsListView.setPlaceholder(new Label("Channel Contents will be shown after 'View' click..."));
+        loadFetchedUploadsListOnUi();
 
         channelsUiStates.forEach(uiState -> {
             if (uiState.getChannel().getChannelSettings().isAutoFetchLatestOnStartup())
@@ -267,7 +269,7 @@ public class SubscriptionsController {
             Platform.runLater(() -> {
                 channelListView.refresh();
 
-                if (channelState.getUrl().equals(activeChannelStateView.getUrl()))
+                if (activeChannelStateView != null && channelState.getUrl().equals(activeChannelStateView.getUrl()))
                     handleViewContents(channelState);
             });
         });
