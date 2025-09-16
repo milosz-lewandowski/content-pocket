@@ -39,32 +39,35 @@ It is not intended for commercial use or production deployment.
 
 ## 📥 Installation
 
-### 🪟 Windows - "Plug & Play" - Portable ZIP (tools bundled)
+### 🪟 Windows: MSI Installer - "Plug & Play" (tools bundled)
 This distribution already includes the required executables (`ffmpeg`, `ffprobe`, `yt-dlp`).  
 No setup needed:
 
-1. Download the ZIP.
-2. Extract files.
-3. Run `ContentPocket.exe`.
+1. Download the `ContentPocket.msi` installer.
+2. Install application (no admin privileges required).
+3. Launch `ContentPocket` app from Menu Start or desktop shortcut.
 
-That’s all.
+✔ That’s it — everything is ready to use.
 
 ---
 
-### 🪟 Windows - Lightweight ZIP (tools not bundled)
-If you already have `ffmpeg`, `ffprobe`, and `yt-dlp` installed (either in a folder or on your system/user PATH), you can use lightweight (without tools execs inside) distribution.
+### 🪟 Windows: Portable ZIP - "No installation needed"
+Two versions are available:
+- Portable → includes tools (`ffmpeg`, `ffprobe`, `yt-dlp`).
+- Lightweight → without tools (requires you to have them installed in PATH or a local folder).
 
 1. Download the ZIP.
 2. Extract files.
 3. Run `ContentPocket.exe`.
 
-The app will:
+If you already have `ffmpeg`, `ffprobe`, and `yt-dlp` installed (either in a folder or on your system/user PATH),
+you can use lightweight (without tools execs inside) distribution. The app will:
 - First check whether required binaries are available via `PATH`.
 - If not found, App will ask you to provide a directory with tools execs.
 
 **Requirement:** all tools executables must be placed in the same directory.
 
-That's all.
+✔ Done — the app runs from wherever you extracted it.
 
 ---
 
@@ -96,7 +99,7 @@ The app will look for them:
    /Applications/ContentPocket.app/Contents/MacOS/ContentPocket
    ```
 
-Good luck.
+✔ Good luck.
 
 ---
 
