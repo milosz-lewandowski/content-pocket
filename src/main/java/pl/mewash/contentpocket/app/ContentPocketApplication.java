@@ -67,8 +67,8 @@ public class ContentPocketApplication extends Application {
     private Image logo;
 
     public static void main(String[] args) {
-        System.out.println("Starting Content Pocket Application");
-        System.out.println(CURRENT_ISSUES_TEMPS_TODOS);
+        System.out.println("Starting ContentPocket Application");
+//        System.out.println(CURRENT_ISSUES_TEMPS_TODOS);
         launch();
     }
 
@@ -187,10 +187,6 @@ public class ContentPocketApplication extends Application {
 
     private void updateSplash(String message) {
         Platform.runLater(() -> splashLabel.setText(message));
-//
-//        try {
-//            Thread.sleep(2000);
-//        } catch (InterruptedException ex) {throw new RuntimeException(ex);}
     }
 
     private boolean verifyBinariesAndInitContext(Stage stage) {

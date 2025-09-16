@@ -69,6 +69,7 @@ public class SubscriptionsController {
     // subscribed channels list
     private final ObservableList<ChannelUiState> channelsUiStates = FXCollections.observableArrayList();
     @FXML private ListView<ChannelUiState> channelListView;
+    private ChannelUiState activeChannelStateView;
 
     // fetched contents list
     @FXML private StackPane contentsBarPane;
@@ -261,13 +262,12 @@ public class SubscriptionsController {
             && Dialogs.showFullFetchRetryAlert()) return;
 
         virtualTasksExecutor.submit(() -> {
-            boolean foundNew = fetchService.fetch(channelState);
+            fetchService.fetch(channelState);
 
             Platform.runLater(() -> {
                 channelListView.refresh();
 
-                Optional<FetchedContent> currentView = fetchedContentsListView.getItems().stream().findAny();
-                if (currentView.isPresent() && currentView.get().getChannelUrl().equals(channelState.getUrl()))
+                if (channelState.getUrl().equals(activeChannelStateView.getUrl()))
                     handleViewContents(channelState);
             });
         });
@@ -275,34 +275,11 @@ public class SubscriptionsController {
 
     private void handleViewContents(ChannelUiState channelState) {
         List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelState.getUrl());
-        SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
-
-        Predicate<ProgressiveFetchStage> fetchedLatest = (stage) ->
-            stage == ProgressiveFetchStage.ALL_FETCHED || stage == ProgressiveFetchStage.FETCH_OLDER;
-
-
-        ContentsSummaryBar.Params barParams = ContentsSummaryBar.Params.builder()
-            .channelName(channelState.getChannelName())
-            .contentsCount(fetchedContents.size())
-            .lastFetchDate(subscribedChannel.getLastFetched())
-            .fetchedLatest(fetchedLatest.test(channelState.getFetchingStage().get()))
-            .fetchedSince(subscribedChannel.getPreviousFetchOlderRangeDate())
-            .fetchedOldest(subscribedChannel.isFetchedSinceOldest())
-            .savedAudios((int) fetchedContents.stream()
-                .filter(fc -> fc.getAudioStage() == ContentDownloadStage.SAVED).count())
-            .savedVideos((int) fetchedContents.stream()
-                .filter(fc -> fc.getVideoStage() == ContentDownloadStage.SAVED).count())
-            .build();
-
-        GridPane bar = new ContentsSummaryBar().buildGridPane(barParams);
-
-        bar.setMaxWidth(Double.MAX_VALUE);
-        bar.prefWidthProperty().bind(contentsBarPane.widthProperty());
-        StackPane.setAlignment(bar, Pos.CENTER_LEFT);
-        contentsBarPane.getChildren().setAll(bar);
 
         currentFetchedContents.clear();
         currentFetchedContents.setAll(fetchedContents);
+        activeChannelStateView = channelState;
+        reloadSummaryBar();
     }
 
     private void handleManageChannelSettings(ChannelUiState channelState) {
@@ -333,7 +310,11 @@ public class SubscriptionsController {
                     Platform.runLater(fetchedContentsListView::refresh);
 
                     contentService.downloadFetched(content, downloadOption, subsBasePath);
-                    Platform.runLater(fetchedContentsListView::refresh);
+
+                    Platform.runLater(() -> {
+                        fetchedContentsListView.refresh();
+                        reloadSummaryBar();
+                    });
                 })
             );
     }
@@ -356,6 +337,38 @@ public class SubscriptionsController {
             logger.logErrWithMessage("Could not open content location", ex, true);
             Dialogs.showAlertAndAwait("Open failed", ex.getMessage(), Alert.AlertType.ERROR);
         }
+    }
+
+    private void reloadSummaryBar() {
+        if (activeChannelStateView == null) return;
+        ChannelUiState channelState = activeChannelStateView;
+
+        List<FetchedContent> fetchedContents = repository.getAllChannelContents(channelState.getUrl());
+        SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
+
+        Predicate<ProgressiveFetchStage> fetchedLatest = (stage) ->
+            stage == ProgressiveFetchStage.ALL_FETCHED || stage == ProgressiveFetchStage.FETCH_OLDER;
+
+        ContentsSummaryBar.Params barParams = ContentsSummaryBar.Params.builder()
+            .channelName(channelState.getChannelName())
+            .contentsCount(fetchedContents.size())
+            .lastFetchDate(subscribedChannel.getLastFetched())
+            .fetchedLatest(fetchedLatest.test(channelState.getFetchingStage().get()))
+            .fetchedSince(subscribedChannel.getPreviousFetchOlderRangeDate())
+            .fetchedOldest(subscribedChannel.isFetchedSinceOldest())
+            .savedAudios((int) fetchedContents.stream()
+                .filter(fc -> fc.getAudioStage() == ContentDownloadStage.SAVED).count())
+            .savedVideos((int) fetchedContents.stream()
+                .filter(fc -> fc.getVideoStage() == ContentDownloadStage.SAVED).count())
+            .build();
+
+        GridPane bar = new ContentsSummaryBar().buildGridPane(barParams);
+
+        bar.setMaxWidth(Double.MAX_VALUE);
+        bar.prefWidthProperty().bind(contentsBarPane.widthProperty());
+        StackPane.setAlignment(bar, Pos.CENTER_LEFT);
+
+        Platform.runLater(() -> contentsBarPane.getChildren().setAll(bar));
     }
 
 

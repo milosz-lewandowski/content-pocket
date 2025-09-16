@@ -10,14 +10,9 @@
 
         <HBox spacing="10" alignment="CENTER">
             <Label text="%label.paste_urls"/>
-            <Label text="❓">
-                <tooltip>
-                    <Tooltip text="%tooltip.paste_url"/>
-                </tooltip>
-            </Label>
         </HBox>
 
-        <TextArea fx:id="urlInput" prefRowCount="14" wrapText="true">
+        <TextArea fx:id="urlInput" promptText="%tooltip.paste_url" prefRowCount="14" wrapText="true">
             <tooltip>
                 <Tooltip text="%tooltip.paste_url"/>
             </tooltip>
@@ -25,7 +20,7 @@
 
         <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="%label.save_to_dir"/>
-            <TextField fx:id="pathField" prefWidth="300"/>
+            <TextField fx:id="pathField" promptText="Select directory to save files..." prefWidth="300"/>
             <Button text="%button.browse_dirs" onAction="#handleBrowse"/>
         </HBox>
 
@@ -184,8 +179,9 @@
             </tooltip>
         </Button>
 
-        <Label fx:id="progressLabel" text="Progress will show here"/>
+        <Label fx:id="progressLabel" text="Completed: 0 | Failed: 0 | Total: 0"/>
 
-        <TextArea fx:id="outputLog" editable="false" wrapText="true" prefRowCount="14"/>
+        <TextArea fx:id="outputLog" promptText="Progress messages will be shown here..."
+                  editable="false" wrapText="true" prefRowCount="14"/>
     </VBox>
 </ScrollPane>

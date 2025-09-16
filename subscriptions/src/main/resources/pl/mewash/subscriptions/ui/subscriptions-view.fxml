@@ -18,7 +18,7 @@
     <VBox spacing="10" style="-fx-padding: 10;">
         <HBox spacing="10" alignment="CENTER_LEFT">
             <Label text="Save to:"/>
-            <TextField fx:id="subsPathField" prefWidth="300"/>
+            <TextField fx:id="subsPathField" promptText="Select directory for contents..." prefWidth="300"/>
             <Button text="Browse..." onAction="#handleBrowse"/>
         </HBox>
         <Separator/>

@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ChannelValidationStage {
-    ADD_NEW("Add", false),
-    CHECKING("Checking", true)
+    ADD_NEW("Add Channel", false),
+    CHECKING("Checking...", true)
     ;
 
     private final String buttonTitle;
