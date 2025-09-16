@@ -53,8 +53,8 @@ No setup needed:
 
 ### 🪟 Windows: Portable ZIP - "No installation needed"
 Two versions are available:
-- Portable → includes tools (`ffmpeg`, `ffprobe`, `yt-dlp`).
-- Lightweight → without tools (requires you to have them installed in PATH or a local folder).
+- `portable.zip` → includes tools (`ffmpeg`, `ffprobe`, `yt-dlp`).
+- `lightweight.zip` → without tools (requires you to have them installed in PATH or a local folder).
 
 1. Download the ZIP.
 2. Extract files.
@@ -71,7 +71,7 @@ you can use lightweight (without tools execs inside) distribution. The app will:
 
 ---
 
-### 🍏 macOS - DMG image (tools not bundled)
+### 🍏 MacOS: DMG image (tools not bundled)
 As Apple Inc. does not try to make developer's life easier (unless you pay 100$/y),
 required tools binaries could not be easily bundled, and installing this App on macOS needs some more hustle.
 
