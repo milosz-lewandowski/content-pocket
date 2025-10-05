@@ -19,12 +19,12 @@ allprojects {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(23))
     }
 }
 
 javafx {
-    version = "21"
+    version = "23"
     modules = listOf("javafx.controls", "javafx.fxml")
 }
 

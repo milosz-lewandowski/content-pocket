@@ -5,6 +5,7 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="azul-23" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
@@ -13,6 +14,7 @@
             <option value="$PROJECT_DIR$/common" />
             <option value="$PROJECT_DIR$/content-pocket" />
             <option value="$PROJECT_DIR$/subscriptions" />
+            <option value="$PROJECT_DIR$/web-jpro" />
           </set>
         </option>
       </GradleProjectSettings>

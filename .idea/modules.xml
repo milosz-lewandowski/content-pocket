@@ -9,6 +9,10 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.main.iml" filepath="$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.test.iml" filepath="$PROJECT_DIR$/.idea/modules/subscriptions/content-pocket.subscriptions.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/content-pocket.test.iml" filepath="$PROJECT_DIR$/.idea/modules/content-pocket.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/batch/pl.mewash.content-pocket.batch.main.iml" filepath="$PROJECT_DIR$/.idea/modules/batch/pl.mewash.content-pocket.batch.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/commands-api/pl.mewash.content-pocket.commands-api.main.iml" filepath="$PROJECT_DIR$/.idea/modules/commands-api/pl.mewash.content-pocket.commands-api.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common/pl.mewash.content-pocket.common.main.iml" filepath="$PROJECT_DIR$/.idea/modules/common/pl.mewash.content-pocket.common.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/subscriptions/pl.mewash.content-pocket.subscriptions.main.iml" filepath="$PROJECT_DIR$/.idea/modules/subscriptions/pl.mewash.content-pocket.subscriptions.main.iml" />
     </modules>
   </component>
 </project>
