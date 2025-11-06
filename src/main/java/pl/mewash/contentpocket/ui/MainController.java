@@ -3,24 +3,33 @@ package pl.mewash.contentpocket.ui;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Popup;
+import pl.mewash.common.app.config.LoggerFilesManager;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
 import pl.mewash.common.spi.tabs.TabPlugin;
 
+import java.awt.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class MainController {
 
+
+    private FileLogger logger;
     private final ResourceBundle defaultAppBundle;
     private final List<TabPlugin> tabPlugins;
 
+    @FXML private Button logsButton;
+    @FXML private Button toolsButton;
     @FXML private Label creditsLabel;
     @FXML private TabPane tabs;
 
@@ -34,6 +43,9 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        logger = AppContext.getInstance().getFileLogger();
+        logsButton.setOnAction(e -> showLogsDir());
+        toolsButton.setOnAction(e -> showToolsDir());
 
         setupCreditsPopup();
 
@@ -80,5 +92,27 @@ public class MainController {
             else infoPopup.show(creditsLabel, event.getScreenX(), event.getScreenY() + 15);
             popupShown = !popupShown;
         });
+    }
+
+    @FXML
+    protected void showLogsDir() {
+        try {
+            Path logsDir = LoggerFilesManager.getResolvedLocalLogsDir();
+            if (Files.exists(logsDir)) Desktop.getDesktop().open(logsDir.getParent().toFile());
+            else System.err.println("Logs directory does not exist!");
+        } catch (Exception ex) {
+            logger.logErrWithMessage("Could not open logs directory", ex, true);
+        }
+    }
+
+    @FXML
+    protected void showToolsDir() {
+        try {
+            Path toolsDir = Path.of(AppContext.getInstance().getYtDlpCommand()).getParent();
+            if (Files.exists(toolsDir)) Desktop.getDesktop().open(toolsDir.toFile());
+            else System.err.println("Tools directory could not be resolved. It might be due to type of installation");
+        } catch (Exception ex) {
+            logger.logErrWithMessage("Could not open tools directory", ex, true);
+        }
     }
 }

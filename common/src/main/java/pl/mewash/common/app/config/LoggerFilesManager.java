@@ -21,7 +21,7 @@ public class LoggerFilesManager {
         return logDir.resolve(date + ".log");
     }
 
-    private static Path getResolvedLocalLogsDir() throws IOException {
+    public static Path getResolvedLocalLogsDir() throws IOException {
         if (cachedLocalLogsDir != null) return cachedLocalLogsDir;
 
         GeneralSettings settings = SettingsManager.loadSettings();
