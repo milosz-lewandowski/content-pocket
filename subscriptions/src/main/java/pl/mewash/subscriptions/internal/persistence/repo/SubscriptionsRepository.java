@@ -19,6 +19,7 @@ public interface SubscriptionsRepository {
     SubscribedChannel getChannel(String channelUrl);
     void addChannel(SubscribedChannel channel);
     void updateChannel(SubscribedChannel subscribedChannel);
+    void deleteChannel(SubscribedChannel subscribedChannel);
 
     // --- channel settings ---
     ChannelSettings getChannelSettings(String channelUrl);

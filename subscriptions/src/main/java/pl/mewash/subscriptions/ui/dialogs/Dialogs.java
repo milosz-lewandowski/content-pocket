@@ -1,13 +1,8 @@
 package pl.mewash.subscriptions.ui.dialogs;
 
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
-import pl.mewash.common.app.context.AppContext;
-import pl.mewash.subscriptions.internal.domain.model.ChannelSettings;
-import pl.mewash.subscriptions.ui.ChannelSettingsController;
 
-import java.io.IOException;
 import java.util.Optional;
 
 public class Dialogs {
@@ -42,44 +37,5 @@ public class Dialogs {
 
         Optional<ButtonType> result = alert.showAndWait();
         return result.orElse(abortButton) == abortButton;
-    }
-
-    public static Optional<ChannelSettings> showEditChannelSettingsDialogAndWait(ChannelSettings currentSettings,
-                                                                                String channelName) {
-        return showChannelSettingsDialogAndWait(currentSettings, channelName, false);
-    }
-
-    public static Optional<ChannelSettings> showNewChannelSettingsDialogAndWait(String channelName) {
-        return showChannelSettingsDialogAndWait(ChannelSettings.defaultSettings(), channelName, true);
-    }
-
-    private static Optional<ChannelSettings> showChannelSettingsDialogAndWait(ChannelSettings currentSettings,
-                                                                             String channelName, boolean isNew) {
-        try {
-            FXMLLoader loader = new FXMLLoader(Dialogs.class
-                .getResource("/pl/mewash/subscriptions/ui/channel-settings-view.fxml"));
-
-            DialogPane pane = loader.load();
-            ChannelSettingsController controller = loader.getController();
-            controller.loadSettingsOnUi(currentSettings);
-
-            Dialog<ChannelSettings> dialog = new Dialog<>();
-            String title = isNew
-                ? "Setup new channel: " + channelName
-                : "Edit channel " + channelName + " settings";
-            dialog.setTitle(title);
-            dialog.setDialogPane(pane);
-
-            dialog.setResultConverter(buttonType -> buttonType != null
-                && buttonType.getButtonData() == ButtonBar.ButtonData.APPLY
-                    ? controller.getSelectedSettings()
-                    : null);
-
-            return dialog.showAndWait();
-
-        } catch (IOException e) {
-            AppContext.getInstance().getFileLogger().logErrStackTrace(e, true);
-            return Optional.empty();
-        }
     }
 }

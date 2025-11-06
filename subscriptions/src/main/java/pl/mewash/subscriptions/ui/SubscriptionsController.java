@@ -35,6 +35,7 @@ import pl.mewash.subscriptions.internal.service.ChannelService;
 import pl.mewash.subscriptions.internal.service.ContentService;
 import pl.mewash.subscriptions.internal.service.FetchService;
 import pl.mewash.subscriptions.ui.components.ContentsSummaryBar;
+import pl.mewash.subscriptions.ui.dialogs.ChannelSettingsDialogs;
 import pl.mewash.subscriptions.ui.dialogs.Dialogs;
 
 import java.awt.*;
@@ -156,28 +157,30 @@ public class SubscriptionsController {
 
                     newChannel.ifPresent(channel -> Platform
                         .runLater(() -> {
-                            ChannelSettings channelSettings = Dialogs
-                                .showNewChannelSettingsDialogAndWait(channel.getChannelName())
-                                .orElse(ChannelSettings.defaultSettings());
+                            var resOpt = ChannelSettingsDialogs
+                                .showNewChannelSettingsDialogAndWait(channel.getChannelName());
+                            boolean isAborted = resOpt.isEmpty() || resOpt.get()
+                                .answerButton() == ChannelSettingsDialogs.AnswerButton.OTHER;
 
-                            channel.setChannelSettings(channelSettings);
-                            ChannelUiState channelState = channelService.saveChannelAndGetState(channel);
+                            if (!isAborted) {
+                                var channelSettings = resOpt.get().settings();
+                                channel.setChannelSettings(channelSettings);
+                                var channelState = channelService.saveChannelAndGetState(channel);
 
-                            if (channelSettings.isFullFetch()) {
-                                channelState.setFetchingStageWithRange(
-                                    ProgressiveFetchRange.LAST_25_YEARS,
-                                    ProgressiveFetchStage.FETCH_OLDER
-                                );
-                                submitFetchTask(channelState);
+                                if (channelSettings.isFullFetch()) {
+                                    channelState.setFetchingStageWithRange(
+                                        ProgressiveFetchRange.LAST_25_YEARS,
+                                        ProgressiveFetchStage.FETCH_OLDER
+                                    );
+                                    submitFetchTask(channelState);
 
-                            } else if (channelSettings.isAutoFetchLatestOnStartup()) {
-                                channelState.setFetchingStage(ProgressiveFetchStage.FIRST_FETCH);
-                                submitFetchTask(channelState);
+                                } else if (channelSettings.isAutoFetchLatestOnStartup()) {
+                                    channelState.setFetchingStage(ProgressiveFetchStage.FIRST_FETCH);
+                                    submitFetchTask(channelState);
+                                }
+                                channelsUiStates.add(channelState);
                             }
-
-                            channelsUiStates.add(channelState);
                             channelListView.refresh();
-
                             channelUrlInput.clear();
                             updateAddChannelButtonState(ChannelValidationStage.ADD_NEW);
                         })
@@ -288,15 +291,24 @@ public class SubscriptionsController {
         SubscribedChannel subscribedChannel = repository.getChannel(channelState.getUrl());
 
         ChannelSettings currentSettings = subscribedChannel.getChannelSettings();
-        Optional<ChannelSettings> selectedSettings = Dialogs
+//        Optional<ChannelSettings> selectedSettings = ChannelSettingsDialogs
+        var respOpt = ChannelSettingsDialogs
             .showEditChannelSettingsDialogAndWait(currentSettings, channelState.getChannelName());
 
-        selectedSettings.ifPresent(newSettings -> {
-            channelState.getChannel().setChannelSettings(newSettings);
-            repository.updateChannel(channelState.getChannel());
-
-            Platform.runLater(channelListView::refresh);
-        });
+        if (respOpt.isEmpty() || respOpt.get().answerButton() == ChannelSettingsDialogs.AnswerButton.CANCEL) return;
+        var result = respOpt.get();
+        switch (result.answerButton()) {
+            case APPLY -> {
+                channelState.getChannel().setChannelSettings(result.settings());
+                repository.updateChannel(channelState.getChannel());
+                Platform.runLater(channelListView::refresh);
+            }
+            case OTHER -> {
+                channelsUiStates.remove(channelState);
+                repository.deleteChannel(channelState.getChannel());
+                Platform.runLater(channelListView::refresh);
+            }
+        }
     }
 
     private void handleContentOptionButton(FetchedContent content, DownloadOption downloadOption) {

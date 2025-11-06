@@ -88,6 +88,11 @@ public class SubscriptionsJsonRepo implements SubscriptionsRepository {
         persist();
     }
 
+    public void deleteChannel(SubscribedChannel subscribedChannel) {
+        channelsUrlsMap.remove(subscribedChannel.getUniqueUrl());
+        persist();
+    }
+
     public void updateContent(FetchedContent fetchedContent) {
         SubscribedChannel subscribedChannel = getChannel(fetchedContent.getChannelUrl());
         subscribedChannel.updateFetchedContent(fetchedContent);

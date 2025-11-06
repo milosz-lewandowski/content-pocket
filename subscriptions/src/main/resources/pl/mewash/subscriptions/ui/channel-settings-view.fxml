@@ -40,6 +40,7 @@
             </TitledPane>
         </VBox>
     </content>
-    <ButtonType text="Apply" buttonData="APPLY"/>
-    <ButtonType text="Cancel" buttonData="CANCEL_CLOSE"/>
+    <ButtonType text="ApplyButton" buttonData="APPLY" />
+    <ButtonType text="OtherButton" buttonData="OTHER"/>
+    <ButtonType text="CancelButton" buttonData="CANCEL_CLOSE"/>
 </DialogPane>
