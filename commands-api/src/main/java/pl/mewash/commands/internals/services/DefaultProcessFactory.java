@@ -43,7 +43,7 @@ public class DefaultProcessFactory implements ProcessFactory {
     public ProcessBuilder fetchContentsPublishedAfter(String channelUrl, LocalDateTime afterDate,
                                                       ContentProperties contentProperties, Path tempFile) {
         return CmdBuilder.newYtDlpCommand(ytDlpCommandPath, printToConsole, commandLogger)
-            .add(FetchCmd.Bundle.getFetchContentsDateAfterEntries(afterDate))
+            .add(FetchCmd.Bundle.getFetchContentsBreakAfter(afterDate))
             .setFilePrint(CmdPrintEntry.withResponsePropsAndFile(contentProperties, tempFile))
             .buildFetch(channelUrl);
     }

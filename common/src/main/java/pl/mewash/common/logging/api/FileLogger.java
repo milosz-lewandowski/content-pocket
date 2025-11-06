@@ -9,7 +9,12 @@ public interface FileLogger {
     void appendSingleLine(String message);
     void appendMultiLineStringList(List<String> lines);
     void consumeAndLogProcessOutputToFile(Process process);
-    // FIXME: returning output from logger (overwhelmed with responsibilities atm) is a temporary solution before
-    // TODO: introducing real-time process manager with output analyzer, watchdogs, triggers, etc.
+
+    @Deprecated
     List<String> getProcessOutputAndLogToFile(Process process);
+
+    /**
+     * Create a stateful managed ProcessLogger which writes to shared buffer.
+     */
+    ProcessLogger getNewProcessLogger();
 }

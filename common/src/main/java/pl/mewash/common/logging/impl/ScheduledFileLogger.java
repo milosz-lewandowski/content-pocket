@@ -87,6 +87,9 @@ public class ScheduledFileLogger implements FileLogger {
         return logProcessOutputToFile(process);
     }
 
+    public DefaultProcessLogger getNewProcessLogger() {
+        return new DefaultProcessLogger(sharedLogBuffer, shortThreadName());
+    }
 
     private List<String> logProcessOutputToFile(Process process) {
         ThreadBuffer localThreadBuffer = threadBuffer.get();

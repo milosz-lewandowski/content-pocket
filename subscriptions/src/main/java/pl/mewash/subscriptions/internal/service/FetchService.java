@@ -6,6 +6,7 @@ import pl.mewash.commands.api.processes.ProcessFactoryProvider;
 import pl.mewash.commands.settings.response.ContentProperties;
 import pl.mewash.common.app.context.AppContext;
 import pl.mewash.common.logging.api.FileLogger;
+import pl.mewash.common.logging.api.ProcessLogger;
 import pl.mewash.subscriptions.internal.domain.model.FetchedContent;
 import pl.mewash.subscriptions.internal.domain.model.SubscribedChannel;
 import pl.mewash.subscriptions.internal.domain.state.ChannelUiState;
@@ -22,6 +23,10 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class FetchService {
 
@@ -79,36 +84,74 @@ public class FetchService {
     }
 
     private FetchResults runFetchUploadsAfter(SubscribedChannel channel, LocalDateTime dateAfter) {
+        ProcessLogger processLogger = null;
+        ScheduledExecutorService progressWatchdog = null;
+
         try {
+            // --- Setup fetch process ---
             ContentProperties responseProperties = ContentProperties.CONTENT_PROPERTIES;
-
             Path tempFile = Files.createTempFile("fetch_uploads_temp", ".txt");
-
+            //FIXME: temp: ensures single playlist with '/videos' suffix
+            String resolvedUrl = channel.getUniqueUrl() + "/videos";
             ProcessBuilder builder = processFactory.fetchContentsPublishedAfter(
-                channel.getUniqueUrl(), dateAfter, responseProperties, tempFile.toAbsolutePath());
+                resolvedUrl, dateAfter, responseProperties, tempFile.toAbsolutePath());
 
+            // -- Setup logger and watchdog ---
+            processLogger = fileLogger.getNewProcessLogger();
+            progressWatchdog = Executors.newSingleThreadScheduledExecutor();
+            ProcessLogger finalProcessLogger = processLogger;
+            ScheduledExecutorService finalProgressWatchdog = progressWatchdog;
+
+            // --- Start the fetch process, logger and watchdog ---
             Process process = builder.start();
+            processLogger.startLogging(process);
+            AtomicLong lastModified = new AtomicLong(System.currentTimeMillis());
+            progressWatchdog.scheduleAtFixedRate(() -> {
+                try {
+                    if (!process.isAlive()) {
+                        finalProgressWatchdog.shutdown();
+                        return;
+                    }
 
-            List<String> output = fileLogger.getProcessOutputAndLogToFile(process);
+                    long currentModified = Files.getLastModifiedTime(tempFile).toMillis();
+                    long lastMod = lastModified.get();
 
-            int finished = process.waitFor();
+                    if (currentModified > lastMod) lastModified.set(currentModified);
+                    else if (System.currentTimeMillis() - lastMod > 20_000) {
+                        fileLogger.appendSingleLine("No new fetches for 20 seconds, destroying process...");
+                        process.destroyForcibly();
+                        finalProcessLogger.shutdownAndGetSnapshot();
+                        finalProgressWatchdog.shutdown();
+                    }
+                } catch (IOException ioe) {
+                    fileLogger.logErrWithMessage("Error accessing fetch temp file: ", ioe, true);
+                }
+            }, 5, 7, TimeUnit.SECONDS);
 
-            boolean isFullFetched = output.getLast().contains("Finished downloading playlist");
+            // --- Await fetch and logger processes completion ---
+            int exitCode = process.waitFor();
+            List<String> output = processLogger.awaitCompletion(5500);
+            boolean isFullFetched =  !output.isEmpty() && output.getLast().contains("Finished downloading playlist");
+            fileLogger.appendSingleLine("Fetch process finished with exit code: " + exitCode);
 
+            // --- Parse response from temp file and cleanup ---
             List<String> lines = Files.readAllLines(tempFile, StandardCharsets.UTF_8);
             List<FetchedContent> fetchedContents = lines.stream()
                 .map(ContentProperties.CONTENT_PROPERTIES::parseResponseToDto)
                 .map(contentDto -> FetchedContent
                     .fromContentPropertiesResponse(contentDto, channel.getUniqueUrl(), channel.getChannelName()))
                 .toList();
-
             Files.deleteIfExists(tempFile);
             return new FetchResults(fetchedContents, isFullFetched);
 
         } catch (IOException | InterruptedException e) {
-            fileLogger.appendSingleLine(e.getMessage());
+            fileLogger.logErrStackTrace(e, true);
             Dialogs.showAlertAndAwait("Fetch Error", e.getMessage(), Alert.AlertType.ERROR);
             return new FetchResults(Collections.emptyList(), false);
+
+        } finally {
+            if (processLogger != null) processLogger.shutdownAndGetSnapshot();
+            if (progressWatchdog != null) progressWatchdog.shutdownNow();
         }
     }
 
