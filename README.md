@@ -14,6 +14,14 @@ It is not intended for commercial use or production deployment.
 
 ---
 
+#### ⚠️ Known Limitation:
+
+- Subscriptions Tab fetching limitations and throttling.
+
+See more in [Known Limitations](#known-limitations) section. 
+
+---
+
 ## 📸 UI preview (screenshots)
 
 ### Subscriptions Tab
@@ -217,6 +225,24 @@ In the future it may be published as a standalone repository.
 - Central application logic lives here.
 - Shared utilities and abstractions for Batch/Subscriptions modules.
 - Acts as the “core” runtime layer.
+
+---
+
+## ⚠️ Known Limitations
+
+### Subscriptions Tab Fetching Limitations
+
+Recent YouTube API changes and the deprecation of `--break-on-reject` in yt-dlp affect
+the **Subscriptions Pocket** tab.  
+Fetching is currently limited to about 12 latest videos per channel, even after retries.
+
+Updating to the latest **yt-dlp nightly build** restores partial functionality.  
+Future releases will include new retry logic and cookie-based authentication
+to mitigate throttling.
+
+_Tracked under ongoing work: yt-dlp throttling fix (v1.3.x branch)._
+
+*Last updated: 2025-11-06*
 
 ---
 
